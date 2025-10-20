@@ -1,0 +1,43 @@
+{% extends 'equivalencias/base.html' %}
+
+{% block content %}
+  <h2>Iniciar Nueva Carrera Académica</h2>
+  <hr>
+
+  <div class="row">
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header">
+          <h5>Opción 1: Iniciar desde un Cargo Regular Existente</h5>
+        </div>
+        <div class="card-body">
+          <form method="POST">
+            {% csrf_token %}
+            {{ ca_form.as_p }}
+            <button type="submit" name="submit_existente" class="btn btn-primary mt-3">Iniciar Carrera Académica</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header">
+          <h5>Opción 2: Iniciar Creando un Cargo Nuevo</h5>
+        </div>
+        <div class="card-body">
+          <form method="POST">
+            {% csrf_token %}
+            {{ cargo_form.as_p }}
+            <button type="submit" name="submit_nuevo" class="btn btn-success mt-3">Crear Cargo e Iniciar Carrera</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4">
+      <a href="{% url 'dashboard_ca' %}" class="btn btn-secondary">Cancelar</a>
+  </div>
+
+{% endblock %}

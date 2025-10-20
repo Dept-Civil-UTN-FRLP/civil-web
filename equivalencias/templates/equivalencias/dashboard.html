@@ -1,0 +1,51 @@
+{% extends 'equivalencias/base.html' %}
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Dashboard de Solicitudes</h1>
+    <a href="{% url 'crear_solicitud' %}" class="btn btn-success">
+        + Nueva Solicitud
+    </a>
+  </div>
+
+  <form method="GET" class="mb-4">
+    <div class="input-group">
+      <input type="text" name="q" class="form-control" placeholder="Buscar por nombre o apellido del estudiante..." value="{{ search_query }}">
+      <button class="btn btn-outline-primary" type="submit">Buscar</button>
+    </div>
+  </form>
+
+  <table class="table table-striped table-hover">
+    <thead>
+      <tr>
+        <th>Estudiante</th>
+        <th>DNI/Pasaporte</th>
+        <th>Fecha de Inicio</th>
+        <th>Progreso</th> <th>Estado General</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for solicitud in solicitudes %}
+      <tr class="{% if solicitud.estado_general == 'Completada' %}table-secondary text-muted{% endif %}">
+        <td>{{ solicitud.id_estudiante.nombre_completo }}</td>
+        <td>{{ solicitud.id_estudiante.dni_pasaporte }}</td>
+        <td>{{ solicitud.fecha_inicio }}</td>
+        <td><strong>{{ solicitud.progreso }}</strong></td> <td>
+            <span class="badge {% if solicitud.estado_general == 'Completada' %}bg-secondary{% else %}bg-info{% endif %}">
+                {{ solicitud.estado_general }}
+            </span>
+        </td>
+        <td>
+          <a href="{% url 'solicitud_detalle' pk=solicitud.pk %}" class="btn btn-primary btn-sm">
+            Ver Detalle
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="text-center">No se encontraron solicitudes.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

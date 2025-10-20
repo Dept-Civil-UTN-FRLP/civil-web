@@ -1,0 +1,142 @@
+{% extends 'equivalencias/base.html' %}
+
+{% block content %}
+    <h2>Editar Junta Evaluadora</h2>
+  <p>Para el expediente de: <strong>{{ ca.cargo.docente }}</strong></p>
+  <hr>
+
+  <div class="row g-3 align-items-center mb-4 p-3 border rounded bg-light">
+    <div class="col-auto"><label class="form-label fw-bold">Filtrar Docentes Internos por:</label></div>
+    <div class="col-auto">
+      <select id="filtro-categoria" class="form-select">
+        <option value="">-- Toda Categoría --</option>
+        {% for value, text in categoria_choices %}
+          <option value="{{ value }}">{{ text }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <select id="filtro-dedicacion" class="form-select">
+        <option value="">-- Toda Dedicación --</option>
+        {% for value, text in dedicacion_choices %}
+          <option value="{{ value }}">{{ text }}</option>
+        {% endfor %}
+      </select>
+    </div>
+</div>
+
+  <form method="POST">
+    {% csrf_token %}
+    
+    <h5>Miembros Internos (FRLP)</h5>
+    <div class="mb-3">
+        <label class="form-label">{{ form.miembro_interno_titular.label }}</label>
+        {{ form.miembro_interno_titular }}
+    </div>
+    <div class="mb-3">
+        <label class="form-label">{{ form.miembro_interno_suplente.label }}</label>
+        {{ form.miembro_interno_suplente }}
+    </div>
+    <hr>
+    
+    <h5>Miembros Externos</h5>
+    <div class="mb-3">
+        <label class="form-label d-flex justify-content-between align-items-center">
+            <span>{{ form.miembros_externos_titulares.label }}</span>
+            <a href="{% url 'admin:carrera_academica_miembroexterno_add' %}" 
+               class="btn btn-outline-success btn-sm" 
+               onclick="return abrirPopup(this.href);">
+               + Nuevo Miembro Externo
+            </a>
+        </label>
+        {{ form.miembros_externos_titulares }}
+    </div>
+    <div class="mb-3">
+        <label class="form-label">{{ form.miembros_externos_suplentes.label }}</label>
+        {{ form.miembros_externos_suplentes }}
+    </div>
+    <hr>
+    
+    <h5>Veedores</h5>
+    <div class="mb-3">
+        <label class="form-label d-flex justify-content-between align-items-center">
+            <span>{{ form.veedor_alumno_titular.label }}</span>
+             <a href="{% url 'admin:carrera_academica_veedor_add' %}" 
+               class="btn btn-outline-success btn-sm"
+               onclick="return abrirPopup(this.href);">
+               + Nuevo Veedor
+            </a>
+        </label>
+        {{ form.veedor_alumno_titular }}
+    </div>
+    <div class="mb-3">
+        <label class="form-label">{{ form.veedor_alumno_suplente.label }}</label>
+        {{ form.veedor_alumno_suplente }}
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">{{ form.veedor_graduado_titular.label }}</label>
+        {{ form.veedor_graduado_titular }}
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">{{ form.veedor_graduado_suplente.label }}</label>
+        {{ form.veedor_graduado_suplente }}
+    </div>
+
+    <button type="submit" class="btn btn-success mt-3">Guardar Cambios</button>
+    <a href="{% url 'detalle_ca' pk=ca.pk %}" class="btn btn-secondary mt-3">Cancelar</a>
+  </form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filtroCategoria = document.getElementById('filtro-categoria');
+    const filtroDedicacion = document.getElementById('filtro-dedicacion');
+    const docenteTitularSelect = document.getElementById('{{ form.miembro_interno_titular.id_for_label }}');
+    const docenteSuplenteSelect = document.getElementById('{{ form.miembro_interno_suplente.id_for_label }}');
+
+    function actualizarDocentes() {
+        const categoria = filtroCategoria.value;
+        const dedicacion = filtroDedicacion.value;
+        
+        // Construimos la URL del API con los filtros
+        const url = `{% url 'api_docentes_filtrados' %}?categoria=${categoria}&dedicacion=${dedicacion}`;
+
+        // Hacemos la petición al backend
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                // Vaciamos los selects actuales
+                docenteTitularSelect.innerHTML = '<option value="">---------</option>';
+                docenteSuplenteSelect.innerHTML = '<option value="">---------</option>';
+
+                // Llenamos los selects con los nuevos docentes
+                data.docentes.forEach(docente => {
+                    const option = new Option(docente.full_name, docente.id);
+                    docenteTitularSelect.add(option.cloneNode(true));
+                    docenteSuplenteSelect.add(option.cloneNode(true));
+                });
+            });
+    }
+
+    // Añadimos los 'listeners' para que la función se ejecute cuando cambie un filtro
+    filtroCategoria.addEventListener('change', actualizarDocentes);
+    filtroDedicacion.addEventListener('change', actualizarDocentes);
+});
+
+function abrirPopup(url) {
+        const popup = window.open(url, 'add-new-popup', 'width=800,height=600');
+        
+        // Creamos un 'intervalo' que revise si la ventana pop-up se cerró
+        const checkPopupClosed = setInterval(function() {
+            if (popup.closed) {
+                clearInterval(checkPopupClosed); // Detenemos la revisión
+                window.location.reload(); // Recargamos la página principal
+            }
+        }, 500); // Revisa cada medio segundo
+
+        return false; // Evita que el enlace se abra de forma normal
+    }
+</script>
+
+{% endblock %}

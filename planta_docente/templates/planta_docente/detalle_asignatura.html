@@ -1,0 +1,41 @@
+{% extends 'equivalencias/base.html' %}
+
+{% block content %}
+  <h2>Planta Docente: {{ asignatura.nombre|title }}</h2>
+  <hr>
+
+  <div class="row">
+    <div class="col-md-8">
+      <h4>Cargos Activos</h4>
+      <table class="table">
+        </table>
+
+      <h4 class="mt-4">Historial de Cargos</h4>
+      <table class="table table-sm text-muted">
+        </table>
+    </div>
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">Responsable de Equivalencias</div>
+        <div class="card-body">
+          {% if responsable_actual.docente_responsable %}
+            <p><strong>Actual:</strong> {{ responsable_actual.docente_responsable }}</p>
+          {% else %}
+            <p class="text-muted">Aún no se ha asignado un responsable.</p>
+          {% endif %}
+          <hr>
+          <form method="POST">
+            {% csrf_token %}
+            <label for="responsable_id" class="form-label">Asignar nuevo responsable:</label>
+            <select name="responsable_id" class="form-select">
+                {% for docente in docentes_elegibles %}
+                <option value="{{ docente.pk }}">{{ docente }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary w-100 mt-2">Asignar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

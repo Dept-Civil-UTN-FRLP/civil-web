@@ -1,0 +1,252 @@
+{% extends 'equivalencias/base.html' %}
+{% load ca_extras %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <a href="{% url 'dashboard_ca' %}" class="btn btn-secondary btn-sm">&larr; Volver al Dashboard</a>
+    
+    <a href="{% url 'consolidar_pdf' pk=ca.pk %}" class="btn btn-success">
+        <i class="fas fa-file-pdf"></i> Consolidar Expediente en PDF
+    </a>
+</div>
+<h2>Expediente de Carrera Académica</h2>
+
+<div class="row mt-3">
+    <div class="col-md-8">
+        <div class="card mb-4">
+    <div class="card-body">
+    <h5 class="card-title">{{ ca.cargo.docente }}</h5>
+    
+    <p class="card-text mb-1 d-flex align-items-center">
+    <strong class="me-2">Expediente:</strong>
+    {% if ca.numero_expediente %}
+        {{ ca.numero_expediente }}
+    {% else %}
+        <form action="{% url 'asignar_expediente' pk=ca.pk %}" method="POST" class="d-inline-flex">
+            {% csrf_token %}
+            {{ expediente_form.numero_expediente }}
+            <button type="submit" class="btn btn-sm btn-outline-success ms-2">Asignar</button>
+        </form>
+    {% endif %}
+</p>
+    <p class="card-text mb-1">
+        <strong>Cargo:</strong> {{ ca.cargo.get_categoria_display }} {{ ca.cargo.get_caracter_display }} en {{ ca.cargo.asignatura.nombre|title }}
+    </p>
+    <p class="card-text mb-1">
+        <strong>Período Original:</strong> {{ ca.fecha_inicio|date:"d/m/Y" }} al {{ ca.fecha_vencimiento_original|date:"d/m/Y" }}
+    </p>
+    <p class="card-text mb-1">
+        <strong>Vencimiento Actual (con prórrogas):</strong> <strong class="text-danger">{{ ca.fecha_vencimiento_actual|date:"d/m/Y" }}</strong>
+    </p>
+    <p class="card-text">
+        <strong>Estado:</strong> {{ ca.get_estado_display }}
+    </p>
+    {% if ca.estado == 'ACT' %}
+    <hr>
+    <form action="{% url 'finalizar_ca' pk=ca.pk %}" method="POST" onsubmit="return confirm('¿Estás seguro de que querés finalizar este expediente? Esta acción no se puede deshacer fácilmente.');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-warning w-100">
+            Finalizar Expediente
+        </button>
+    </form>
+    {% endif %}
+    <hr>
+    
+    <p class="card-text small mb-1">
+        <strong>Res. Designación:</strong>
+        {% if ca.resolucion_designacion %}
+            {{ ca.resolucion_designacion }}
+            {% if ca.resolucion_designacion.file %}
+                <a href="{{ ca.resolucion_designacion.file.url }}" target="_blank" class="ms-2 fw-bold">(Ver Archivo)</a>
+            {% endif %}
+        {% else %}
+            No asignada.
+        {% endif %}
+    </p>
+    <p class="card-text small">
+        <strong>Res. Puesta en Función:</strong>
+        {% if ca.resolucion_puesta_en_funcion %}
+            {{ ca.resolucion_puesta_en_funcion }}
+            {% if ca.resolucion_puesta_en_funcion.file %}
+                <a href="{{ ca.resolucion_puesta_en_funcion.file.url }}" target="_blank" class="ms-2 fw-bold">(Ver Archivo)</a>
+            {% endif %}
+        {% else %}
+            No asignada.
+        {% endif %}
+    </p>
+</div>
+</div>
+<div class="card mb-4">
+        <div class="card-header">Curriculum Vitae</div>
+        <div class="card-body">
+            {% if form_cv %}
+                {% include 'carrera_academica/includes/form_list.html' with formularios=form_cv|as_list ca=ca %}
+            {% else %}
+                <p class="text-muted">El formulario para el CV no ha sido generado.</p>
+            {% endif %}
+        </div>
+    </div>
+        <h4>Checklist de Formularios</h4>
+        
+        <h5>Formularios de Inicio</h5>
+        {% include 'carrera_academica/includes/form_list.html' with formularios=form_unicos ca=ca %}
+
+        <h5 class="mt-4">Formularios Anuales</h5>
+        {% regroup form_anuales by anio_correspondiente as formularios_por_anio %}
+        {% for grupo in formularios_por_anio %}
+            <h6 class="mt-3 text-muted">Año {{ grupo.grouper }}</h6>
+            {% include 'carrera_academica/includes/form_list.html' with formularios=grupo.list ca=ca %}
+
+        {% endfor %}
+        
+<div class="d-flex justify-content-between align-items-center mt-4">
+    <h5>Evaluaciones</h5>
+            {% if ca.estado != 'FIN' and anios_pendientes_evaluacion %}
+                <a href="{% url 'iniciar_evaluacion' pk=ca.pk %}" class="btn btn-info btn-sm">+ Iniciar Nueva Evaluación</a>
+            {% endif %}
+        </div>
+
+        {% if anios_pendientes_evaluacion %}
+        <div class="alert alert-warning small mt-2">
+            <strong>Años pendientes de evaluación:</strong> {{ anios_pendientes_evaluacion|join:", " }}
+        </div>
+        {% else %}
+        <div class="alert alert-success small mt-2">
+            Todos los años hasta la fecha han sido cubiertos por una evaluación.
+        </div>
+        {% endif %}
+
+        {% for evaluacion in ca.evaluaciones.all %}
+            <div class="card mt-3">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ evaluacion }}</strong>
+                        <span class="fw-normal small text-muted">(Años: {{ evaluacion.anios_evaluados|join:", " }})</span>
+                    </div>
+                    <div>
+                        <a href="{% url 'notificar_junta' pk=evaluacion.pk %}" class="btn btn-primary btn-sm">Notificar a Junta</a>
+                        <a href="{% url 'editar_junta' pk=evaluacion.pk %}" class="btn btn-outline-secondary btn-sm">Editar Junta</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form action="{% url 'agendar_evaluacion' pk=evaluacion.pk %}" method="POST" class="d-flex mb-3">
+                        {% csrf_token %}
+                        <label class="form-label me-2">Fecha:</label>
+                        <input type="datetime-local" name="fecha_evaluacion" class="form-control form-control-sm" 
+                               value="{{ evaluacion.fecha_evaluacion|date:'Y-m-d\TH:i' }}">
+                        <button type="submit" class="btn btn-secondary btn-sm ms-2">Agendar</button>
+                    </form>
+
+                    <h6 class="mt-3">Formularios de esta Evaluación</h6>
+                    {% include 'carrera_academica/includes/form_list.html' with formularios=evaluacion.formularios.all ca=ca %}
+                </div>
+            </div>
+        {% endfor %}
+        
+        {% if not ca.evaluaciones.all %}
+            <p class="text-muted">Aún no se han iniciado evaluaciones.</p>
+        {% endif %}
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Junta Evaluadora</span>
+        <div>
+            <a href="{% url 'generar_propuesta_jurado' pk=ca.pk %}" class="btn btn-info btn-sm">
+                Generar Planilla
+            </a>
+            <a href="{% url 'editar_junta' pk=ca.pk %}" class="btn btn-outline-secondary btn-sm">
+                Editar
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        {% with junta=ca.junta_evaluadora %}
+            {% if junta %}
+                <strong>Miembro Interno Titular:</strong>
+                <p>{{ junta.miembro_interno_titular|default:"No asignado." }}</p>
+                <strong>Miembros Externos Titulares:</strong>
+                <ul>
+                    {% for miembro in junta.miembros_externos_titulares.all %}
+                        <li>{{ miembro }}</li>
+                    {% empty %}
+                        <li>No asignados.</li>
+                    {% endfor %}
+                </ul>
+                <hr>
+                <strong>Veedor Alumno Titular:</strong>
+                <p>{{ junta.veedor_alumno_titular|default:"No asignado." }}</p>
+                <strong>Veedor Graduado Titular:</strong>
+                <p>{{ junta.veedor_graduado_titular|default:"No asignado." }}</p>
+            {% else %}
+                 <p class="text-muted">Aún no se ha asignado una Junta Evaluadora.</p>
+            {% endif %}
+        {% endwith %}
+    </div>
+</div>
+
+<div class="card mb-4">
+            <div class="card-header">Acciones del Expediente</div>
+            <div class="card-body">
+                {% if hay_formularios_pendientes %}
+                    <a href="{% url 'notificar_pendientes' pk=ca.pk %}" class="btn btn-primary w-100">
+                        Notificar Formularios Pendientes
+                    </a>
+                    <small class="form-text text-muted d-block mt-1">
+                        Se enviará un correo al docente con las plantillas F02, F04 y F05 que falten.
+                    </small>
+                {% else %}
+                    <p class="text-muted mb-0">No hay formularios (F02, F04, F05) pendientes de notificar.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if ca.estado != 'FIN' %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <a class="text-decoration-none text-dark d-block" data-bs-toggle="collapse" href="#collapseResolucionForm" role="button">
+                    Registrar Resolución / Evento
+                </a>
+            </div>
+            <div class="collapse" id="collapseResolucionForm">
+                <div class="card-body">
+                    <form action="{% url 'registrar_resolucion' pk=ca.pk %}" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {{ form_resolucion.as_p }}
+                        <button type="submit" class="btn btn-success w-100 mt-2">Registrar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        <div class="card mt-4"> <div class="card-header">Resoluciones y Eventos</div>
+            <ul class="list-group list-group-flush">
+                {% for res in ca.cargo.resoluciones.all %}
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>{{ res.get_origen_display|upper }} {{ res.numero }}/{{ res.año }}</strong><br>
+                                <small>{{ res.get_objeto_display }}</small>
+                            </div>
+                            {% if res.objeto == 'prorroga_ca' %}
+                                <span class="badge bg-info text-dark">Prórroga</span>
+                            {% endif %}
+                        </div>
+                        {% if res.descripcion %}
+                            <p class="card-text bg-light border p-2 mt-2 mb-0 rounded" style="font-size: 0.85em;">
+                                {{ res.descripcion }}
+                            </p>
+                        {% endif %}
+                        {% if res.file %}
+                            <a href="{{ res.file.url }}" target="_blank" class="card-link small mt-1 d-block">Ver Archivo</a>
+                        {% endif %}
+                    </li>
+                {% empty %}
+                    <li class="list-group-item text-muted">No hay resoluciones asociadas.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

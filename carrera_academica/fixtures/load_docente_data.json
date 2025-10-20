@@ -1,0 +1,805 @@
+[
+  {
+    "model": "planta_docente.Docente",
+    "pk": 1,
+    "fields": {
+      "nombre": "Cecilia Susana",
+      "apellido": "ALVAREZ",
+      "documento": 17480162,
+      "legajo": 36664,
+      "fecha_nacimiento": "1965-11-29"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 2,
+    "fields": {
+      "nombre": "Roberto César",
+      "apellido": "AMARILLA",
+      "documento": 14713047,
+      "legajo": 33344,
+      "fecha_nacimiento": "1961-12-12"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 3,
+    "fields": {
+      "nombre": "Diego Federico",
+      "apellido": "AMICONI",
+      "documento": 25476665,
+      "legajo": 44668,
+      "fecha_nacimiento": "1976-09-25"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 4,
+    "fields": {
+      "nombre": "Juan Cruz",
+      "apellido": "AMPRIMO",
+      "documento": 28052780,
+      "legajo": 93104,
+      "fecha_nacimiento": "1980-03-31"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 5,
+    "fields": {
+      "nombre": "Raúl Alberto",
+      "apellido": "ANTENUCCI",
+      "documento": 16260572,
+      "legajo": 43362,
+      "fecha_nacimiento": "1963-04-27"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 6,
+    "fields": {
+      "nombre": "Carla Silvina",
+      "apellido": "AQUINO",
+      "documento": 34550000,
+      "legajo": 89150,
+      "fecha_nacimiento": "1989-07-19"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 7,
+    "fields": {
+      "nombre": "Jose Augusto",
+      "apellido": "ATELA",
+      "documento": 31520422,
+      "legajo": 91385,
+      "fecha_nacimiento": "1985-07-18"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 8,
+    "fields": {
+      "nombre": "Lisandro Javier",
+      "apellido": "BALLARIO",
+      "documento": 20796128,
+      "legajo": 40130,
+      "fecha_nacimiento": "1969-09-18"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 9,
+    "fields": {
+      "nombre": "Alejandro Javier",
+      "apellido": "BARREDA",
+      "documento": 20256929,
+      "legajo": 41037,
+      "fecha_nacimiento": "1968-05-27"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 10,
+    "fields": {
+      "nombre": "Marcelo Fabián",
+      "apellido": "BARREDA",
+      "documento": 17419062,
+      "legajo": 29244,
+      "fecha_nacimiento": "1965-06-30"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 11,
+    "fields": {
+      "nombre": "Mirco",
+      "apellido": "BATTISTA",
+      "documento": 41677499,
+      "legajo": 91644,
+      "fecha_nacimiento": "1999-11-05"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 12,
+    "fields": {
+      "nombre": "Hugo Gerardo",
+      "apellido": "BOTASSO",
+      "documento": 18053603,
+      "legajo": 27362,
+      "fecha_nacimiento": "1966-09-29"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 13,
+    "fields": {
+      "nombre": "Luciano Germán",
+      "apellido": "BRIZUELA",
+      "documento": 29208152,
+      "legajo": 58183,
+      "fecha_nacimiento": "1981-11-22"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 14,
+    "fields": {
+      "nombre": "Ricardo Andrés",
+      "apellido": "BROWN",
+      "documento": 20233467,
+      "legajo": 28381,
+      "fecha_nacimiento": "1968-05-03"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 15,
+    "fields": {
+      "nombre": "Ezequiel",
+      "apellido": "CAPARRA",
+      "documento": 29577884,
+      "legajo": 84750,
+      "fecha_nacimiento": "1982-11-04"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 16,
+    "fields": {
+      "nombre": "José Luis",
+      "apellido": "CARNER",
+      "documento": 16875034,
+      "legajo": 82604,
+      "fecha_nacimiento": "1963-10-20"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 17,
+    "fields": {
+      "nombre": "Paola Soledad",
+      "apellido": "CEDRIK",
+      "documento": 37021569,
+      "legajo": 89461,
+      "fecha_nacimiento": "1992-11-19"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 18,
+    "fields": {
+      "nombre": "Carlos Darío",
+      "apellido": "CHIOLI",
+      "documento": 21463313,
+      "legajo": 44392,
+      "fecha_nacimiento": "1970-01-18"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 19,
+    "fields": {
+      "nombre": "Andrés Hipólito",
+      "apellido": "CHIRILLANO",
+      "documento": 31114257,
+      "legajo": 86969,
+      "fecha_nacimiento": "1984-10-17"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 20,
+    "fields": {
+      "nombre": "Pedro Antonio",
+      "apellido": "CIELLI",
+      "documento": 12666129,
+      "legajo": 72389,
+      "fecha_nacimiento": "1958-06-23"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 21,
+    "fields": {
+      "nombre": "María José",
+      "apellido": "CORREA",
+      "documento": 22669525,
+      "legajo": 64488,
+      "fecha_nacimiento": "1972-03-07"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 22,
+    "fields": {
+      "nombre": "Adrián Ceferino",
+      "apellido": "CUATTROCCHIO",
+      "documento": 22024689,
+      "legajo": 43239,
+      "fecha_nacimiento": "1971-07-26"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 23,
+    "fields": {
+      "nombre": "Arcángel José",
+      "apellido": "CURTO",
+      "documento": 11096219,
+      "legajo": 16844,
+      "fecha_nacimiento": "1954-10-01"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 24,
+    "fields": {
+      "nombre": "Gustavo Alejandro",
+      "apellido": "DAS NEVES",
+      "documento": 22870339,
+      "legajo": 40831,
+      "fecha_nacimiento": "1973-02-21"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 25,
+    "fields": {
+      "nombre": "Héctor Luis",
+      "apellido": "DELBONO",
+      "documento": 27328359,
+      "legajo": 46188,
+      "fecha_nacimiento": "1979-09-22"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 26,
+    "fields": {
+      "nombre": "Gimena",
+      "apellido": "DIAZ ROMAN",
+      "documento": 26324160,
+      "legajo": 88897,
+      "fecha_nacimiento": "1977-12-29"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 27,
+    "fields": {
+      "nombre": "Mauro Agustín",
+      "apellido": "DOMINGUEZ",
+      "documento": 35073123,
+      "legajo": 88898,
+      "fecha_nacimiento": "1990-01-06"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 28,
+    "fields": {
+      "nombre": "Juan Manuel",
+      "apellido": "DONATI",
+      "documento": 32193345,
+      "legajo": 82609,
+      "fecha_nacimiento": "1986-02-16"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 29,
+    "fields": {
+      "nombre": "Enrique Alberto",
+      "apellido": "FENSEL",
+      "documento": 14057569,
+      "legajo": 24884,
+      "fecha_nacimiento": "1960-06-09"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 30,
+    "fields": {
+      "nombre": "Rubén Oscar",
+      "apellido": "FITTIPALDI",
+      "documento": 12697637,
+      "legajo": 37565,
+      "fecha_nacimiento": "1959-02-21"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 31,
+    "fields": {
+      "nombre": "Anabela",
+      "apellido": "GABALEC",
+      "documento": 32223067,
+      "legajo": 92024,
+      "fecha_nacimiento": "1986-03-01"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 32,
+    "fields": {
+      "nombre": "Juan Angel",
+      "apellido": "GARCIA",
+      "documento": 13581921,
+      "legajo": 59581,
+      "fecha_nacimiento": "1960-05-31"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 33,
+    "fields": {
+      "nombre": "Juan Ignacio",
+      "apellido": "GATTI",
+      "documento": 37710583,
+      "legajo": 91923,
+      "fecha_nacimiento": "1993-07-14"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 34,
+    "fields": {
+      "nombre": "Rubén Osmar",
+      "apellido": "GONZALEZ SBURLATI",
+      "documento": 17585644,
+      "legajo": 26505,
+      "fecha_nacimiento": "1966-03-10"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 35,
+    "fields": {
+      "nombre": "Ernesto Oscar",
+      "apellido": "IAFOLLA",
+      "documento": 12942055,
+      "legajo": 21546,
+      "fecha_nacimiento": "1959-03-25"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 36,
+    "fields": {
+      "nombre": "Jorge Daniel",
+      "apellido": "JURADO",
+      "documento": 21433048,
+      "legajo": 39355,
+      "fecha_nacimiento": "1970-03-07"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 37,
+    "fields": {
+      "nombre": "Fabio Esteban",
+      "apellido": "JURI CASANOVA",
+      "documento": 92362679,
+      "legajo": 56096,
+      "fecha_nacimiento": "1969-03-01"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 38,
+    "fields": {
+      "nombre": "Jan Ignacio",
+      "apellido": "LOGIOCCO",
+      "documento": 29470618,
+      "legajo": 94781,
+      "fecha_nacimiento": "1982-08-20"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 39,
+    "fields": {
+      "nombre": "Alejandro Francisco",
+      "apellido": "LOUDET",
+      "documento": 17569248,
+      "legajo": 51582,
+      "fecha_nacimiento": "1965-02-16"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 40,
+    "fields": {
+      "nombre": "Pedro Miguel",
+      "apellido": "LOZADA",
+      "documento": 12942914,
+      "legajo": 18316,
+      "fecha_nacimiento": "1959-04-22"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 41,
+    "fields": {
+      "nombre": "María Victoria",
+      "apellido": "LUGO",
+      "documento": 29224334,
+      "legajo": 78429,
+      "fecha_nacimiento": "1982-03-11"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 42,
+    "fields": {
+      "nombre": "María Laura",
+      "apellido": "MARTINO",
+      "documento": 30139832,
+      "legajo": 78430,
+      "fecha_nacimiento": "1983-04-06"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 43,
+    "fields": {
+      "nombre": "Verónica Vanesa",
+      "apellido": "MECHURA",
+      "documento": 31504068,
+      "legajo": 85043,
+      "fecha_nacimiento": "1985-04-30"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 44,
+    "fields": {
+      "nombre": "Osvaldo Guillermo",
+      "apellido": "MENA",
+      "documento": 14571850,
+      "legajo": 28505,
+      "fecha_nacimiento": "1961-08-16"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 45,
+    "fields": {
+      "nombre": "Carlos Alberto",
+      "apellido": "NIEVES",
+      "documento": 12291115,
+      "legajo": 19091,
+      "fecha_nacimiento": "1958-01-14"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 46,
+    "fields": {
+      "nombre": "Leonardo Emanuel",
+      "apellido": "OBERST MARTINEZ",
+      "documento": 30727938,
+      "legajo": 88904,
+      "fecha_nacimiento": "1984-07-15"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 47,
+    "fields": {
+      "nombre": "Carlos Ariel",
+      "apellido": "PARRILLO",
+      "documento": 21056374,
+      "legajo": 32570,
+      "fecha_nacimiento": "1969-09-12"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 48,
+    "fields": {
+      "nombre": "Augusto",
+      "apellido": "PERAZO",
+      "documento": 26708062,
+      "legajo": 87655,
+      "fecha_nacimiento": "1978-06-11"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 49,
+    "fields": {
+      "nombre": "Esteban Andrés",
+      "apellido": "PERERA",
+      "documento": 16964683,
+      "legajo": 29019,
+      "fecha_nacimiento": "1964-07-16"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 50,
+    "fields": {
+      "nombre": "Cristian Germán",
+      "apellido": "PIERMARIA",
+      "documento": 24427016,
+      "legajo": 45423,
+      "fecha_nacimiento": "1975-04-23"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 51,
+    "fields": {
+      "nombre": "Santiago",
+      "apellido": "PINEDO",
+      "documento": 32869729,
+      "legajo": 91924,
+      "fecha_nacimiento": "1987-04-24"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 52,
+    "fields": {
+      "nombre": "María José",
+      "apellido": "POURREUIX",
+      "documento": 20716253,
+      "legajo": 94777,
+      "fecha_nacimiento": "1968-09-26"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 53,
+    "fields": {
+      "nombre": "Emilio Daniel",
+      "apellido": "PRIMANTE",
+      "documento": 17082158,
+      "legajo": 30964,
+      "fecha_nacimiento": "1964-09-07"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 54,
+    "fields": {
+      "nombre": "Fernando Martin",
+      "apellido": "PUGLISI",
+      "documento": 25720583,
+      "legajo": 45171,
+      "fecha_nacimiento": "1977-03-14"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 55,
+    "fields": {
+      "nombre": "Eduardo Luis",
+      "apellido": "QUARTARA",
+      "documento": 14161741,
+      "legajo": 32118,
+      "fecha_nacimiento": "1960-10-29"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 56,
+    "fields": {
+      "nombre": "Lucas César",
+      "apellido": "QUESADA",
+      "documento": 25570185,
+      "legajo": 63600,
+      "fecha_nacimiento": "1976-09-02"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 57,
+    "fields": {
+      "nombre": "Oscar Raúl",
+      "apellido": "REBOLLO",
+      "documento": 12666365,
+      "legajo": 24886,
+      "fecha_nacimiento": "1958-12-12"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 58,
+    "fields": {
+      "nombre": "Ernesto",
+      "apellido": "REPETTO",
+      "documento": 29859069,
+      "legajo": 91008,
+      "fecha_nacimiento": "1982-12-06"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 59,
+    "fields": {
+      "nombre": "Luis Agustín",
+      "apellido": "RICCI",
+      "documento": 28671790,
+      "legajo": 55509,
+      "fecha_nacimiento": "1981-01-28"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 60,
+    "fields": {
+      "nombre": "José Julián",
+      "apellido": "RIVERA",
+      "documento": 24441811,
+      "legajo": 36965,
+      "fecha_nacimiento": "1975-05-03"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 61,
+    "fields": {
+      "nombre": "Rocío Esther",
+      "apellido": "ROLON FARIÑA",
+      "documento": 31783757,
+      "legajo": 78640,
+      "fecha_nacimiento": "1985-10-08"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 62,
+    "fields": {
+      "nombre": "Fabio Roque",
+      "apellido": "ROMANI",
+      "documento": 16561660,
+      "legajo": 34405,
+      "fecha_nacimiento": "1963-02-25"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 63,
+    "fields": {
+      "nombre": "Jorge Ernesto",
+      "apellido": "RONCONI",
+      "documento": 35299782,
+      "legajo": 69211,
+      "fecha_nacimiento": "1990-08-15"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 64,
+    "fields": {
+      "nombre": "Darío Alejandro",
+      "apellido": "ROZZI",
+      "documento": 28991440,
+      "legajo": 92206,
+      "fecha_nacimiento": "1981-09-17"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 65,
+    "fields": {
+      "nombre": "Carlos",
+      "apellido": "SAMUDIO",
+      "documento": 39349061,
+      "legajo": 326086,
+      "fecha_nacimiento": "1900-01-01"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 66,
+    "fields": {
+      "nombre": "Pablo Fabián",
+      "apellido": "SCHAAF",
+      "documento": 23115975,
+      "legajo": 40103,
+      "fecha_nacimiento": "1973-12-10"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 67,
+    "fields": {
+      "nombre": "Ayelén",
+      "apellido": "SOPRANO LOTO",
+      "documento": 29764469,
+      "legajo": 164469,
+      "fecha_nacimiento": "1900-01-01"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 68,
+    "fields": {
+      "nombre": "María Eva",
+      "apellido": "SOSA",
+      "documento": 30575577,
+      "legajo": 86650,
+      "fecha_nacimiento": "1983-11-13"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 69,
+    "fields": {
+      "nombre": "Silvina Verónica",
+      "apellido": "SOSA",
+      "documento": 30139489,
+      "legajo": 92346,
+      "fecha_nacimiento": "1983-02-25"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 70,
+    "fields": {
+      "nombre": "Cristian Ariel",
+      "apellido": "SUAREZ",
+      "documento": 23806377,
+      "legajo": 88910,
+      "fecha_nacimiento": "1974-03-12"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 71,
+    "fields": {
+      "nombre": "Gabriel Alberto",
+      "apellido": "YANKOWSKY",
+      "documento": 14770244,
+      "legajo": 72710,
+      "fecha_nacimiento": "1961-10-21"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 72,
+    "fields": {
+      "nombre": "Daniel Marcelo",
+      "apellido": "ZANGARA",
+      "documento": 13908641,
+      "legajo": 29637,
+      "fecha_nacimiento": "1960-11-12"
+    }
+  },
+  {
+    "model": "planta_docente.Docente",
+    "pk": 73,
+    "fields": {
+      "nombre": "Ignacio",
+      "apellido": "ZAPATA FERRERO",
+      "documento": 35720645,
+      "legajo": 83231,
+      "fecha_nacimiento": "1991-09-06"
+    }
+  }
+]

@@ -1,0 +1,249 @@
+# ============================================================================
+# .gitignore para Proyecto Django - Gestión Académica
+# ============================================================================
+
+# ============================================================================
+# Python
+# ============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ============================================================================
+# Virtual Environment
+# ============================================================================
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ============================================================================
+# Django
+# ============================================================================
+# ❌ NO subir base de datos SQLite (si la usas en desarrollo)
+*.sqlite3
+*.sqlite3-journal
+db.sqlite3
+db.sqlite3-journal
+
+# ❌ NO subir archivos estáticos compilados
+/staticfiles/
+/static_root/
+
+# ❌ NO subir archivos media (uploads de usuarios)
+/media/
+# Excepción: puedes tener una carpeta media/examples/ con archivos de ejemplo
+!/media/examples/
+
+# ❌ NO subir archivos de log
+*.log
+logs/
+*.log.*
+
+# ❌ NO subir settings locales (si usas este patrón)
+local_settings.py
+
+# ✅ SÍ subir migraciones (son parte del código)
+# NO incluir: */migrations/
+# Las migraciones SON código y deben estar en Git
+
+# ============================================================================
+# Variables de Entorno y Secretos
+# ============================================================================
+# ❌ CRÍTICO: NO subir archivos con datos sensibles
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+
+# ✅ SÍ subir el template de ejemplo
+# .env.example debe estar en Git
+
+# ============================================================================
+# IDEs y Editores
+# ============================================================================
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+.idea_modules/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# ============================================================================
+# Sistema Operativo
+# ============================================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ============================================================================
+# Testing y Coverage
+# ============================================================================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+nosetests.xml
+junit.xml
+
+# ============================================================================
+# Jupyter Notebook
+# ============================================================================
+.ipynb_checkpoints
+*.ipynb
+
+# ============================================================================
+# Celery (si lo usas)
+# ============================================================================
+celerybeat-schedule
+celerybeat.pid
+
+# ============================================================================
+# Backups
+# ============================================================================
+*.bak
+*.backup
+*.old
+*.orig
+*~
+
+# ============================================================================
+# Archivos Temporales
+# ============================================================================
+*.tmp
+*.temp
+tmp/
+temp/
+
+# ============================================================================
+# Certificados SSL (nunca subir a Git)
+# ============================================================================
+*.pem
+*.key
+*.crt
+*.cert
+*.p12
+
+# ============================================================================
+# Dumps de Base de Datos (pueden contener datos sensibles)
+# ============================================================================
+*.dump
+*.sql
+*.db
+
+# ============================================================================
+# Node.js (si usas frontend con npm)
+# ============================================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# ============================================================================
+# Documentación compilada
+# ============================================================================
+docs/_build/
+site/
+
+# ============================================================================
+# Archivos Específicos del Proyecto
+# ============================================================================
+# Si tienes scripts con credenciales
+scripts/deploy_with_secrets.sh
+scripts/backup_production.sh
+
+# Archivos de configuración local personalizados
+config/local.py
+
+# ============================================================================
+# RESUMEN: ¿Qué SÍ subir a Git?
+# ============================================================================
+# ✅ Código fuente (.py)
+# ✅ Migraciones (*/migrations/*.py)
+# ✅ Templates (.html)
+# ✅ Archivos estáticos (.css, .js antes de compilar)
+# ✅ Requirements (requirements.txt)
+# ✅ Configuración (.env.example, NO .env)
+# ✅ Scripts de deployment (sin credenciales)
+# ✅ Tests
+# ✅ Documentación (.md, .rst)
+# ✅ .gitignore
+# ✅ README.md
+# ✅ Dockerfile y docker-compose.yml
+
+# ============================================================================
+# RESUMEN: ¿Qué NO subir a Git?
+# ============================================================================
+# ❌ .env (credenciales reales)
+# ❌ Base de datos (db.sqlite3, *.dump)
+# ❌ Media files (uploads de usuarios)
+# ❌ Archivos compilados (__pycache__, *.pyc)
+# ❌ Logs (*.log)
+# ❌ Virtual environments (.venv/)
+# ❌ Certificados SSL
+# ❌ Backups de base de datos
+# ❌ Archivos temporales

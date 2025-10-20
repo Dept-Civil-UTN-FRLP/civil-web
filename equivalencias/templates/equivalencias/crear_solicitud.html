@@ -1,0 +1,57 @@
+{% extends 'equivalencias/base.html' %}
+
+{% block content %}
+  <h2>Iniciar Nueva Solicitud de Equivalencia</h2>
+  <hr>
+  <form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    
+    <div class="card mb-3">
+        <div class="card-header">Paso 1: Seleccionar Estudiante</div>
+        <div class="card-body">
+            <p>Seleccioná un estudiante existente de la lista. Si no existe, dejá la lista como está y completá los campos de abajo.</p>
+            <label for="estudiante" class="form-label">Estudiante Existente</label>
+            <select name="estudiante" id="estudiante" class="form-select">
+                <option value="">--- Seleccione un estudiante... ---</option>
+                {% for est in estudiantes %}
+                <option value="{{ est.pk }}">{{ est.nombre_completo }} ({{ est.dni_pasaporte }})</option>
+                {% endfor %}
+            </select>
+            <hr>
+            <h5>O crear un nuevo estudiante:</h5>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="nuevo_estudiante_nombre" class="form-label">Nombre Completo del Nuevo Estudiante</label>
+                    <input type="text" name="nuevo_estudiante_nombre" class="form-control">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="nuevo_estudiante_dni" class="form-label">DNI o Pasaporte</label>
+                    <input type="text" name="nuevo_estudiante_dni" class="form-control">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Paso 2: Cargar Documentación</div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label for="asignaturas" class="form-label">Asignaturas Solicitadas (mantén Ctrl para seleccionar varias)</label>
+                <select name="asignaturas" id="asignaturas" class="form-select" multiple required size="10">
+                    {% for asig in asignaturas %}
+                      <option value="{{ asig.pk }}">{{ asig.asignatura.nombre.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+    
+            <div class="mb-3">
+                <label for="documentacion" class="form-label">Documentación Adjunta (Analítico, Programas, etc.)</label>
+                <input type="file" name="documentacion" id="documentacion" class="form-control" required multiple>
+            </div>
+        </div>
+    </div>
+    
+    <button type="submit" class="btn btn-success">Iniciar Proceso y Notificar a Cátedras</button>
+    <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancelar</a>
+  </form>
+{% endblock %}

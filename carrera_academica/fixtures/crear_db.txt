@@ -1,0 +1,5 @@
+python .\manage.py loaddata load_area_data.json
+python .\manage.py loaddata load_bloque_data.json
+python .\manage.py loaddata load_asignatura_data.json
+python .\manage.py loaddata load_docente_data.json
+ 

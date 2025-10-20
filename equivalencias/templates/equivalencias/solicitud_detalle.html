@@ -1,0 +1,90 @@
+{% extends 'equivalencias/base.html' %}
+
+{% block content %}
+  <a href="{% url 'dashboard' %}" class="btn btn-secondary btn-sm mb-3">&larr; Volver al Dashboard</a>
+  <h2>Detalle de Solicitud de: {{ solicitud.id_estudiante.nombre_completo }}</h2>
+  <p><strong>Legajo:</strong> {{ solicitud.id_estudiante.legajo }} | <strong>Fecha:</strong> {{ solicitud.fecha_inicio }}</p>
+  <hr>
+
+  <div class="d-flex justify-content-end mb-3">
+    <a href="{% url 'reenviar_pendientes' pk=solicitud.pk %}" class="btn btn-warning">
+      Reenviar a todos los Pendientes
+    </a>
+  </div>
+
+  <h4>Asignaturas Solicitadas</h4>
+  <div class="list-group">
+    {% for detalle in detalles %}
+      <div class="list-group-item">
+        <form method="POST" class="row align-items-center">
+    {% csrf_token %}
+    <input type="hidden" name="detalle_id" value="{{ detalle.pk }}">
+    
+    <div class="col-md-4"><strong>{{ detalle.id_asignatura.asignatura.nombre|title }}</strong></div>
+    
+    <div class="col-md-4">
+      <select name="estado_asignatura" class="form-select">
+        {% for value, text in estado_choices %}
+          <option value="{{ value }}" {% if detalle.estado_asignatura == value %}selected{% endif %}>
+            {{ text }}
+          </option>
+        {% endfor %}
+      </select>
+      </div>
+
+    <div class="col-md-4">
+      <button type="submit" class="btn btn-success btn-sm">Actualizar</button>
+    </div>
+
+    {% if detalle.estado_asignatura == 'Requiere PC' %}
+    <div class="col-12 mt-2">
+        <textarea name="detalle_pc" class="form-control" placeholder="Indicar temas para el Programa Complementario">{{ detalle.detalle_pc|default_if_none:"" }}</textarea>
+    </div>
+    {% endif %}
+  </form>
+
+        {% if detalle.estado_asignatura == 'Enviada a Cátedra' %}
+        <div class="text-end mt-2">
+            <a href="{% url 'reenviar_email_asignatura' pk=solicitud.pk detalle_pk=detalle.pk %}" class="btn btn-outline-secondary btn-sm">
+                Reenviar Correo a esta Cátedra
+            </a>
+        </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+{% if solicitud_completa %}
+<div class="card mt-4">
+  <div class="card-header bg-success text-white">
+    Proceso de Dictamen Finalizado
+  </div>
+  <div class="card-body">
+    <p>Todas las asignaturas han sido dictaminadas. El siguiente paso es generar el acta, firmarla y enviarla al Departamento de Alumnos.</p>
+    
+    <a href="{% url 'generar_acta_pdf' pk=solicitud.pk %}" class="btn btn-primary">
+      1. Descargar Acta para Firmar (PDF)
+    </a>
+    <hr>
+    
+    <h5>2. Subir y Enviar Acta Firmada</h5>
+    <form action="{% url 'finalizar_solicitud' pk=solicitud.pk %}" method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="input-group">
+        <input type="file" class="form-control" name="acta_firmada" required>
+        <button class="btn btn-danger" type="submit">
+          Enviar a Dpto. de Alumnos y Archivar
+        </button>
+      </div>
+      {% if solicitud.acta_firmada %}
+        <p class="mt-2 text-success">
+          Ya hay un acta firmada subida: 
+          <a href="{{ solicitud.acta_firmada.url }}" target="_blank">Ver acta</a>. 
+          Puedes reemplazarla subiendo una nueva.
+        </p>
+      {% endif %}
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

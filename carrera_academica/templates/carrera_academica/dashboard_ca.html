@@ -1,0 +1,72 @@
+{% extends 'equivalencias/base.html' %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Dashboard de Carrera Académica</h1>
+    <a href="{% url 'crear_ca' %}" class="btn btn-success">
+        + Nueva Carrera Académica
+    </a>
+    </div>
+
+  <form method="GET" class="mb-4">
+    <div class="row">
+      <div class="col-md-8">
+        <input type="text" name="q" class="form-control" placeholder="Buscar por nombre o apellido del docente..." value="{{ search_query }}">
+      </div>
+      <div class="col-md-3">
+        <select name="estado" class="form-select">
+          <option value="">Todos los estados</option>
+          {% for value, text in estado_choices %}
+            <option value="{{ value }}" {% if value == estado_filter %}selected{% endif %}>{{ text }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-1">
+        <button class="btn btn-primary w-100" type="submit">Filtrar</button>
+      </div>
+    </div>
+  </form>
+
+  <table class="table table-striped table-hover">
+    <thead>
+      <tr>
+        <th>Docente</th>
+        <th>Cargo</th>
+        <th>Asignatura</th>
+        <th>Vencimiento</th>
+        <th>Progreso Formularios</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ca in carreras %}
+      <tr>
+        <td>{{ ca.cargo.docente }}</td>
+        <td>{{ ca.cargo.get_categoria_display }} {{ ca.cargo.get_caracter_display }}</td>
+        <td>{{ ca.cargo.asignatura.nombre.title }}</td>
+        <td>{{ ca.fecha_vencimiento_actual|date:"d/m/Y" }}</td>
+        <td>
+          <div class="progress" role="progressbar" aria-valuenow="{{ ca.formularios_entregados }}" aria-valuemin="0" aria-valuemax="{{ ca.total_formularios_debidos }}">
+          <div class="progress-bar" style="width: {% widthratio ca.formularios_entregados ca.total_formularios_debidos 100 %}%"></div>
+        </div>
+        <small class="text-muted">{{ ca.formularios_entregados }} de {{ ca.total_formularios_debidos }} debidos</small>
+        </td>
+        <td>
+          <span class="badge 
+            {% if ca.estado == 'ACT' %}bg-success{% elif ca.estado == 'STB' %}bg-warning text-dark{% elif ca.estado == 'VEN' %}bg-danger{% else %}bg-secondary{% endif %}">
+            {{ ca.get_estado_display }}
+          </span>
+        </td>
+        <td>
+            <a href="{% url 'detalle_ca' pk=ca.pk %}" class="btn btn-primary btn-sm">Ver Expediente</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" class="text-center">No se encontraron carreras académicas que coincidan con la búsqueda.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

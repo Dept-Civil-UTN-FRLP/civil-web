@@ -1,0 +1,30 @@
+[
+  {
+    "model": "planta_docente.Bloque",
+    "pk": 1,
+    "fields": {
+      "nombre": "ciencias básicas de la ingeniería"
+    }
+  },
+  {
+    "model": "planta_docente.Bloque",
+    "pk": 2,
+    "fields": {
+      "nombre": "tecnologías básicas"
+    }
+  },
+  {
+    "model": "planta_docente.Bloque",
+    "pk": 3,
+    "fields": {
+      "nombre": "tecnologías aplicadas"
+    }
+  },
+  {
+    "model": "planta_docente.Bloque",
+    "pk": 4,
+    "fields": {
+      "nombre": "ciencias y tecnologías complementarias"
+    }
+  }
+]

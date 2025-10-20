@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Acta de Equivalencias - {{ solicitud.id_estudiante.nombre_completo }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12pt;
+        }
+        p, li {
+            line-height: 1.5;
+            text-align: justify;
+        }
+        .header-date {
+            text-align: right;
+        }
+        .signature-block-alu {
+            margin-top: 40px;
+            position: relative; /* MUY IMPORTANTE: para contener la imagen */
+        }
+        .signature-block {
+            margin-top: 40px;
+            position: relative; /* MUY IMPORTANTE: para contener la imagen */
+            height: 100px;      /* Dale algo de altura para que la imagen quepa bien */
+        }
+        .signature-image {
+            position: absolute; /* Posiciona la imagen sobre otros elementos */
+            width: 250px;       /* Ajusta el ancho de tu firma */
+            height: auto;
+            bottom: 50px;       /* Distancia desde la parte inferior del bloque */
+            right: 20px;        /* Distancia desde la derecha del bloque */
+        }    
+        .signature-line {
+            margin-top: 60px;
+            display: inline-block;
+            width: 250px;
+            border-top: 1px solid black;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: center;
+            vertical-align: top;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .text-left {
+            text-align: left;
+        }
+        .small-text {
+            font-size: 10pt;
+        }
+    </style>
+</head>
+<body>
+
+    <p class="header-date">Berisso, {% now "d \d\e F \d\e Y" %}</p>
+
+    <p>
+        <strong>SOLICITANTE:</strong> {{ solicitud.id_estudiante.nombre_completo }} <br>
+        <strong>ESPECIALIDAD:</strong> ING. CIVIL
+    </p>
+
+    <p>
+        <strong>Señor Director del Departamento: CIVIL</strong><br>
+        <strong>S/D.-</strong>
+    </p>
+
+    <p>
+        Tengo el agrado de dirigirme a usted, elevando a su consideración actuaciones relacionadas con solicitud de ingreso por el Régimen de Equivalencias, de acuerdo con lo establecido en el Capítulo 3ro del Reglamento de Estudios, aprobado por la Ordenanza Nº 1549, con el objeto de que se establezcan las asignaturas equivalentes que correspondieren, según los Planes de Estudios vigentes.
+    </p>
+
+    <div class="signature-block-alu" style="text-align: right; margin-top: 40px;">
+        <p class="signature-line" style="margin-top: 0; margin-bottom: 4px;"></p>
+        <p style="text-align: right; margin-top: 0;">Firma y sello del Dpto. ALUMNOS</p>
+    </div>
+
+    <p class="small-text">
+        Se deberá determinar si se establece equivalencia de la asignatura, mediante afirmación (SI) o negación (NO). En caso de merecer prueba de complemento para su equivalencia, se indicará PC. (Se recuerda que, para ello, la diferencia que se establezca no superará el 20 % del programa analítico de la asignatura solicitada) y en este caso se adjuntará temario de examen respectivo, y fecha de la Prueba de complemento, en su defecto, la fecha la fijará el Departamento Alumnos.
+    </p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ASIGNATURA</th>
+                <th>DICTAMEN</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for detalle in detalles %}
+            <tr>
+                <td class="text-left">{{ detalle.id_asignatura.asignatura.nombre|title }}</td>
+                <td>
+                    {% if detalle.estado_asignatura == 'Aprobada' %}SI{% endif %}
+                    {% if detalle.estado_asignatura == 'Denegada' %}NO{% endif %}
+                    {% if detalle.estado_asignatura == 'Requiere PC' %}PC{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p>
+        <strong>Sr. Director Académico</strong><br>
+        <strong>S/D.-</strong>
+    </p>
+
+    <p>
+        Habiéndose procedido al análisis de la documentación recibida en las presentes actuaciones y con el resultado obtenido respecto de las asignaturas solicitadas por equivalencias, remito el presente a los fines de proseguir con las mismas.
+    </p>
+
+    <div class="signature-block" style="text-align: right; margin-top: 40px;">
+    
+    <img src="{{ signature_image_path }}" alt="Firma" class="signature-image">
+
+    <p class="signature-line" style="margin-top: 0; margin-bottom: 4px;"></p>
+    <p style="text-align: right; margin-top: 0;">Firma y sello del Departamento</p>
+
+    <hr style="page-break-after: always; border: none; margin: 0; padding: 0;">
+
+    {% if detalles|dictsort:"estado_asignatura" %}
+        {% with temarios_pc=detalles|dictsort:"estado_asignatura" %}
+            {% if temarios_pc|length > 0 and detalles|yesno:"Requiere PC," %}
+                {% for detalle in detalles %}
+                    {% if detalle.estado_asignatura == 'Requiere PC' and detalle.detalle_pc %}
+                        {% if forloop.first %}
+                            <h2>Temario de Complementos</h2>
+                            <div class="temario-pc">
+                        {% endif %}
+                            <h3 style="text-align: left;"><strong>Asignatura:</strong> {{ detalle.id_asignatura.asignatura.nombre|title }}<br></h3>
+                        <p>
+                            <strong>Temario:</strong> {{ detalle.detalle_pc|linebreaksbr }}
+                        </p>
+                    {% endif %}
+                    {% if forloop.last and detalle.estado_asignatura == 'Requiere PC' and detalle.detalle_pc %}
+                            </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    {% endif %}
+
+
+</div>
+
+
+
+</body>
+</html>

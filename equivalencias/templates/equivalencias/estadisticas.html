@@ -1,0 +1,173 @@
+{% extends 'equivalencias/base.html' %}
+{% load static %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Estadísticas de Equivalencias</h1>
+    
+    <form method="GET" class="d-flex align-items-center">
+      <select name="year" class="form-select me-2" style="width: 150px;">
+        <option value="">Histórico</option>
+        {% for year in available_years %}
+          <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>
+            Año {{ year }}
+          </option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-primary">Filtrar</button>
+    </form>
+  </div>
+
+  <h3 class="text-muted mb-4">{{ titulo_periodo }}</h3>
+
+  <div class="row">
+    <div class="col-lg-8">
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card text-center h-100">
+                    <div class="card-header">Tiempo Promedio de Resolución</div>
+                    <div class="card-body d-flex align-items-center justify-content-center">
+                        <p class="card-text display-4">{{ stats.avg_resolucion_dias|floatformat:0 }} <span class="fs-4">días</span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card text-center h-100">
+                    <div class="card-header">Tiempo Promedio de Dictamen</div>
+                    <div class="card-body d-flex align-items-center justify-content-center">
+                        <p class="card-text display-4">{{ stats.avg_dictamen_dias|floatformat:0 }} <span class="fs-4">días</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">Distribución de Dictámenes</div>
+            <div class="card-body"><canvas id="dictamenesChart"></canvas></div>
+        </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">Nuevas Solicitudes por Mes</div>
+            <div class="card-body"><canvas id="solicitudesPorMesChart"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">Balance Mensual (Nuevas vs. Completadas)</div>
+            <div class="card-body"><canvas id="balanceMensualChart"></canvas></div>
+        </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">Top Asignaturas más Solicitadas</div>
+            <div class="card-body">
+                <table class="table table-sm table-striped">
+                    <tbody>
+                        {% for item in stats.asignaturas_mas_solicitadas %}
+                        <tr>
+                            <td>{{ item.nombre_materia|title }}</td>
+                            <td class="text-end"><strong>{{ item.total }}</strong></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td>No hay datos.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">Top Asignaturas Denegadas o con PC</div>
+            <div class="card-body">
+                <table class="table table-sm table-striped">
+                    <tbody>
+                        {% for item in stats.asignaturas_problematicas %}
+                        <tr>
+                            <td>{{ item.nombre_materia|title }}</td>
+                            <td class="text-end"><span class="badge bg-warning text-dark">{{ item.estado_asignatura }}</span> ({{ item.total }})</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td>No hay datos.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">Top 5 Asignaturas con Mayor Demora</div>
+            <div class="card-body">
+                <table class="table table-sm table-striped">
+                    <tbody>
+                        {% for item in stats.top_demoras %}
+                        <tr>
+                            <td>{{ item.nombre|title }}</td>
+                            <td class="text-end"><strong>{{ item.dias }} días</strong></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td>No hay datos.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  {{ stats.meses_labels|json_script:"meses-labels" }}
+  {{ stats.solicitudes_data|json_script:"solicitudes-data" }}
+  {{ stats.balance_labels|json_script:"balance-labels" }}
+  {{ stats.nuevas_data|json_script:"nuevas-data" }}
+  {{ stats.completadas_data|json_script:"completadas-data" }}
+  {{ stats.dictamen_labels|json_script:"dictamen-labels" }}
+  {{ stats.dictamen_valores|json_script:"dictamen-valores" }}
+
+  <script>
+    // El código JS no cambia, ya que solo necesita que los id de los json_script
+    // coincidan, y ya lo hacen.
+    const labels1 = JSON.parse(document.getElementById('meses-labels').textContent);
+    const data1 = JSON.parse(document.getElementById('solicitudes-data').textContent);
+    const ctx1 = document.getElementById('solicitudesPorMesChart');
+    if (ctx1 && data1.length > 0) {
+      new Chart(ctx1.getContext('2d'), {
+        type: 'bar', data: { labels: labels1, datasets: [{ label: 'Nuevas Solicitudes', data: data1, backgroundColor: 'rgba(54, 162, 235, 0.5)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1 }] },
+        options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, responsive: true, plugins: { legend: { display: false } } }
+      });
+    }
+
+    const labels2 = JSON.parse(document.getElementById('balance-labels').textContent);
+    const nuevasData = JSON.parse(document.getElementById('nuevas-data').textContent);
+    const completadasData = JSON.parse(document.getElementById('completadas-data').textContent);
+    const ctx2 = document.getElementById('balanceMensualChart');
+    if (ctx2 && nuevasData.length > 0) {
+      new Chart(ctx2.getContext('2d'), {
+        type: 'bar', data: { labels: labels2, datasets: [ { label: 'Nuevas', data: nuevasData, backgroundColor: 'rgba(54, 162, 235, 0.5)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1 }, { label: 'Completadas', data: completadasData, backgroundColor: 'rgba(75, 192, 192, 0.5)', borderColor: 'rgba(75, 192, 192, 1)', borderWidth: 1 } ] },
+        options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, responsive: true }
+      });
+    }
+
+    const labels3 = JSON.parse(document.getElementById('dictamen-labels').textContent);
+    const data3 = JSON.parse(document.getElementById('dictamen-valores').textContent);
+    const ctx3 = document.getElementById('dictamenesChart');
+    if (ctx3 && data3.length > 0) {
+      new Chart(ctx3.getContext('2d'), {
+        type: 'pie', data: { labels: labels3, datasets: [{ label: 'Dictámenes', data: data3, backgroundColor: ['rgba(255, 206, 86, 0.7)', 'rgba(255, 99, 132, 0.7)', 'rgba(75, 192, 192, 0.7)'], borderColor: ['rgba(255, 206, 86, 1)', 'rgba(255, 99, 132, 1)', 'rgba(75, 192, 192, 1)'], borderWidth: 1 }] },
+        options: { responsive: true }
+      });
+    }
+  </script>
+{% endblock %}

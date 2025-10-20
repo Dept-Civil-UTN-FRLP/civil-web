@@ -1,0 +1,869 @@
+[
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 1,
+    "fields": {
+      "nombre": "Análisis Matemático I",
+      "nivel": "i",
+      "puntaje": 0,
+      "departamento": "basicas",
+      "especialidad": "civil",
+      "obligatoria": true,
+      "area": [1],
+      "bloque": [1],
+      "hora_semanal": 5,
+      "hora_total": 120,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 2,
+    "fields": {
+      "nombre": "Álgebra y Geometría Analítica",
+      "nivel": "i",
+      "puntaje": 0,
+      "departamento": "basicas",
+      "especialidad": "civil",
+      "obligatoria": true,
+      "area": [1],
+      "bloque": [1],
+      "hora_semanal": 5,
+      "hora_total": 120,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 3,
+    "fields": {
+      "nombre": "Ingeniería y Sociedad",
+      "nivel": "i",
+      "puntaje": 0,
+      "departamento": "basicas",
+      "especialidad": "civil",
+      "obligatoria": true,
+      "area": [4],
+      "bloque": [4],
+      "hora_semanal": 2,
+      "hora_total": 48,
+      "dictado": "c1"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 4,
+    "fields": {
+      "nombre": "Ingeniería Civil I",
+      "nivel": "i",
+      "puntaje": 0,
+      "departamento": "civil",
+      "especialidad": "civil",
+      "obligatoria": true,
+      "area": [6],
+      "bloque": [2],
+      "hora_semanal": 3,
+      "hora_total": 72,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 5,
+    "fields": {
+      "nombre": "Sistemas de Representación",
+      "nivel": "i",
+      "puntaje": 0,
+      "departamento": "civil",
+      "especialidad": "civil",
+      "obligatoria": true,
+      "area": [6],
+      "bloque": [1],
+      "hora_semanal": 3,
+      "hora_total": 72,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 6,
+    "fields": {
+      "nombre": "Química General",
+      "nivel": "i",
+      "puntaje": 0,
+      "departamento": "basicas",
+      "especialidad": "civil",
+      "obligatoria": true,
+      "area": [3],
+      "bloque": [1],
+      "hora_semanal": 5,
+      "hora_total": 120,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 7,
+    "fields": {
+      "nombre": "Física I",
+      "nivel": "i",
+      "puntaje": 0,
+      "departamento": "basicas",
+      "especialidad": "civil",
+      "obligatoria": true,
+      "area": [2],
+      "bloque": [1],
+      "hora_semanal": 5,
+      "hora_total": 120,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 8,
+    "fields": {
+      "nombre": "Fundamentos de Informática",
+      "nivel": "i",
+      "puntaje": 0,
+      "departamento": "civil",
+      "especialidad": "civil",
+      "obligatoria": true,
+      "area": [6],
+      "bloque": [1],
+      "hora_semanal": 2,
+      "hora_total": 48,
+      "dictado": "c2"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 9,
+    "fields": {
+      "nombre": "Análisis Matemático II",
+      "nivel": "ii",
+      "puntaje": 0,
+      "departamento": "basicas",
+      "especialidad": "civil",
+      "obligatoria": true,
+      "area": [1],
+      "bloque": [1],
+      "hora_semanal": 5,
+      "hora_total": 120,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 10,
+    "fields": {
+      "nombre": "Estabilidad",
+      "nivel": "ii",
+      "puntaje": 0,
+      "departamento": "civil",
+      "especialidad": "civil",
+      "obligatoria": true,
+      "area": [7],
+      "bloque": [2],
+      "hora_semanal": 5,
+      "hora_total": 120,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 11,
+    "fields": {
+      "nombre": "Ingeniería Civil II",
+      "nivel": "ii",
+      "puntaje": 0,
+      "departamento": "civil",
+      "especialidad": "civil",
+      "obligatoria": true,
+      "area": [6],
+      "bloque": [2],
+      "hora_semanal": 3,
+      "hora_total": 72,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 12,
+    "fields": {
+      "nombre": "Tecnología de los Materiales",
+      "nivel": "ii",
+      "puntaje": 0,
+      "departamento": "civil",
+      "especialidad": "civil",
+      "obligatoria": true,
+      "area": [8],
+      "bloque": [2],
+      "hora_semanal": 4,
+      "hora_total": 96,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 13,
+    "fields": {
+      "nombre": "Física II",
+      "nivel": "ii",
+      "puntaje": 0,
+      "departamento": "basicas",
+      "especialidad": "civil",
+      "obligatoria": true,
+      "area": [2],
+      "bloque": [1],
+      "hora_semanal": 5,
+      "hora_total": 120,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 14,
+    "fields": {
+      "nombre": "Probabilidad y Estadística",
+      "nivel": "ii",
+      "puntaje": 0,
+      "departamento": "basicas",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [1],
+      "bloque": [1],
+      "hora_semanal": 3,
+      "hora_total": 72,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 15,
+    "fields": {
+      "nombre": "Inglés I",
+      "nivel": "ii",
+      "puntaje": 0,
+      "departamento": "basicas",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [5],
+      "bloque": [4],
+      "hora_semanal": 2,
+      "hora_total": 48,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 16,
+    "fields": {
+      "nombre": "Resistencia de Materiales",
+      "nivel": "iii",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [7],
+      "bloque": [2],
+      "hora_semanal": 4,
+      "hora_total": 96,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 17,
+    "fields": {
+      "nombre": "Tecnología del Hormigón",
+      "nivel": "iii",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [8],
+      "bloque": [2],
+      "hora_semanal": 2,
+      "hora_total": 48,
+      "dictado": "c1"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 18,
+    "fields": {
+      "nombre": "Tecnología de la Construcción",
+      "nivel": "iii",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [8],
+      "bloque": [2],
+      "hora_semanal": 6,
+      "hora_total": 144,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 19,
+    "fields": {
+      "nombre": "Geotopografía",
+      "nivel": "iii",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [9],
+      "bloque": [2],
+      "hora_semanal": 4,
+      "hora_total": 96,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 20,
+    "fields": {
+      "nombre": "Hidráulica General y Aplicada",
+      "nivel": "iii",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [9],
+      "bloque": [2, 3],
+      "hora_semanal": 5,
+      "hora_total": 120,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 21,
+    "fields": {
+      "nombre": "Cálculo Avanzado",
+      "nivel": "iii",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [7],
+      "bloque": [1],
+      "hora_semanal": 2,
+      "hora_total": 48,
+      "dictado": "c1"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 22,
+    "fields": {
+      "nombre": "Instalaciones Eléctricas y Acústicas",
+      "nivel": "iii",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [8],
+      "bloque": [3],
+      "hora_semanal": 2,
+      "hora_total": 48,
+      "dictado": "c2"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 23,
+    "fields": {
+      "nombre": "Instalaciones Termomecánicas",
+      "nivel": "iii",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [8],
+      "bloque": [3],
+      "hora_semanal": 2,
+      "hora_total": 48,
+      "dictado": "c2"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 24,
+    "fields": {
+      "nombre": "Economía",
+      "nivel": "iii",
+      "puntaje": 0,
+      "departamento": "basicas",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [4],
+      "bloque": [4],
+      "hora_semanal": 3,
+      "hora_total": 72,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 25,
+    "fields": {
+      "nombre": "Inglés II",
+      "nivel": "iii",
+      "puntaje": 0,
+      "departamento": "basicas",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [5],
+      "bloque": [4],
+      "hora_semanal": 2,
+      "hora_total": 48,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 26,
+    "fields": {
+      "nombre": "Geotecnia",
+      "nivel": "iv",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [7],
+      "bloque": [2, 3],
+      "hora_semanal": 5,
+      "hora_total": 120,
+      "dictado": "c2"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 27,
+    "fields": {
+      "nombre": "Instalaciones Sanitarias y de Gas",
+      "nivel": "iv",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [8],
+      "bloque": [3],
+      "hora_semanal": 3,
+      "hora_total": 72,
+      "dictado": "c1"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 28,
+    "fields": {
+      "nombre": "Diseño Arquitectónico, Planeamiento y Urbanismo",
+      "nivel": "iv",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [6],
+      "bloque": [3],
+      "hora_semanal": 5,
+      "hora_total": 120,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 29,
+    "fields": {
+      "nombre": "Análisis Estructural I",
+      "nivel": "iv",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [7],
+      "bloque": [3],
+      "hora_semanal": 5,
+      "hora_total": 120,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 30,
+    "fields": {
+      "nombre": "Estructuras de Hormigón",
+      "nivel": "iv",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [7],
+      "bloque": [3],
+      "hora_semanal": 5,
+      "hora_total": 120,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 31,
+    "fields": {
+      "nombre": "Hidrología y Obras Hidráulicas",
+      "nivel": "iv",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [9],
+      "bloque": [2, 3],
+      "hora_semanal": 4,
+      "hora_total": 96,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 32,
+    "fields": {
+      "nombre": "Ingeniería Legal",
+      "nivel": "iv",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [8],
+      "bloque": [4],
+      "hora_semanal": 3,
+      "hora_total": 72,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 33,
+    "fields": {
+      "nombre": "Construcciones Metálicas y de Madera",
+      "nivel": "v",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [7],
+      "bloque": [3],
+      "hora_semanal": 4,
+      "hora_total": 96,
+      "dictado": "c2"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 34,
+    "fields": {
+      "nombre": "Cimentaciones",
+      "nivel": "v",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [7],
+      "bloque": [3],
+      "hora_semanal": 4,
+      "hora_total": 96,
+      "dictado": "c2"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 35,
+    "fields": {
+      "nombre": "Ingeniería Sanitaria",
+      "nivel": "v",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [9],
+      "bloque": [3],
+      "hora_semanal": 3,
+      "hora_total": 72,
+      "dictado": "c2"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 36,
+    "fields": {
+      "nombre": "Organización y Conducción de Obras",
+      "nivel": "v",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [8],
+      "bloque": [4],
+      "hora_semanal": 3,
+      "hora_total": 72,
+      "dictado": "c1"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 37,
+    "fields": {
+      "nombre": "Vías de Comunicación I",
+      "nivel": "iv",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [9],
+      "bloque": [3],
+      "hora_semanal": 5,
+      "hora_total": 120,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 38,
+    "fields": {
+      "nombre": "Análisis Estructural II",
+      "nivel": "v",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [7],
+      "bloque": [3],
+      "hora_semanal": 5,
+      "hora_total": 120,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 39,
+    "fields": {
+      "nombre": "Vías de Comunicación II",
+      "nivel": "v",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [9],
+      "bloque": [3],
+      "hora_semanal": 4,
+      "hora_total": 96,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 40,
+    "fields": {
+      "nombre": "Gestión Ambiental y Desarrollo Sutentable",
+      "nivel": "vi",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [6],
+      "bloque": [3],
+      "hora_semanal": 3,
+      "hora_total": 72,
+      "dictado": "c1"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 41,
+    "fields": {
+      "nombre": "Proyecto Final",
+      "nivel": "vi",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": true,
+      "especialidad": "civil",
+      "area": [6],
+      "bloque": [3],
+      "hora_semanal": 2,
+      "hora_total": 48,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 42,
+    "fields": {
+      "nombre": "Ferrocarriles I",
+      "nivel": "-",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": false,
+      "especialidad": "civil",
+      "area": [9],
+      "bloque": [3],
+      "hora_semanal": 3,
+      "hora_total": 72,
+      "dictado": "c1"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 43,
+    "fields": {
+      "nombre": "Diseño Arquitectónico y Planeamiento II",
+      "nivel": "-",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": false,
+      "especialidad": "civil",
+      "area": [6],
+      "bloque": [3],
+      "hora_semanal": 3,
+      "hora_total": 72,
+      "dictado": "a"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 44,
+    "fields": {
+      "nombre": "Rocas y Suelos",
+      "nivel": "-",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": false,
+      "especialidad": "civil",
+      "area": [7],
+      "bloque": [3],
+      "hora_semanal": 2,
+      "hora_total": 48,
+      "dictado": "c1"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 45,
+    "fields": {
+      "nombre": "Puentes y Prefabricaciones",
+      "nivel": "-",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": false,
+      "especialidad": "civil",
+      "area": [9],
+      "bloque": [3],
+      "hora_semanal": 3,
+      "hora_total": 72,
+      "dictado": "c1"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 46,
+    "fields": {
+      "nombre": "Centrales y Máquinas Hidráulicas",
+      "nivel": "-",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": false,
+      "especialidad": "civil",
+      "area": [9],
+      "bloque": [3],
+      "hora_semanal": 3,
+      "hora_total": 72,
+      "dictado": "c1"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 47,
+    "fields": {
+      "nombre": "Estructuras Especiales",
+      "nivel": "-",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": false,
+      "especialidad": "civil",
+      "area": [7],
+      "bloque": [3],
+      "hora_semanal": 4,
+      "hora_total": 96,
+      "dictado": "c1"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 48,
+    "fields": {
+      "nombre": "Puertos y Vías Navegables",
+      "nivel": "-",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": false,
+      "especialidad": "civil",
+      "area": [9],
+      "bloque": [3],
+      "hora_semanal": 3,
+      "hora_total": 72,
+      "dictado": "c1"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 49,
+    "fields": {
+      "nombre": "Vías III",
+      "nivel": "-",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": false,
+      "especialidad": "civil",
+      "area": [9],
+      "bloque": [3],
+      "hora_semanal": 3,
+      "hora_total": 72,
+      "dictado": "c1"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 50,
+    "fields": {
+      "nombre": "Ferrocarriles II",
+      "nivel": "-",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": false,
+      "especialidad": "civil",
+      "area": [9],
+      "bloque": [3],
+      "hora_semanal": 2,
+      "hora_total": 48,
+      "dictado": "c2"
+    }
+  },
+  {
+    "model": "planta_docente.Asignatura",
+    "pk": 51,
+    "fields": {
+      "nombre": "Gestión de Competencias en la Ingeniería",
+      "nivel": "-",
+      "puntaje": 0,
+      "departamento": "civil",
+      "obligatoria": false,
+      "especialidad": "civil",
+      "area": [8],
+      "bloque": [4],
+      "hora_semanal": 3,
+      "hora_total": 72,
+      "dictado": "c1"
+    }
+  }
+]

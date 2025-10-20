@@ -1,0 +1,13 @@
+{% extends 'equivalencias/base.html' %}
+
+{% block content %}
+  <h2>Iniciar Nueva Evaluación</h2>
+  <p>Para el expediente de: <strong>{{ ca.cargo.docente }}</strong></p>
+  <hr>
+  <form method="POST">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-success mt-3">Crear Evaluación y Formularios</button>
+    <a href="{% url 'detalle_ca' pk=ca.pk %}" class="btn btn-secondary mt-3">Cancelar</a>
+  </form>
+{% endblock %}

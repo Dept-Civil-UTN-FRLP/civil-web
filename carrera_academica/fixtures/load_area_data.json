@@ -1,0 +1,65 @@
+[
+  {
+    "fields": {
+      "nombre": "matemática"
+    },
+    "model": "planta_docente.Area",
+    "pk": 1
+  },
+  {
+    "fields": {
+      "nombre": "física"
+    },
+    "model": "planta_docente.Area",
+    "pk": 2
+  },
+  {
+    "fields": {
+      "nombre": "química"
+    },
+    "model": "planta_docente.Area",
+    "pk": 3
+  },
+  {
+    "fields": {
+      "nombre": "ciencias sociales"
+    },
+    "model": "planta_docente.Area",
+    "pk": 4
+  },
+  {
+    "fields": {
+      "nombre": "idiomas"
+    },
+    "model": "planta_docente.Area",
+    "pk": 5
+  },
+  {
+    "fields": {
+      "nombre": "integradoras"
+    },
+    "model": "planta_docente.Area",
+    "pk": 6
+  },
+  {
+    "fields": {
+      "nombre": "estructuras y fundaciones"
+    },
+    "model": "planta_docente.Area",
+    "pk": 7
+  },
+  {
+    "fields": {
+      "nombre": "tecnologia, gestion y construccion"
+    },
+    "model": "planta_docente.Area",
+    "pk": 8
+  },
+  {
+    "fields": {
+      "nombre": "infraestructura"
+    },
+    "model": "planta_docente.Area",
+    "pk": 9
+  }
+]

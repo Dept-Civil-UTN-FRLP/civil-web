@@ -1,0 +1,48 @@
+<table class="table table-sm table-bordered align-middle">
+    <tbody>
+        {% for form in formularios %}
+        <tr>
+            <td class="fw-bold" style="width: 20%;">
+                {{ form.get_tipo_formulario_display }}
+                {% if form.anio_correspondiente %}({{ form.anio_correspondiente }}){% endif %}
+                {% if form.evaluacion %}(Eval. {{ form.evaluacion.numero_evaluacion }}){% endif %}
+            </td>
+            <td>
+                {% if form.estado == 'ENT' %}
+                    <span class="badge bg-success">Entregado</span> 
+                    <small class="text-muted">el {{ form.fecha_entrega|date:"d/m/Y" }}</small>
+                    {% if form.archivo %}
+                        <a href="{{ form.archivo.url }}" target="_blank" class="ms-2">Ver</a>
+                    {% endif %}
+                {% elif form.estado == 'OBS' %}
+                     <span class="badge bg-danger">Observado</span>
+                {% else %}
+                    <span class="badge bg-warning text-dark">Pendiente</span>
+                {% endif %}
+            </td>
+            <td style="width: 45%;">
+                {% if ca.estado != 'FIN' %}
+                    {% if form.estado == 'PEN' or form.tipo_formulario == 'CV' %}
+                    <div class="d-flex">
+                        <form method="POST" enctype="multipart/form-data" class="d-flex flex-grow-1">
+                            {% csrf_token %}
+                            <input type="hidden" name="formulario_id" value="{{ form.pk }}">
+                            <input type="file" name="archivo" class="form-control form-control-sm" required>
+                            <button type="submit" class="btn btn-primary btn-sm ms-2">
+                                {% if form.estado == 'ENT' %}Actualizar{% else %}Subir{% endif %}
+                            </button>
+                        </form>
+                        
+                        {% if form.tipo_formulario in "F04 F05 F06 F07 F13 ENC" and form.estado == 'PEN' %}
+                        <a href="{% url 'descargar_plantilla' pk=form.pk %}" class="btn btn-outline-secondary btn-sm ms-2" title="Descargar Plantilla">
+                            ↓
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
