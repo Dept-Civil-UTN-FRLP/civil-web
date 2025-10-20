@@ -38,7 +38,9 @@ from .forms import (
     ExpedienteForm,
     EvaluacionForm,
 )
-
+from carrera_academica.services.email_service import EmailService
+from carrera_academica.services.pdf_service import PDFService
+from carrera_academica.services.document_service import DocumentService
 
 def replace_text_in_doc(doc, replacements):
     """
@@ -61,71 +63,6 @@ def replace_text_in_doc(doc, replacements):
                         for old_text, new_text in replacements.items():
                             if old_text in run.text:
                                 run.text = run.text.replace(old_text, new_text)
-
-
-def _generar_documento_dinamico(formulario):
-    """
-    Recibe un objeto Formulario y devuelve un documento de Word personalizado
-    en un buffer de memoria, junto con un nombre de archivo sugerido.
-    Devuelve (None, None) si no se puede generar.
-    """
-    ca = formulario.carrera_academica
-    plantilla_maestra = PlantillaDocumento.objects.filter(
-        tipo_formulario=formulario.tipo_formulario
-    ).first()
-    membrete = MembreteAnual.objects.filter(
-        anio=formulario.anio_correspondiente
-    ).first()
-
-    if not (plantilla_maestra and membrete):
-        return None, None  # No se puede generar si falta la plantilla o el membrete
-
-    try:
-        doc = Document(plantilla_maestra.archivo.path)
-
-        # Reemplazar datos del cuerpo
-        contexto_remplazo = {
-            "[DOCENTE_NOMBRE]": str(ca.cargo.docente),
-            "[ASIGNATURA]": ca.cargo.asignatura.nombre.title(),
-            "[CARGO]": f"{ca.cargo.get_categoria_display()} {ca.cargo.get_caracter_display()}",
-            "[ANIO_LECTIVO]": str(formulario.anio_correspondiente),
-            "[FECHA_GENERACION]": date.today().strftime("%d/%m/%Y"),
-            "[DEDICACION]": ca.cargo.get_dedicacion_display(),
-            "[COMISIONES]": "....................",  # Dejamos un espacio para completar a mano
-        }
-        replace_text_in_doc(doc, contexto_remplazo)
-
-        # Reemplazar datos del encabezado
-        header = doc.sections[0].header
-        if header.tables:  # Verificamos que exista una tabla en el encabezado
-            table = header.tables[0]
-
-            # Celda izquierda para el logo (columna 0)
-            cell_logo = table.cell(0, 0)
-            for p in cell_logo.paragraphs:
-                if "[LOGO_ANUAL]" in p.text:
-                    p.text = ""  # Borramos el marcador
-                    # Añadimos la imagen en esa misma posición
-                    p.add_run().add_picture(membrete.logo.path, height=Inches(1.5))
-
-            # Celda derecha para la frase (columna 1)
-            cell_frase = table.cell(0, 1)
-            for p in cell_frase.paragraphs:
-                if "[FRASE_ANUAL]" in p.text:
-                    p.text = p.text.replace("[FRASE_ANUAL]", membrete.frase)
-                    # Nos aseguramos de que la alineación del párrafo sea a la derecha
-                    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-
-        # Guardar en memoria
-        buffer = io.BytesIO()
-        doc.save(buffer)
-        buffer.seek(0)
-
-        filename = f"{formulario.tipo_formulario}_{formulario.anio_correspondiente}_{slugify(ca.cargo.docente)}.docx"
-
-        return buffer, filename
-    except Exception:
-        return None, None
 
 
 @login_required
@@ -556,53 +493,18 @@ def finalizar_ca_view(request, pk):
 
 @login_required
 def consolidar_pdf_view(request, pk):
+    """Vista para consolidar expediente en PDF."""
     ca = get_object_or_404(CarreraAcademica, pk=pk)
-    archivos_a_unir = []
 
-    # 1. Recopilar archivos de los Formularios
-    formularios_con_archivo = ca.formularios.exclude(archivo__isnull=True).exclude(
-        archivo=""
-    )
-    for form in formularios_con_archivo:
-        # Usamos la fecha de entrega si existe, si no, el 1ro de enero del año correspondiente
-        fecha_orden = (
-            form.fecha_entrega
-            if form.fecha_entrega
-            else date(form.anio_correspondiente or ca.fecha_inicio.year, 1, 1)
-        )
-        archivos_a_unir.append({"fecha": fecha_orden, "ruta": form.archivo.path})
+    output_buffer, errores = PDFService.consolidar_expediente(ca)
 
-    # 2. Recopilar archivos de las Resoluciones
-    resoluciones_con_archivo = ca.cargo.resoluciones.exclude(file__isnull=True).exclude(
-        file=""
-    )
-    for res in resoluciones_con_archivo:
-        # Usamos el 1ro de enero del año de la resolución para ordenar
-        fecha_orden = date(res.año, 1, 1)
-        archivos_a_unir.append({"fecha": fecha_orden, "ruta": res.file.path})
+    if not output_buffer:
+        messages.error(request, "No se pudo generar el PDF consolidado")
+        return redirect("detalle_ca", pk=ca.pk)
 
-    # 3. Ordenar la lista completa de archivos por fecha
-    archivos_a_unir.sort(key=lambda x: x["fecha"])
+    for error in errores:
+        messages.warning(request, error)
 
-    # 4. Unir los PDFs
-    merger = PdfWriter()
-    for archivo in archivos_a_unir:
-        try:
-            merger.append(archivo["ruta"])
-        except Exception as e:
-            # Si un PDF está corrupto o no es un PDF, lo saltamos y notificamos
-            messages.warning(
-                request,
-                f"Se omitió un archivo por ser inválido o no ser un PDF: {archivo['ruta']}. Error: {e}",
-            )
-
-    # 5. Guardar el PDF unido en memoria
-    output_buffer = io.BytesIO()
-    merger.write(output_buffer)
-    merger.close()
-    output_buffer.seek(0)
-
-    # 6. Devolver el archivo para su descarga
     response = HttpResponse(output_buffer, content_type="application/pdf")
     response["Content-Disposition"] = (
         f'attachment; filename="expediente_{slugify(ca.cargo.docente)}.pdf"'
@@ -612,89 +514,16 @@ def consolidar_pdf_view(request, pk):
 
 @login_required
 def generar_propuesta_jurado_view(request, pk):
+    """Vista para generar PDF de propuesta de jurado."""
     ca = get_object_or_404(CarreraAcademica, pk=pk)
-    # Usamos getattr para evitar error si no hay junta
-    junta = getattr(ca, "junta_evaluadora", None)
 
-    if not junta:
-        messages.error(
-            request,
-            "No se puede generar la planilla porque no se ha asignado una Junta Evaluadora a este expediente.",
-        )
-        return redirect("detalle_ca", pk=pk)
+    signature_path = "/static/images/firma_holografica.png"
+    pdf_file = PDFService.generar_propuesta_jurado(ca, signature_path)
 
-    # Preparamos las listas de jurados para la plantilla
-    jurados_titulares = []
-    # Miembro interno titular
-    if junta.miembro_interno_titular:
-        docente = junta.miembro_interno_titular
-        # Tomamos el primer cargo como representativo
-        cargo = docente.cargo_docente.first()
-        jurados_titulares.append(
-            {
-                "nombre": str(docente),
-                "dependencia": "UTN-FRLP",
-                "cargo": cargo.get_categoria_display() if cargo else "N/A",
-                "email": (
-                    docente.correos.filter(principal=True).first().email
-                    if docente.correos.filter(principal=True).exists()
-                    else "N/A"
-                ),
-            }
-        )
-    # Miembros externos titulares
-    for externo in junta.miembros_externos_titulares.all():
-        jurados_titulares.append(
-            {
-                "nombre": externo.nombre_completo,
-                "dependencia": externo.universidad_origen,
-                "cargo": externo.cargo_info,
-                "email": externo.email,
-            }
-        )
+    if not pdf_file:
+        messages.error(request, "No se pudo generar la propuesta de jurado")
+        return redirect("detalle_ca", pk=ca.pk)
 
-    # Hacemos lo mismo para los suplentes
-    jurados_suplentes = []
-    if junta.miembro_interno_suplente:
-        docente = junta.miembro_interno_suplente
-        cargo = docente.cargo_docente.first()
-        jurados_suplentes.append(
-            {
-                "nombre": str(docente),
-                "dependencia": "UTN-FRLP",
-                "cargo": cargo.get_categoria_display() if cargo else "N/A",
-                "email": (
-                    docente.correos.filter(principal=True).first().email
-                    if docente.correos.filter(principal=True).exists()
-                    else "N/A"
-                ),
-            }
-        )
-    for externo in junta.miembros_externos_suplentes.all():
-        jurados_suplentes.append(
-            {
-                "nombre": externo.nombre_completo,
-                "dependencia": externo.universidad_origen,
-                "cargo": externo.cargo_info,
-                "email": externo.email,
-            }
-        )
-
-    contexto = {
-        "ca": ca,
-        "junta": junta,
-        "jurados_titulares": jurados_titulares,
-        "jurados_suplentes": jurados_suplentes,
-    }
-
-    # Renderizar la plantilla HTML a un string
-    html_string = render_to_string("carrera_academica/planilla_jurado.html", contexto)
-
-    # Generar el PDF
-    with open(os.devnull, "w") as f, redirect_stderr(f):
-        pdf_file = HTML(string=html_string).write_pdf()
-
-    # Devolver el PDF para su descarga
     response = HttpResponse(pdf_file, content_type="application/pdf")
     response["Content-Disposition"] = (
         f'attachment; filename="propuesta_jurado_{slugify(ca.cargo.docente)}.pdf"'
@@ -704,110 +533,44 @@ def generar_propuesta_jurado_view(request, pk):
 
 @login_required
 def notificar_pendientes_view(request, pk):
+    """Vista para notificar formularios pendientes."""
     ca = get_object_or_404(CarreraAcademica, pk=pk)
-    docente = ca.cargo.docente
-    correo_principal = docente.correos.filter(principal=True).first()
 
-    if not correo_principal:
-        messages.error(
-            request, f"El docente {docente} no tiene un correo principal asignado."
-        )
-        return redirect("detalle_ca", pk=ca.pk)
+    exito, mensaje = EmailService.enviar_recordatorio_formularios_pendientes(
+        ca)
 
-    tipos_a_notificar = ["F02", "F04", "F05"]
-    formularios_pendientes = Formulario.objects.filter(
-        carrera_academica=ca, estado="PEN", tipo_formulario__in=tipos_a_notificar
-    )
+    if exito:
+        messages.success(request, mensaje)
+    else:
+        messages.error(request, mensaje)
 
-    if not formularios_pendientes.exists():
-        messages.info(
-            request,
-            "El docente no tiene formularios (F02, F04, F05) pendientes de entrega.",
-        )
-        return redirect("detalle_ca", pk=ca.pk)
-
-    # Preparamos el correo
-    info_cargo = f"{ca.cargo.get_categoria_display()} {ca.cargo.get_caracter_display()} en la asignatura {ca.cargo.asignatura.nombre.title()}"
-    email_body_list = [
-        "Estimado/a Docente,",
-        f"\nLe recordamos que tiene documentación pendiente para su expediente de Carrera Académica correspondiente a su cargo de {info_cargo}.",
-        "A continuación, se adjuntan las plantillas para los siguientes formularios:",
-        "",
-    ]
-    email = EmailMessage(
-        subject=f"Recordatorio de Documentación Pendiente - Carrera Académica",
-        from_email=None,
-        to=[correo_principal.email],
-    )
-
-    adjuntos_encontrados = 0
-    email_body_list.append("- Curriculum Vitae (formato CONEAU).")
-
-    # --- LÓGICA DE ADJUNTOS CORREGIDA ---
-    for form in formularios_pendientes:
-        # Si es un formulario dinámico (anual), lo generamos al momento
-        if form.tipo_formulario in ["F04", "F05", "F06", "F07", "F13", "ENC"]:
-            buffer, filename = _generar_documento_dinamico(form)
-            if buffer:
-                email.attach(
-                    filename,
-                    buffer.getvalue(),
-                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                )
-                adjuntos_encontrados += 1
-                email_body_list.append(
-                    f"- {form.tipo_formulario} del año {form.anio_correspondiente} (Personalizado)"
-                )
-            else:
-                email_body_list.append(
-                    f"- {form.tipo_formulario} del año {form.anio_correspondiente} - ERROR: No se pudo generar (verifique plantillas y membretes)."
-                )
-
-        # Si es un formulario estático (como el F02), buscamos su plantilla maestra
-        elif form.tipo_formulario == "F02":
-            plantilla = PlantillaDocumento.objects.filter(tipo_formulario="F02").first()
-            if plantilla and plantilla.archivo:
-                email.attach_file(plantilla.archivo.path)
-                adjuntos_encontrados += 1
-                email_body_list.append("- Formulario F02")
-            else:
-                email_body_list.append(
-                    "- Formulario F02 - PLANTILLA MAESTRA NO ENCONTRADA."
-                )
-
-    email_body_list.append("\nSaludos cordiales,")
-    email_body_list.append("Departamento de Ing. Civil")
-    email.body = "\n".join(email_body_list)
-
-    email.send()
-
-    messages.success(
-        request,
-        f"Correo de recordatorio enviado a {docente} con {adjuntos_encontrados} documentos adjuntos.",
-    )
     return redirect("detalle_ca", pk=ca.pk)
 
 
 @login_required
 def descargar_plantilla_view(request, pk):
+    """Vista para descargar plantilla de formulario."""
     formulario = get_object_or_404(Formulario, pk=pk)
     tipos_dinamicos = ["F06", "F07", "F13", "ENC", "F04", "F05"]
 
     if formulario.tipo_formulario in tipos_dinamicos:
-        buffer, filename = _generar_documento_dinamico(formulario)
+        buffer, filename = DocumentService.generar_documento_dinamico(
+            formulario)
+
         if buffer:
             return FileResponse(buffer, as_attachment=True, filename=filename)
         else:
             messages.error(
                 request,
-                "No se pudo generar el documento dinámico. Verifique que la plantilla maestra y el membrete del año existan.",
+                "No se pudo generar el documento. Verifique plantillas y membretes."
             )
             return redirect("detalle_ca", pk=formulario.carrera_academica.pk)
     else:
-        # Lógica anterior para plantillas estáticas (como F02)
+        # Lógica para plantillas estáticas
         plantilla = PlantillaDocumento.objects.filter(
-            tipo_formulario=formulario.tipo_formulario, anio__isnull=True
+            tipo_formulario=formulario.tipo_formulario
         ).first()
+
         if plantilla and plantilla.archivo:
             return FileResponse(
                 plantilla.archivo.open("rb"),
@@ -817,113 +580,29 @@ def descargar_plantilla_view(request, pk):
         else:
             messages.error(
                 request,
-                f"No se encontró una plantilla para el formulario {formulario.tipo_formulario}.",
+                f"No se encontró plantilla para {formulario.tipo_formulario}."
             )
             return redirect("detalle_ca", pk=formulario.carrera_academica.pk)
 
 
 @login_required
 def notificar_junta_view(request, pk):
+    """Vista para notificar a la junta evaluadora."""
     evaluacion = get_object_or_404(Evaluacion, pk=pk)
-    junta = getattr(evaluacion, "junta_evaluadora", None)
     ca = evaluacion.carrera_academica
 
-    if not junta:
-        messages.error(request, "Esta evaluación no tiene una junta asignada.")
-        return redirect("detalle_ca", pk=ca.pk)
+    emails_enviados, errores = EmailService.enviar_notificacion_junta(
+        evaluacion)
 
-    # === 1. DETERMINAR MIEMBROS ACTIVOS ===
-    miembros_a_notificar = []
-
-    # Miembro Interno
-    if junta.asistencia_status.get("miembro_interno_titular") == "ausente":
-        if junta.miembro_interno_suplente:
-            miembros_a_notificar.append(junta.miembro_interno_suplente)
-    else:
-        if junta.miembro_interno_titular:
-            miembros_a_notificar.append(junta.miembro_interno_titular)
-
-    # Miembros Externos (aquí notificamos a todos los titulares por defecto)
-    miembros_a_notificar.extend(junta.miembros_externos_titulares.all())
-
-    # Veedores (notificamos a los titulares)
-    if junta.veedor_alumno_titular:
-        miembros_a_notificar.append(junta.veedor_alumno_titular)
-    if junta.veedor_graduado_titular:
-        miembros_a_notificar.append(junta.veedor_graduado_titular)
-
-    if not miembros_a_notificar:
-        messages.warning(request, "No hay miembros activos en la junta para notificar.")
-        return redirect("detalle_ca", pk=ca.pk)
-
-    # === 2. RECOPILAR DOCUMENTOS PERTINENTES ===
-    # Formularios generales (no anuales) que ya fueron entregados
-    documentos_generales = (
-        ca.formularios.filter(estado="ENT", anio_correspondiente__isnull=True)
-        .exclude(archivo__isnull=True)
-        .exclude(archivo="")
-    )
-
-    # Formularios anuales de los años que cubre ESTA evaluación, que ya fueron entregados
-    documentos_anuales = (
-        ca.formularios.filter(
-            estado="ENT", anio_correspondiente__in=evaluacion.anios_evaluados
-        )
-        .exclude(archivo__isnull=True)
-        .exclude(archivo="")
-    )
-
-    # Unimos ambas listas de documentos
-    documentos_a_adjuntar = list(documentos_generales) + list(documentos_anuales)
-
-    if not documentos_a_adjuntar:
-        messages.warning(
+    if emails_enviados > 0:
+        messages.success(
             request,
-            "No hay documentos entregados en el expediente para enviar a la junta.",
+            f"Se han enviado {emails_enviados} correos a los miembros de la junta."
         )
-        return redirect("detalle_ca", pk=ca.pk)
 
-    # === 3. ENVIAR CORREOS A CADA MIEMBRO ACTIVO ===
-    email_subject = (
-        f"Convocatoria y Documentación para Junta Evaluadora - {ca.cargo.docente}"
-    )
-    email_body = (
-        f"Estimado/a Miembro de la Junta Evaluadora,\n\n"
-        f"Se le convoca a participar en la evaluación para la Carrera Académica de {ca.cargo.docente}. "
-        f"La misma está agendada para el {evaluacion.fecha_evaluacion.strftime('%d/%m/%Y a las %H:%Mhs') if evaluacion.fecha_evaluacion else 'a confirmar'}.\n\n"
-        f"Se adjunta toda la documentación relevante del expediente para su análisis.\n\n"
-        f"Saludos cordiales."
-    )
+    for error in errores:
+        messages.warning(request, error)
 
-    emails_enviados = 0
-    for miembro in miembros_a_notificar:
-        # Obtenemos el email sin importar si es Docente, MiembroExterno o Veedor
-        email_destinatario = ""
-        if isinstance(miembro, Docente):
-            correo = miembro.correos.filter(principal=True).first()
-            if correo:
-                email_destinatario = correo.email
-        else:  # Para MiembroExterno y Veedor, el email está en el propio objeto
-            email_destinatario = miembro.email
-
-        if email_destinatario:
-            email = EmailMessage(
-                subject=email_subject,
-                body=email_body,
-                from_email=None,
-                to=[email_destinatario],
-            )
-            for doc in documentos_a_adjuntar:
-                if doc.archivo:
-                    email.attach_file(doc.archivo.path)
-
-            email.send()
-            emails_enviados += 1
-
-    messages.success(
-        request,
-        f"Se han enviado {emails_enviados} correos a los miembros de la junta con la documentación adjunta.",
-    )
     return redirect("detalle_ca", pk=ca.pk)
 
 
