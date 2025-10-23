@@ -40,18 +40,31 @@ class CarreraAcademicaValidationTestCase(TestCase):
             caracter="reg",
             categoria="adj",
             dedicacion="ds",
+            cantidad_horas=10,
             fecha_inicio=date(2020, 1, 1),
             fecha_vencimiento=date(2025, 1, 1)
         )
 
     def test_caracter_invalido_para_ca(self):
         """Test que solo reg/ord pueden tener CA."""
+        # Crear una asignatura solo para este test
+        asignatura_interina = Asignatura.objects.create(
+            nombre="test asignatura 2",
+            nivel="i",
+            departamento="civil",
+            especialidad="civil",
+            hora_semanal=4,
+            hora_total=96,
+            dictado="a"
+        )
+    
         cargo_interino = Cargo.objects.create(
             docente=self.docente,
-            asignatura=self.asignatura,
+            asignatura=asignatura_interina,
             caracter="int",
             categoria="adj",
             dedicacion="ds",
+            cantidad_horas=10,
             fecha_inicio=date(2020, 1, 1)
         )
 
@@ -93,7 +106,8 @@ class CarreraAcademicaValidationTestCase(TestCase):
         ca = CarreraAcademica(
             cargo=self.cargo,
             fecha_inicio=date(2020, 1, 1),
-            fecha_vencimiento_original=date(2025, 1, 1)
+            fecha_vencimiento_original=date(2025, 1, 1),
+            fecha_vencimiento_actual=date(2025, 1, 1),
         )
 
         try:
@@ -110,6 +124,7 @@ class CarreraAcademicaValidationTestCase(TestCase):
             cargo=self.cargo,
             fecha_inicio=date(2020, 1, 1),
             fecha_vencimiento_original=date(2025, 1, 1),
+            fecha_vencimiento_actual=date(2025, 1, 1),
             estado='ACT'
         )
 
@@ -154,6 +169,7 @@ class EvaluacionValidationTestCase(TestCase):
             caracter="reg",
             categoria="adj",
             dedicacion="ds",
+            cantidad_horas=10,
             fecha_inicio=date(2020, 1, 1),
             fecha_vencimiento=date(2025, 1, 1)
         )
@@ -161,7 +177,8 @@ class EvaluacionValidationTestCase(TestCase):
         self.ca = CarreraAcademica.objects.create(
             cargo=self.cargo,
             fecha_inicio=date(2020, 1, 1),
-            fecha_vencimiento_original=date(2025, 1, 1)
+            fecha_vencimiento_original=date(2025, 1, 1),
+            fecha_vencimiento_actual=date(2025, 1, 1),
         )
 
     def test_anio_anterior_a_inicio_ca(self):
@@ -252,6 +269,7 @@ class FormularioValidationTestCase(TestCase):
             caracter="reg",
             categoria="adj",
             dedicacion="ds",
+            cantidad_horas=10,
             fecha_inicio=date(2020, 1, 1),
             fecha_vencimiento=date(2025, 1, 1)
         )
@@ -259,7 +277,8 @@ class FormularioValidationTestCase(TestCase):
         self.ca = CarreraAcademica.objects.create(
             cargo=self.cargo,
             fecha_inicio=date(2020, 1, 1),
-            fecha_vencimiento_original=date(2025, 1, 1)
+            fecha_vencimiento_original=date(2025, 1, 1),
+            fecha_vencimiento_actual=date(2025, 1, 1)
         )
 
     def test_formulario_anual_sin_anio(self):
