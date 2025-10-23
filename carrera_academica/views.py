@@ -4,6 +4,9 @@ import os
 from contextlib import redirect_stderr
 from datetime import date, timedelta
 
+from django.core.exceptions import ValidationError
+import logging
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.mail import EmailMessage
@@ -41,6 +44,10 @@ from .forms import (
 from carrera_academica.services.email_service import EmailService
 from carrera_academica.services.pdf_service import PDFService
 from carrera_academica.services.document_service import DocumentService
+
+logger = logging.getLogger(__name__)
+
+
 
 def replace_text_in_doc(doc, replacements):
     """
@@ -218,9 +225,15 @@ def detalle_ca_view(request, pk):
 def iniciar_evaluacion_view(request, pk):
     ca = get_object_or_404(CarreraAcademica, pk=pk)
 
+    # Verificar si se puede iniciar evaluación
+    puede, razon = ca.puede_iniciar_evaluacion()
+    if not puede:
+        messages.error(request, f"No se puede iniciar evaluación: {razon}")
+        return redirect("detalle_ca", pk=ca.pk)
+
     # --- Lógica para determinar años pendientes ---
     start_year = ca.fecha_inicio.year
-    end_year = timezone.now().year  # Evaluamos hasta el año actual
+    end_year = timezone.now().year
     todos_los_anios = set(range(start_year, end_year + 1))
 
     anios_ya_evaluados = set()
@@ -230,47 +243,63 @@ def iniciar_evaluacion_view(request, pk):
 
     anios_pendientes = sorted(list(todos_los_anios - anios_ya_evaluados))
 
-    # --- Lógica del Formulario ---
     if request.method == "POST":
         form = EvaluacionForm(request.POST)
-        # Volvemos a definir las opciones para la validación
-        form.fields["anios_a_evaluar"].choices = [(y, y) for y in anios_pendientes]
+        form.fields["anios_a_evaluar"].choices = [
+            (y, y) for y in anios_pendientes]
 
         if form.is_valid():
-            anios_seleccionados = form.cleaned_data["anios_a_evaluar"]
+            try:
+                anios_seleccionados = form.cleaned_data["anios_a_evaluar"]
 
-            # Creamos la nueva evaluación
-            max_eval = ca.evaluaciones.aggregate(max_num=Max("numero_evaluacion"))[
-                "max_num"
-            ]
-            nuevo_num = (max_eval or 0) + 1
+                # Obtener el siguiente número de evaluación
+                from django.db.models import Max
+                max_eval = ca.evaluaciones.aggregate(
+                    max_num=Max("numero_evaluacion"))["max_num"]
+                nuevo_num = (max_eval or 0) + 1
 
-            nueva_evaluacion = Evaluacion.objects.create(
-                carrera_academica=ca,
-                numero_evaluacion=nuevo_num,
-                anios_evaluados=[int(a) for a in anios_seleccionados],
-            )
-
-            # Creamos los formularios asociados
-            for tipo in ["F08", "F09", "F10", "F11", "F12"]:
-                Formulario.objects.create(
+                # Crear la nueva evaluación
+                nueva_evaluacion = Evaluacion(
                     carrera_academica=ca,
-                    tipo_formulario=tipo,
-                    evaluacion=nueva_evaluacion,
+                    numero_evaluacion=nuevo_num,
+                    anios_evaluados=[int(a) for a in anios_seleccionados],
                 )
 
-            messages.success(
-                request,
-                f"Evaluación N°{nuevo_num} creada, cubriendo los años {', '.join(anios_seleccionados)}.",
-            )
-            return redirect("detalle_ca", pk=ca.pk)
+                # Validar antes de guardar
+                nueva_evaluacion.full_clean()
+                nueva_evaluacion.save()
+
+                # Crear los formularios asociados
+                for tipo in ["F08", "F09", "F10", "F11", "F12"]:
+                    Formulario.objects.create(
+                        carrera_academica=ca,
+                        tipo_formulario=tipo,
+                        evaluacion=nueva_evaluacion,
+                    )
+
+                messages.success(
+                    request,
+                    f"Evaluación N°{nuevo_num} creada, cubriendo los años {', '.join(anios_seleccionados)}.",
+                )
+                return redirect("detalle_ca", pk=ca.pk)
+
+            except ValidationError as e:
+                logger.warning(f"Error de validación al crear evaluación: {e}")
+                for error in e.messages:
+                    messages.error(request, error)
+
+            except Exception as e:
+                logger.error(f"Error inesperado al crear evaluación: {e}")
+                messages.error(
+                    request, "Error al crear la evaluación. Contacte al administrador.")
     else:
         form = EvaluacionForm()
-        # Definimos las opciones para mostrar en el formulario
-        form.fields["anios_a_evaluar"].choices = [(y, y) for y in anios_pendientes]
+        form.fields["anios_a_evaluar"].choices = [
+            (y, y) for y in anios_pendientes]
 
     return render(
-        request, "carrera_academica/iniciar_evaluacion.html", {"form": form, "ca": ca}
+        request, "carrera_academica/iniciar_evaluacion.html", {
+            "form": form, "ca": ca}
     )
 
 
@@ -334,47 +363,84 @@ def crear_ca_view(request):
     cargo_form = CargoForm()
 
     if request.method == "POST":
-        # Verificamos qué formulario se envió
         if "submit_existente" in request.POST:
             form = CarreraAcademicaForm(request.POST)
             if form.is_valid():
-                cargo_seleccionado = form.cleaned_data["cargo"]
+                try:
+                    cargo_seleccionado = form.cleaned_data["cargo"]
 
-                # Creamos la CA manualmente con las fechas del cargo
-                nueva_ca = CarreraAcademica.objects.create(
-                    cargo=cargo_seleccionado,
-                    numero_expediente=form.cleaned_data["numero_expediente"],
-                    fecha_inicio=cargo_seleccionado.fecha_inicio,
-                    fecha_vencimiento_original=cargo_seleccionado.fecha_vencimiento,
-                )
-                # El signal se dispara aquí y crea los formularios
-                messages.success(
-                    request,
-                    f"Carrera Académica iniciada para el cargo de {cargo_seleccionado}.",
-                )
-                return redirect("dashboard_ca")
+                    # Crear la CA manualmente con las fechas del cargo
+                    nueva_ca = CarreraAcademica(
+                        cargo=cargo_seleccionado,
+                        numero_expediente=form.cleaned_data["numero_expediente"],
+                        fecha_inicio=cargo_seleccionado.fecha_inicio,
+                        fecha_vencimiento_original=cargo_seleccionado.fecha_vencimiento,
+                    )
+
+                    # Validar antes de guardar
+                    nueva_ca.full_clean()
+                    nueva_ca.save()
+
+                    messages.success(
+                        request,
+                        f"Carrera Académica iniciada para el cargo de {cargo_seleccionado}.",
+                    )
+                    return redirect("dashboard_ca")
+
+                except ValidationError as e:
+                    # Manejar errores de validación
+                    logger.warning(f"Error de validación al crear CA: {e}")
+                    for field, errors in e.message_dict.items():
+                        for error in errors:
+                            messages.error(request, f"{field}: {error}")
+                    ca_form = form
+
+                except Exception as e:
+                    logger.error(f"Error inesperado al crear CA: {e}")
+                    messages.error(
+                        request, "Error al crear la Carrera Académica. Contacte al administrador.")
+                    ca_form = form
             else:
-                ca_form = form  # Devolvemos el form con errores
+                ca_form = form
 
         elif "submit_nuevo" in request.POST:
             form = CargoForm(request.POST)
             if form.is_valid():
-                # Creamos el nuevo cargo
-                nuevo_cargo = form.save()
+                try:
+                    # Crear el nuevo cargo
+                    nuevo_cargo = form.save()
 
-                # Creamos la CA asociada a este nuevo cargo
-                nueva_ca = CarreraAcademica.objects.create(
-                    cargo=nuevo_cargo,
-                    fecha_inicio=nuevo_cargo.fecha_inicio,
-                    fecha_vencimiento_original=nuevo_cargo.fecha_vencimiento,
-                )
-                messages.success(
-                    request,
-                    f"Nuevo cargo y Carrera Académica creados para {nuevo_cargo.docente}.",
-                )
-                return redirect("dashboard_ca")
+                    # Crear la CA asociada
+                    nueva_ca = CarreraAcademica(
+                        cargo=nuevo_cargo,
+                        fecha_inicio=nuevo_cargo.fecha_inicio,
+                        fecha_vencimiento_original=nuevo_cargo.fecha_vencimiento,
+                    )
+
+                    nueva_ca.full_clean()
+                    nueva_ca.save()
+
+                    messages.success(
+                        request,
+                        f"Nuevo cargo y Carrera Académica creados para {nuevo_cargo.docente}.",
+                    )
+                    return redirect("dashboard_ca")
+
+                except ValidationError as e:
+                    logger.warning(
+                        f"Error de validación al crear cargo y CA: {e}")
+                    for field, errors in e.message_dict.items():
+                        for error in errors:
+                            messages.error(request, f"{field}: {error}")
+                    cargo_form = form
+
+                except Exception as e:
+                    logger.error(f"Error inesperado al crear cargo y CA: {e}")
+                    messages.error(
+                        request, "Error al crear el cargo. Contacte al administrador.")
+                    cargo_form = form
             else:
-                cargo_form = form  # Devolvemos el form con errores
+                cargo_form = form
 
     contexto = {
         "ca_form": ca_form,
