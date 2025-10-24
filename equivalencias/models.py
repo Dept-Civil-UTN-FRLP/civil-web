@@ -7,6 +7,7 @@ import os, uuid
 
 # <-- Apunta a la nueva app
 from planta_docente.models import Asignatura as AsignaturaCA, Docente as DocenteCA
+from .managers import SolicitudEquivalenciaManager
 
 
 def get_equivalencias_upload_path(instance, filename):
@@ -79,6 +80,8 @@ class SolicitudEquivalencia(models.Model):
         upload_to=get_equivalencias_upload_path, blank=True, null=True
     )
     fecha_completada = models.DateTimeField(null=True, blank=True)
+    objects = SolicitudEquivalenciaManager()
+
 
     @property
     def progreso(self):

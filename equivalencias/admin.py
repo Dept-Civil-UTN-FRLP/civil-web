@@ -47,6 +47,18 @@ class AsignaturaParaEquivalenciaAdmin(admin.ModelAdmin):
 
 class SolicitudEquivalenciaAdmin(admin.ModelAdmin):
     inlines = [DocumentoAdjuntoInline]
+    list_display = ('__str__', 'estado_general', 'fecha_inicio')
+    list_filter = ('estado_general',)
+    search_fields = ('id_estudiante__nombre_completo',)
+
+    # ✅ OPTIMIZACIÓN: Optimizar queries en el admin
+    def get_queryset(self, request):
+        """Override para optimizar queries."""
+        qs = super().get_queryset(request)
+        return qs.select_related('id_estudiante').prefetch_related(
+            'detallesolicitud_set',
+            'documentoadjunto_set',
+        )
 
 
 #admin.site.register(AsignaturaParaEquivalencia)

@@ -328,55 +328,55 @@ def _calculate_statistics(solicitudes_qs, is_historical_view=False):
 
 @login_required
 def dashboard_view(request):
-    # 1. Lógica de Búsqueda
-    # Obtiene el término de búsqueda de la URL
+    """Dashboard optimizado de equivalencias."""
     search_query = request.GET.get("q", "")
 
-    solicitudes = SolicitudEquivalencia.objects.all()
+    # ✅ OPTIMIZACIÓN: Usar manager personalizado
+    solicitudes = SolicitudEquivalencia.objects.with_related_data()
 
     if search_query:
-        # Filtra por nombre completo del estudiante (insensible a mayúsculas/minúsculas)
         solicitudes = solicitudes.filter(
             id_estudiante__nombre_completo__icontains=search_query
         )
 
-    # 2. Lógica de Ordenamiento
-    # Anotamos cada solicitud con un '1' si está completada, y '0' si no.
+    # ✅ OPTIMIZACIÓN: Ordenamiento optimizado
     solicitudes = solicitudes.annotate(
         estado_ordenado=Case(
-            When(estado_general="Completada", then=Value(1)), default=Value(0)
+            When(estado_general="Completada", then=Value(1)),
+            default=Value(0)
         )
-        # Ordena primero por estado, luego por fecha
     ).order_by("estado_ordenado", "fecha_inicio")
 
-    # 3. Pasamos los datos a la plantilla
     contexto = {
         "solicitudes": solicitudes,
-        "search_query": search_query,  # Para mantener el texto en la barra de búsqueda
+        "search_query": search_query,
     }
     return render(request, "equivalencias/dashboard.html", contexto)
 
 
 @login_required
 def solicitud_detalle_view(request, pk):
-    solicitud = get_object_or_404(SolicitudEquivalencia, pk=pk)
+    """Vista de detalle optimizada."""
+    # ✅ OPTIMIZACIÓN: Usar with_full_detail()
+    solicitud = get_object_or_404(
+        SolicitudEquivalencia.objects.with_full_detail(),
+        pk=pk
+    )
 
-    # --- LÓGICA DE ACTUALIZACIÓN (POST) CORREGIDA ---
     if request.method == "POST":
         detalle_id = request.POST.get("detalle_id")
         nuevo_estado = request.POST.get("estado_asignatura")
 
         if detalle_id and nuevo_estado:
-            detalle_a_actualizar = get_object_or_404(DetalleSolicitud, pk=detalle_id)
+            # ✅ OPTIMIZACIÓN: Ya está precargado
+            detalle_a_actualizar = solicitud.detallesolicitud_set.get(
+                pk=detalle_id)
             detalle_a_actualizar.estado_asignatura = nuevo_estado
 
-            # --- LÓGICA REINCORPORADA PARA GUARDAR EL PC ---
             if nuevo_estado == "Requiere PC":
-                # Obtenemos el texto del formulario y lo guardamos
                 temas_pc = request.POST.get("detalle_pc", "")
                 detalle_a_actualizar.detalle_pc = temas_pc
             else:
-                # Buena práctica: si el estado no es PC, limpiamos el campo
                 detalle_a_actualizar.detalle_pc = None
 
             estados_finales = ["Aprobada", "Denegada", "Requiere PC"]
@@ -396,16 +396,13 @@ def solicitud_detalle_view(request, pk):
 
         return redirect("solicitud_detalle", pk=pk)
 
-    # --- LÓGICA PARA MOSTRAR LA PÁGINA (GET) ---
-    detalles = solicitud.detallesolicitud_set.select_related(
-        "id_asignatura__asignatura", "id_asignatura__docente_responsable"
-    ).all()
-
+    # ✅ OPTIMIZACIÓN: Ya están precargados
+    detalles = solicitud.detallesolicitud_set.all()
     estado_choices = DetalleSolicitud.ESTADO_ASIGNATURA_CHOICES
 
     # Lógica para determinar si la solicitud está completa
     solicitud_completa = False
-    if detalles.exists():
+    if detalles:
         estados_finales = ["Aprobada", "Denegada", "Requiere PC"]
         solicitud_completa = all(
             d.estado_asignatura in estados_finales for d in detalles
@@ -624,16 +621,25 @@ def reenviar_pendientes_view(request, pk):
 
 @login_required
 def estadisticas_view(request):
+    """Vista de estadísticas optimizada."""
     selected_year = request.GET.get("year")
-    available_years_dates = SolicitudEquivalencia.objects.dates(
-        "fecha_inicio", "year", order="DESC"
-    )
-    available_years = [d.year for d in available_years_dates]
 
-    solicitudes_base = SolicitudEquivalencia.objects.all()
-    # Título por defecto
+    # ✅ OPTIMIZACIÓN: Solo traer años, no objetos completos
+    available_years = SolicitudEquivalencia.objects.dates(
+        "fecha_inicio", "year", order="DESC"
+    ).values_list('fecha_inicio__year', flat=True).distinct()
+
+    # ✅ OPTIMIZACIÓN: Usar select_related en el queryset base
+    solicitudes_base = SolicitudEquivalencia.objects.select_related(
+        'id_estudiante'
+    ).prefetch_related(
+        'detallesolicitud_set',
+        'detallesolicitud_set__id_asignatura',
+        'detallesolicitud_set__id_asignatura__asignatura',
+    )
+
     titulo_periodo = "Promedio Histórico (todos los años)"
-    is_historical = True  # Flag para la función de cálculo
+    is_historical = True
 
     if selected_year and selected_year.isdigit():
         if int(selected_year) in available_years:
@@ -641,10 +647,10 @@ def estadisticas_view(request):
                 fecha_inicio__year=int(selected_year)
             )
             titulo_periodo = f"Año {selected_year}"
-            is_historical = False  # Cambiamos el flag
+            is_historical = False
 
-    # Pasamos el flag a la función de cálculo
-    stats = _calculate_statistics(solicitudes_base, is_historical_view=is_historical)
+    stats = _calculate_statistics(
+        solicitudes_base, is_historical_view=is_historical)
 
     contexto = {
         "stats": stats,
