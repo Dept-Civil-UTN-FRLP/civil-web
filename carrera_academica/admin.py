@@ -80,6 +80,12 @@ class DocenteAdmin(admin.ModelAdmin):
     # Permite añadir/editar correos desde la página del docente
     inlines = [CorreoInline]
 
+    # ✅ OPTIMIZACIÓN: prefetch_related para correos
+    def get_queryset(self, request):
+        """Override para optimizar queries."""
+        qs = super().get_queryset(request)
+        return qs.prefetch_related('correos')
+
     def correo_principal(self, obj):
         correo_principal = obj.correos.filter(principal=True).first()
         return correo_principal.email if correo_principal else "N/A"
@@ -181,6 +187,18 @@ class CarreraAcademicaAdmin(admin.ModelAdmin):
     list_filter = ("estado",)
     search_fields = ("cargo__docente__apellido", "numero_expediente")
     inlines = [JuntaEvaluadoraInline, EvaluacionInline, FormularioInline]
+
+    # ✅ OPTIMIZACIÓN: select_related y prefetch_related en el admin
+    def get_queryset(self, request):
+        """Override para optimizar queries en el listado del admin."""
+        qs = super().get_queryset(request)
+        return qs.select_related(
+            'cargo',
+            'cargo__docente',
+            'cargo__asignatura',
+        ).prefetch_related(
+            'formularios',
+        )
 
     # Organizamos los campos en secciones para que el formulario sea más claro
     fieldsets = (

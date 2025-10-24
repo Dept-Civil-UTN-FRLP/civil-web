@@ -7,6 +7,7 @@ import os
 import uuid
 
 from planta_docente.models import *
+from .managers import CarreraAcademicaManager, EvaluacionManager
 
 
 # ==============================================================================
@@ -92,6 +93,7 @@ class CarreraAcademica(models.Model):
         help_text="Resolución de puesta en función (Decano)",
     )
     fecha_finalizacion = models.DateTimeField(null=True, blank=True)
+    objects = CarreraAcademicaManager()
 
     def clean(self):
         """Validaciones a nivel de modelo."""
@@ -213,7 +215,7 @@ class Evaluacion(models.Model):
         verbose_name="Fecha y Hora de la Evaluación", null=True, blank=True
     )
     estado = models.CharField(max_length=3, choices=ESTADO_EVAL_CHOICES, default="PRO")
-
+    objects = EvaluacionManager()
 
     def clean(self):
         """Validaciones a nivel de modelo."""

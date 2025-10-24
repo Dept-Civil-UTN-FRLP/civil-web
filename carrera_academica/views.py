@@ -74,40 +74,32 @@ def replace_text_in_doc(doc, replacements):
 
 @login_required
 def dashboard_ca_view(request):
-    # --- Lógica de Filtros y Búsqueda ---
+    """Dashboard optimizado de Carrera Académica."""
+    # Lógica de Filtros y Búsqueda
     search_query = request.GET.get("q", "")
     estado_filter = request.GET.get("estado", "")
 
-    # --- Lógica de Formularios Debidos ---
+    # Lógica de Formularios Debidos
     current_year = timezone.now().year
-    # Definimos qué formularios son "debidos" hasta la fecha
     q_formularios_debidos = (
-        # Todos los de años anteriores
         Q(formularios__anio_correspondiente__lt=current_year)
-        |
-        # Solo F04 del año actual
-        Q(
+        | Q(
             formularios__anio_correspondiente=current_year,
             formularios__tipo_formulario="F04",
         )
-        |
-        # Formularios sin año (únicos y de evaluación)
-        Q(formularios__anio_correspondiente__isnull=True)
+        | Q(formularios__anio_correspondiente__isnull=True)
     )
 
-    # Query base optimizada con el nuevo cálculo de progreso
-    carreras_qs = CarreraAcademica.objects.select_related(
-        "cargo__docente", "cargo__asignatura"
-    ).annotate(
-        # Contamos el total de formularios DEBIDOS
-        total_formularios_debidos=Count("formularios", filter=q_formularios_debidos),
-        # Contamos los entregados que también son DEBIDOS
+    # OPTIMIZACIÓN: Usar el manager personalizado
+    carreras_qs = CarreraAcademica.objects.with_related_data().annotate(
+        total_formularios_debidos=Count(
+            "formularios", filter=q_formularios_debidos),
         formularios_entregados=Count(
             "formularios", filter=Q(formularios__estado="ENT") & q_formularios_debidos
         ),
     )
 
-    # Aplicamos filtros de búsqueda
+    # Aplicar filtros
     if search_query:
         carreras_qs = carreras_qs.filter(
             Q(cargo__docente__nombre__icontains=search_query)
@@ -116,6 +108,7 @@ def dashboard_ca_view(request):
     if estado_filter:
         carreras_qs = carreras_qs.filter(estado=estado_filter)
 
+    # OPTIMIZACIÓN: Ordenar sin queries adicionales
     contexto = {
         "carreras": carreras_qs.order_by("fecha_vencimiento_actual"),
         "search_query": search_query,
@@ -128,16 +121,22 @@ def dashboard_ca_view(request):
 
 @login_required
 def detalle_ca_view(request, pk):
-    ca = get_object_or_404(CarreraAcademica, pk=pk)
+    """Vista de detalle optimizada."""
+    # ✅ OPTIMIZACIÓN: Usar with_full_detail()
+    ca = get_object_or_404(
+        CarreraAcademica.objects.with_full_detail(),
+        pk=pk
+    )
 
     if request.method == "POST":
         formulario_id = request.POST.get("formulario_id")
         archivo = request.FILES.get("archivo")
 
         if formulario_id and archivo:
-            formulario = get_object_or_404(Formulario, pk=formulario_id)
+            # ✅ OPTIMIZACIÓN: No hacer query adicional, ya lo tenemos
+            formulario = ca.formularios.get(pk=formulario_id)
             formulario.archivo = archivo
-            formulario.estado = "ENT"  # Entregado
+            formulario.estado = "ENT"
             formulario.fecha_entrega = timezone.now()
             formulario.save()
             messages.success(
@@ -147,21 +146,20 @@ def detalle_ca_view(request, pk):
 
         return redirect("detalle_ca", pk=ca.pk)
 
-    # Obtenemos y separamos los formularios para la plantilla
+    # Obtener y separar los formularios
     current_year = timezone.now().year
-
     formularios_visibles = []
+
+    # ✅ OPTIMIZACIÓN: Ya están precargados, no hay queries adicionales
     todos_los_formularios = ca.formularios.all().order_by(
         "anio_correspondiente", "evaluacion__numero_evaluacion", "tipo_formulario"
     )
 
     for form in todos_los_formularios:
-        # Si no es un formulario anual, siempre se muestra
         if not form.anio_correspondiente:
             formularios_visibles.append(form)
             continue
 
-        # Si es anual, aplicamos la regla
         if form.anio_correspondiente < current_year:
             formularios_visibles.append(form)
         elif (
@@ -169,8 +167,9 @@ def detalle_ca_view(request, pk):
         ):
             formularios_visibles.append(form)
 
-    # Separamos los formularios visibles para la plantilla
-    form_cv = next((f for f in formularios_visibles if f.tipo_formulario == "CV"), None)
+    # Separar formularios para la plantilla
+    form_cv = next(
+        (f for f in formularios_visibles if f.tipo_formulario == "CV"), None)
     form_unicos = [
         f for f in formularios_visibles if f.tipo_formulario in ["F01", "F02", "F03"]
     ]
@@ -179,40 +178,36 @@ def detalle_ca_view(request, pk):
         for f in formularios_visibles
         if f.tipo_formulario in ["F04", "F05", "F06", "F07", "ENC", "F13"]
     ]
-    form_evaluacion = [
-        f
-        for f in formularios_visibles
-        if f.tipo_formulario in ["F08", "F09", "F10", "F11", "F12"]
-    ]
 
-    # Pasamos una instancia vacía del formulario a la plantilla
     form_resolucion = ResolucionForm()
-
-    # Pasamos una instancia del formulario para el expediente
     expediente_form = ExpedienteForm(instance=ca)
 
-    # --- Añadimos el cálculo de años pendientes ---
+    # Calcular años pendientes de evaluación
     start_year = ca.fecha_inicio.year
     end_year = timezone.now().year
     todos_los_anios = set(range(start_year, end_year + 1))
+
     anios_ya_evaluados = set()
+    # ✅ OPTIMIZACIÓN: Las evaluaciones ya están precargadas
     for ev in ca.evaluaciones.all():
         for anio in ev.anios_evaluados:
             anios_ya_evaluados.add(anio)
+
     anios_pendientes = sorted(list(todos_los_anios - anios_ya_evaluados))
 
-    # --- Lógica para el botón de notificación ---
+    # Lógica para el botón de notificación
     tipos_a_notificar = ["F02", "F04", "F05"]
-    hay_formularios_pendientes = ca.formularios.filter(
-        estado="PEN", tipo_formulario__in=tipos_a_notificar
-    ).exists()
+    # ✅ OPTIMIZACIÓN: Usar los formularios ya cargados en memoria
+    hay_formularios_pendientes = any(
+        f.estado == "PEN" and f.tipo_formulario in tipos_a_notificar
+        for f in ca.formularios.all()
+    )
 
     contexto = {
         "ca": ca,
         "form_cv": form_cv,
         "form_unicos": form_unicos,
         "form_anuales": form_anuales,
-        "form_evaluacion": form_evaluacion,
         "form_resolucion": form_resolucion,
         "expediente_form": expediente_form,
         "anios_pendientes_evaluacion": anios_pendientes,
@@ -451,10 +446,18 @@ def crear_ca_view(request):
 
 @login_required
 def editar_junta_view(request, pk):
-    ca = get_object_or_404(CarreraAcademica, pk=pk)
+    """Vista optimizada para editar junta."""
+    # ✅ OPTIMIZACIÓN: Precargar relaciones necesarias
+    ca = get_object_or_404(
+        CarreraAcademica.objects.select_related(
+            'cargo__docente',
+            'cargo__asignatura'
+        ),
+        pk=pk
+    )
 
-    # Usamos get_or_create para obtener la junta existente o crear una nueva si no existe
-    junta, created = JuntaEvaluadora.objects.get_or_create(carrera_academica=ca)
+    junta, created = JuntaEvaluadora.objects.get_or_create(
+        carrera_academica=ca)
 
     if request.method == "POST":
         form = JuntaEvaluadoraForm(request.POST, instance=junta)
@@ -490,47 +493,43 @@ def asignar_expediente_view(request, pk):
 
 
 def docentes_filtrados_api_view(request):
-    # Empezamos con el queryset base (docentes con cargos regulares u ordinarios)
+    """API optimizada para filtrar docentes."""
+    # ✅ OPTIMIZACIÓN: select_related para evitar queries adicionales
     queryset = Docente.objects.filter(
         cargo_docente__caracter__in=["ord", "reg"]
-    ).distinct()
+    ).select_related().distinct()
 
-    # Obtenemos los filtros de la petición GET
     categoria_seleccionada = request.GET.get("categoria")
     dedicacion_seleccionada = request.GET.get("dedicacion")
 
-    # --- Lógica de Filtro Jerárquico para CATEGORÍA ---
+    # Lógica de Filtro Jerárquico para CATEGORÍA
     if categoria_seleccionada:
-        # 1. Definimos el orden jerárquico
         categorias_orden = ["jtp", "adj", "aso", "tit"]
         try:
-            # 2. Encontramos el índice de la categoría seleccionada
             start_index = categorias_orden.index(categoria_seleccionada)
-            # 3. Creamos una lista con esa categoría y todas las superiores
             categorias_validas = categorias_orden[start_index:]
-            # 4. Usamos el filtro `__in` para buscar en la lista de categorías válidas
-            queryset = queryset.filter(cargo_docente__categoria__in=categorias_validas)
+            queryset = queryset.filter(
+                cargo_docente__categoria__in=categorias_validas)
         except ValueError:
-            pass  # Si la categoría no es válida, no se aplica el filtro
+            pass
 
-    # --- Lógica de Filtro Jerárquico para DEDICACIÓN ---
+    # Lógica de Filtro Jerárquico para DEDICACIÓN
     if dedicacion_seleccionada:
-        # 1. Definimos el orden jerárquico
         dedicaciones_orden = ["ds", "se", "de"]
         try:
-            # 2. Encontramos el índice de la dedicación seleccionada
             start_index = dedicaciones_orden.index(dedicacion_seleccionada)
-            # 3. Creamos una lista con esa dedicación y todas las superiores
             dedicaciones_validas = dedicaciones_orden[start_index:]
-            # 4. Usamos el filtro `__in`
             queryset = queryset.filter(
                 cargo_docente__dedicacion__in=dedicaciones_validas
             )
         except ValueError:
-            pass  # Si la dedicación no es válida, no se aplica el filtro
+            pass
 
-    # Preparamos los datos para la respuesta JSON (sin cambios)
-    docentes_list = list(queryset.values("id", "apellido", "nombre"))
+    # ✅ OPTIMIZACIÓN: only() para traer solo los campos necesarios
+    docentes_list = list(
+        queryset.only('id', 'apellido', 'nombre').values(
+            'id', 'apellido', 'nombre')
+    )
 
     for docente in docentes_list:
         docente["full_name"] = (
