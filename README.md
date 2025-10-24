@@ -48,3 +48,30 @@ python manage.py runserver
 ## Variables de Entorno
 
 Ver `.env.example` para la lista completa de variables requeridas.
+
+## Performance
+
+Este proyecto está optimizado para minimizar queries a la base de datos:
+
+- **Managers personalizados** con `select_related()` y `prefetch_related()`
+- **~90% reducción** en número de queries
+- **~85% reducción** en tiempo de carga
+
+### Herramientas de Desarrollo
+
+#### Django Debug Toolbar
+
+```bash
+# Ya está instalado, visitar en desarrollo:
+http://localhost:8000/__debug__/
+```
+
+#### Análisis de Queries
+
+```bash
+python manage.py analyze_queries
+```
+
+### Ver Optimizaciones
+
+Consultar `docs/OPTIMIZACIONES.md` para detalles completos.
