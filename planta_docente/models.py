@@ -88,6 +88,24 @@ class Asignatura(models.Model):
         ordering = ["-obligatoria", "nivel"]
         verbose_name = "Asignatura"
         verbose_name_plural = "Asignaturas"
+        # Agregar índices
+        indexes = [
+            # Índice para filtrar por nivel
+            models.Index(fields=['nivel'], name='asig_nivel_idx'),
+
+            # Índice para filtrar por departamento
+            models.Index(fields=['departamento'], name='asig_depto_idx'),
+
+            # Índice para filtrar por especialidad
+            models.Index(fields=['especialidad'],
+                         name='asig_especialidad_idx'),
+
+            # Índice para ordenar: obligatoria + nivel
+            models.Index(
+                fields=['-obligatoria', 'nivel'],
+                name='asig_oblig_nivel_idx'
+            ),
+        ]
 
 
 class Docente(models.Model):
@@ -133,6 +151,23 @@ class Docente(models.Model):
     class Meta:
         verbose_name = "Docente"
         verbose_name_plural = "Docentes"
+        # Agregar índices
+        indexes = [
+            # Índice para búsqueda por legajo (único, pero útil)
+            models.Index(fields=['legajo'], name='doc_legajo_idx'),
+
+            # Índice para búsqueda por documento (único, pero útil)
+            models.Index(fields=['documento'], name='doc_documento_idx'),
+
+            # Índice para búsqueda por apellido (muy común en búsquedas)
+            models.Index(fields=['apellido'], name='doc_apellido_idx'),
+
+            # Índice compuesto: apellido + nombre (búsqueda completa)
+            models.Index(
+                fields=['apellido', 'nombre'],
+                name='doc_apellido_nombre_idx'
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.apellido.upper()}, {self.nombre.title()}"    
@@ -147,6 +182,21 @@ class Correo(models.Model):
 
     def __str__(self) -> str:
         return f"{self.docente.apellido.upper()}, {self.docente.nombre.title()} <{self.email.lower()}>"
+    
+    class Meta:
+        verbose_name = "Correo"
+        verbose_name_plural = "Correos"
+        # Agregar índices
+        indexes = [
+            # Índice para filtrar por docente
+            models.Index(fields=['docente'], name='correo_docente_idx'),
+
+            # Índice compuesto: docente + principal (query muy común)
+            models.Index(
+                fields=['docente', 'principal'],
+                name='correo_doc_principal_idx'
+            ),
+        ]
 
     def save(self, *args, **kwargs):
         self.email = self.email.lower()
@@ -278,6 +328,36 @@ class Cargo(models.Model):
     class Meta:
         verbose_name = "Cargo"
         verbose_name_plural = "Cargos"
+        # Agregar índices
+        indexes = [
+            # Índice para filtrar por docente
+            models.Index(fields=['docente'], name='cargo_docente_idx'),
+
+            # Índice para filtrar por asignatura
+            models.Index(fields=['asignatura'], name='cargo_asignatura_idx'),
+
+            # Índice para filtrar por estado
+            models.Index(fields=['estado'], name='cargo_estado_idx'),
+
+            # Índice para filtrar por carácter
+            models.Index(fields=['caracter'], name='cargo_caracter_idx'),
+
+            # Índice compuesto: estado + carácter (query común para CA)
+            models.Index(
+                fields=['estado', 'caracter'],
+                name='cargo_estado_caracter_idx'
+            ),
+
+            # Índice compuesto: docente + asignatura (evitar duplicados)
+            models.Index(
+                fields=['docente', 'asignatura'],
+                name='cargo_doc_asig_idx'
+            ),
+
+            # Índice para ordenar por fecha de inicio
+            models.Index(fields=['fecha_inicio'],
+                         name='cargo_fecha_inicio_idx'),
+        ]
 
     def __str__(self) -> str:
         return f"{self.docente.apellido.upper()} ({self.get_caracter_display()} en {self.asignatura.nombre.title()})"
@@ -398,6 +478,29 @@ class Resolucion(models.Model):
         verbose_name = "Resolución"
         verbose_name_plural = "Resoluciones"
         ordering = ['-año', '-numero']
+        # Agregar índices
+        indexes = [
+            # Índice para filtrar por cargo
+            models.Index(fields=['cargo'], name='res_cargo_idx'),
+
+            # Índice para filtrar por objeto
+            models.Index(fields=['objeto'], name='res_objeto_idx'),
+
+            # Índice para ordenar por año
+            models.Index(fields=['año'], name='res_anio_idx'),
+
+            # Índice compuesto para ordenamiento default
+            models.Index(
+                fields=['-año', '-numero'],
+                name='res_anio_num_idx'
+            ),
+
+            # Índice compuesto: cargo + objeto (búsquedas específicas)
+            models.Index(
+                fields=['cargo', 'objeto'],
+                name='res_cargo_objeto_idx'
+            ),
+        ]
 
     def __str__(self):
         return f"Res. {self.get_origen_display()} {self.numero}/{self.año} - {self.cargo.docente.apellido.upper()}"

@@ -52,6 +52,15 @@ class AsignaturaParaEquivalencia(models.Model):
     class Meta:
         verbose_name = "Asignatura para Equivalencia"
         verbose_name_plural = "Asignaturas para Equivalencias"
+        # Agregar índices
+        indexes = [
+            # Índice para búsqueda por asignatura (relación 1-1)
+            models.Index(fields=['asignatura'], name='asig_equiv_asig_idx'),
+
+            # Índice para filtrar por docente responsable
+            models.Index(fields=['docente_responsable'],
+                         name='asig_equiv_doc_idx'),
+        ]
 
 
 class Estudiante(models.Model):
@@ -60,6 +69,18 @@ class Estudiante(models.Model):
     dni_pasaporte = models.CharField(
         "DNI o Pasaporte", max_length=50, unique=True, blank=True, null=True
     )
+
+    class Meta:
+        verbose_name = "Estudiante"
+        verbose_name_plural = "Estudiantes"
+        # Agregar índices
+        indexes = [
+            # Índice para búsqueda por DNI
+            models.Index(fields=['dni_pasaporte'], name='est_dni_idx'),
+
+            # Índice para búsqueda por nombre
+            models.Index(fields=['nombre_completo'], name='est_nombre_idx'),
+        ]
 
     def __str__(self):
         return self.nombre_completo
@@ -102,6 +123,31 @@ class SolicitudEquivalencia(models.Model):
         ).count()
 
         return f"{asignaturas_respondidas} de {total_asignaturas}"
+    
+    class Meta:
+        verbose_name = "Solicitud de Equivalencia"
+        verbose_name_plural = "Solicitudes de Equivalencia"
+        # Agregar índices
+        indexes = [
+            # Índice para filtrar por estudiante
+            models.Index(fields=['id_estudiante'], name='sol_estudiante_idx'),
+
+            # Índice para filtrar por estado
+            models.Index(fields=['estado_general'], name='sol_estado_idx'),
+
+            # Índice para ordenar por fecha
+            models.Index(fields=['fecha_inicio'], name='sol_fecha_inicio_idx'),
+
+            # Índice para ordenar por fecha completada
+            models.Index(fields=['fecha_completada'],
+                         name='sol_fecha_comp_idx'),
+
+            # Índice compuesto: estado + fecha (query común en dashboard)
+            models.Index(
+                fields=['estado_general', 'fecha_inicio'],
+                name='sol_estado_fecha_idx'
+            ),
+        ]
 
     def __str__(self):
         return (
@@ -112,6 +158,15 @@ class SolicitudEquivalencia(models.Model):
 class DocumentoAdjunto(models.Model):
     solicitud = models.ForeignKey(SolicitudEquivalencia, on_delete=models.CASCADE)
     archivo = models.FileField(upload_to=get_equivalencias_upload_path)
+    
+    class Meta:
+        verbose_name = "Documento Adjunto"
+        verbose_name_plural = "Documentos Adjuntos"
+        # Agregar índices
+        indexes = [
+            # Índice para filtrar por solicitud
+            models.Index(fields=['solicitud'], name='doc_solicitud_idx'),
+        ]
 
     def __str__(self):
         # Muestra el nombre del archivo en el admin
@@ -137,6 +192,27 @@ class DetalleSolicitud(models.Model):
         blank=True, null=True, help_text="Detallar temas del Programa Complementario"
     )
     fecha_dictamen = models.DateTimeField(blank=True, null=True)
+    
+    class Meta:
+        verbose_name = "Detalle de Solicitud"
+        verbose_name_plural = "Detalles de Solicitudes"
+        # Agregar índices
+        indexes = [
+            # Índice para filtrar por solicitud
+            models.Index(fields=['id_solicitud'], name='det_solicitud_idx'),
+
+            # Índice para filtrar por asignatura
+            models.Index(fields=['id_asignatura'], name='det_asignatura_idx'),
+
+            # Índice para filtrar por estado
+            models.Index(fields=['estado_asignatura'], name='det_estado_idx'),
+
+            # Índice compuesto: solicitud + estado (query muy común)
+            models.Index(
+                fields=['id_solicitud', 'estado_asignatura'],
+                name='det_sol_estado_idx'
+            ),
+        ]
 
     def __str__(self):
         return f"{self.id_asignatura.asignatura.nombre} para {self.id_solicitud.id_estudiante.nombre_completo}"
