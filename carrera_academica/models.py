@@ -190,6 +190,29 @@ class CarreraAcademica(models.Model):
     class Meta:
         verbose_name = "Carrera Académica"
         verbose_name_plural = "Carreras Académicas"
+        # Agregar índices
+        indexes = [
+            # Índice para filtrado por estado (usado en dashboard)
+            models.Index(fields=['estado'], name='ca_estado_idx'),
+
+            # Índice para ordenamiento por fecha de vencimiento
+            models.Index(fields=['fecha_vencimiento_actual'],
+                         name='ca_venc_actual_idx'),
+
+            # Índice para búsqueda por expediente
+            models.Index(fields=['numero_expediente'],
+                         name='ca_expediente_idx'),
+
+            # Índice compuesto: estado + fecha (query común en dashboard)
+            models.Index(
+                fields=['estado', 'fecha_vencimiento_actual'],
+                name='ca_estado_fecha_idx'
+            ),
+
+            # Índice para búsquedas por cargo
+            models.Index(fields=['cargo'], name='ca_cargo_idx'),
+        ]
+        ordering = ['fecha_vencimiento_actual']
 
     def __str__(self):
         return f"Expediente de {self.cargo}"
@@ -278,6 +301,24 @@ class Evaluacion(models.Model):
         ordering = ["numero_evaluacion"]
         verbose_name = "Evaluación"
         verbose_name_plural = "Evaluaciones"
+        # Agregar índices
+        indexes = [
+            # Índice para filtrar por CA
+            models.Index(fields=['carrera_academica'], name='eval_ca_idx'),
+
+            # Índice para filtrar por estado
+            models.Index(fields=['estado'], name='eval_estado_idx'),
+
+            # Índice para ordenar por fecha
+            models.Index(fields=['fecha_evaluacion'], name='eval_fecha_idx'),
+
+            # Índice compuesto: CA + número (query común)
+            models.Index(
+                fields=['carrera_academica', 'numero_evaluacion'],
+                name='eval_ca_num_idx'
+            ),
+        ]
+
 
     def __str__(self):
         return f"Evaluación N°{self.numero_evaluacion} de {self.carrera_academica.cargo.docente}"
@@ -377,6 +418,34 @@ class Formulario(models.Model):
     class Meta:
         verbose_name = "Formulario"
         verbose_name_plural = "Formularios"
+        # Agregar índices
+        indexes = [
+            # Índice para filtrar por CA
+            models.Index(fields=['carrera_academica'], name='form_ca_idx'),
+
+            # Índice para filtrar por tipo
+            models.Index(fields=['tipo_formulario'], name='form_tipo_idx'),
+
+            # Índice para filtrar por estado
+            models.Index(fields=['estado'], name='form_estado_idx'),
+
+            # Índice para filtrar por año
+            models.Index(fields=['anio_correspondiente'],
+                         name='form_anio_idx'),
+
+            # Índice compuesto: CA + estado (query muy común)
+            models.Index(
+                fields=['carrera_academica', 'estado'],
+                name='form_ca_estado_idx'
+            ),
+
+            # Índice compuesto: CA + tipo + año (para separar formularios)
+            models.Index(
+                fields=['carrera_academica',
+                        'tipo_formulario', 'anio_correspondiente'],
+                name='form_ca_tipo_anio_idx'
+            ),
+        ]
 
     def __str__(self):
         return f"{self.tipo_formulario} de {self.carrera_academica.cargo.docente}"
@@ -523,6 +592,11 @@ class JuntaEvaluadora(models.Model):
     class Meta:
         verbose_name = "Junta Evaluadora"
         verbose_name_plural = "Juntas Evaluadoras"
+        # Agregar índices
+        indexes = [
+            # Índice para búsqueda por CA (relación 1-1)
+            models.Index(fields=['carrera_academica'], name='junta_ca_idx'),
+        ]
 
     def __str__(self):
         return f"Junta para {self.carrera_academica}"
