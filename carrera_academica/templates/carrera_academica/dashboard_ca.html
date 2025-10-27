@@ -1,4 +1,6 @@
+<!-- carrera_academica/templates/carrera_academica/dashboard_ca.html -->
 {% extends 'equivalencias/base.html' %}
+{% load pagination_tags %}
 
 {% block content %}
   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -6,7 +8,7 @@
     <a href="{% url 'crear_ca' %}" class="btn btn-success">
         + Nueva Carrera Académica
     </a>
-    </div>
+  </div>
 
   <form method="GET" class="mb-4">
     <div class="row">
@@ -26,6 +28,14 @@
       </div>
     </div>
   </form>
+
+  <!-- Información de resultados -->
+  {% if is_paginated %}
+  <div class="alert alert-info">
+    Se encontraron <strong>{{ total_count }}</strong> registros. 
+    Mostrando página <strong>{{ page_obj.number }}</strong> de <strong>{{ paginator.num_pages }}</strong>.
+  </div>
+  {% endif %}
 
   <table class="table table-striped table-hover">
     <thead>
@@ -48,9 +58,9 @@
         <td>{{ ca.fecha_vencimiento_actual|date:"d/m/Y" }}</td>
         <td>
           <div class="progress" role="progressbar" aria-valuenow="{{ ca.formularios_entregados }}" aria-valuemin="0" aria-valuemax="{{ ca.total_formularios_debidos }}">
-          <div class="progress-bar" style="width: {% widthratio ca.formularios_entregados ca.total_formularios_debidos 100 %}%"></div>
-        </div>
-        <small class="text-muted">{{ ca.formularios_entregados }} de {{ ca.total_formularios_debidos }} debidos</small>
+            <div class="progress-bar" style="width: {% widthratio ca.formularios_entregados ca.total_formularios_debidos 100 %}%"></div>
+          </div>
+          <small class="text-muted">{{ ca.formularios_entregados }} de {{ ca.total_formularios_debidos }} debidos</small>
         </td>
         <td>
           <span class="badge 
@@ -64,9 +74,21 @@
       </tr>
       {% empty %}
       <tr>
-        <td colspan="7" class="text-center">No se encontraron carreras académicas que coincidan con la búsqueda.</td>
+        <td colspan="7" class="text-center">
+          {% if search_query or estado_filter %}
+            No se encontraron carreras académicas que coincidan con la búsqueda.
+          {% else %}
+            No hay carreras académicas registradas.
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
+
+  <!-- Controles de paginación -->
+  {% if is_paginated %}
+    {% render_pagination page_obj %}
+  {% endif %}
+
 {% endblock %}

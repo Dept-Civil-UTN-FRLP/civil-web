@@ -41,6 +41,7 @@ from .forms import (
     ExpedienteForm,
     EvaluacionForm,
 )
+from config.pagination import paginate_queryset
 from carrera_academica.services.email_service import EmailService
 from carrera_academica.services.pdf_service import PDFService
 from carrera_academica.services.document_service import DocumentService
@@ -108,12 +109,21 @@ def dashboard_ca_view(request):
     if estado_filter:
         carreras_qs = carreras_qs.filter(estado=estado_filter)
 
+    # Ordenar
+    carreras_qs = carreras_qs.order_by("fecha_vencimiento_actual")
+
+    # ✅ PAGINACIÓN: Aplicar paginación
+    page_obj, pagination_context = paginate_queryset(
+        carreras_qs, request, page_size=25)
+
+
     # OPTIMIZACIÓN: Ordenar sin queries adicionales
     contexto = {
-        "carreras": carreras_qs.order_by("fecha_vencimiento_actual"),
+        'carreras': page_obj,
         "search_query": search_query,
         "estado_filter": estado_filter,
         "estado_choices": CarreraAcademica.ESTADO_CHOICES,
+        **pagination_context,
     }
 
     return render(request, "carrera_academica/dashboard_ca.html", contexto)
