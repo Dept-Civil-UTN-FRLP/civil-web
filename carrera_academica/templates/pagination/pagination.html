@@ -1,0 +1,103 @@
+<!-- carrera_academica/templates/pagination/pagination.html -->
+<nav aria-label="Paginación" class="mt-4">
+    <div class="row">
+        <div class="col-md-6">
+            <!-- Información de registros -->
+            <p class="text-muted">
+                Mostrando 
+                <strong>{{ page_obj.start_index }}</strong> - 
+                <strong>{{ page_obj.end_index }}</strong> 
+                de 
+                <strong>{{ page_obj.paginator.count }}</strong> 
+                registros
+            </p>
+        </div>
+        
+        <div class="col-md-6">
+            <!-- Controles de paginación -->
+            <ul class="pagination justify-content-end mb-0">
+                <!-- Botón Primera página -->
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% url_replace page=1 %}" aria-label="Primera">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?{% url_replace page=page_obj.previous_page_number %}" aria-label="Anterior">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&laquo;&laquo;</span>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link">&laquo;</span>
+                    </li>
+                {% endif %}
+
+                <!-- Números de página -->
+                {% for page_num in page_range %}
+                    {% if page_num == '...' %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    {% elif page_num == page_obj.number %}
+                        <li class="page-item active">
+                            <span class="page-link">
+                                {{ page_num }}
+                                <span class="sr-only">(actual)</span>
+                            </span>
+                        </li>
+                    {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% url_replace page=page_num %}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Botón Última página -->
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% url_replace page=page_obj.next_page_number %}" aria-label="Siguiente">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?{% url_replace page=page_obj.paginator.num_pages %}" aria-label="Última">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&raquo;</span>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link">&raquo;&raquo;</span>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Selector de tamaño de página -->
+    {% if show_page_size %}
+    <div class="row mt-3">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-end align-items-center">
+                <label class="me-2 mb-0">Registros por página:</label>
+                <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href='?{% url_replace page=1 %}&page_size='+this.value">
+                    {% for size in page_obj.paginator|get_page_size_options %}
+                        <option value="{{ size }}" {% if size == request.GET.page_size %}selected{% endif %}>
+                            {{ size }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</nav>

@@ -29,6 +29,8 @@ from .models import (
     DocumentoAdjunto,
 )
 
+from config.pagination import paginate_queryset
+
 
 def _enviar_email_catedra(detalle_solicitud):
     """
@@ -328,10 +330,10 @@ def _calculate_statistics(solicitudes_qs, is_historical_view=False):
 
 @login_required
 def dashboard_view(request):
-    """Dashboard optimizado de equivalencias."""
+    """Dashboard optimizado de equivalencias con paginación."""
     search_query = request.GET.get("q", "")
 
-    # ✅ OPTIMIZACIÓN: Usar manager personalizado
+    # Query base optimizada
     solicitudes = SolicitudEquivalencia.objects.with_related_data()
 
     if search_query:
@@ -339,17 +341,21 @@ def dashboard_view(request):
             id_estudiante__nombre_completo__icontains=search_query
         )
 
-    # ✅ OPTIMIZACIÓN: Ordenamiento optimizado
+    # Ordenamiento
     solicitudes = solicitudes.annotate(
         estado_ordenado=Case(
-            When(estado_general="Completada", then=Value(1)),
+            When(estado_general="Completada", then=Value(1)), 
             default=Value(0)
         )
-    ).order_by("estado_ordenado", "fecha_inicio")
+    ).order_by("estado_ordenado", "-fecha_inicio")
+
+    # ✅ PAGINACIÓN: Aplicar paginación
+    page_obj, pagination_context = paginate_queryset(solicitudes, request, page_size=25)
 
     contexto = {
-        "solicitudes": solicitudes,
-        "search_query": search_query,
+        'solicitudes': page_obj,
+        'search_query': search_query,
+        **pagination_context,
     }
     return render(request, "equivalencias/dashboard.html", contexto)
 

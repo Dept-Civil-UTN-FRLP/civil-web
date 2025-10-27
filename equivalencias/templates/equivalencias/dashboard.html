@@ -1,4 +1,7 @@
+<!-- equivalencias/templates/equivalencias/dashboard.html -->
 {% extends 'equivalencias/base.html' %}
+{% load pagination_tags %}
+
 {% block content %}
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h1>Dashboard de Solicitudes</h1>
@@ -14,13 +17,22 @@
     </div>
   </form>
 
+  <!-- Información de resultados -->
+  {% if is_paginated %}
+  <div class="alert alert-info">
+    Se encontraron <strong>{{ total_count }}</strong> solicitudes. 
+    Mostrando página <strong>{{ page_obj.number }}</strong> de <strong>{{ paginator.num_pages }}</strong>.
+  </div>
+  {% endif %}
+
   <table class="table table-striped table-hover">
     <thead>
       <tr>
         <th>Estudiante</th>
         <th>DNI/Pasaporte</th>
         <th>Fecha de Inicio</th>
-        <th>Progreso</th> <th>Estado General</th>
+        <th>Progreso</th>
+        <th>Estado General</th>
         <th>Acciones</th>
       </tr>
     </thead>
@@ -29,8 +41,9 @@
       <tr class="{% if solicitud.estado_general == 'Completada' %}table-secondary text-muted{% endif %}">
         <td>{{ solicitud.id_estudiante.nombre_completo }}</td>
         <td>{{ solicitud.id_estudiante.dni_pasaporte }}</td>
-        <td>{{ solicitud.fecha_inicio }}</td>
-        <td><strong>{{ solicitud.progreso }}</strong></td> <td>
+        <td>{{ solicitud.fecha_inicio|date:"d/m/Y" }}</td>
+        <td><strong>{{ solicitud.progreso }}</strong></td>
+        <td>
             <span class="badge {% if solicitud.estado_general == 'Completada' %}bg-secondary{% else %}bg-info{% endif %}">
                 {{ solicitud.estado_general }}
             </span>
@@ -43,9 +56,21 @@
       </tr>
       {% empty %}
       <tr>
-        <td colspan="6" class="text-center">No se encontraron solicitudes.</td>
+        <td colspan="6" class="text-center">
+          {% if search_query %}
+            No se encontraron solicitudes que coincidan con la búsqueda.
+          {% else %}
+            No hay solicitudes registradas.
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
+
+  <!-- Controles de paginación -->
+  {% if is_paginated %}
+    {% render_pagination page_obj %}
+  {% endif %}
+
 {% endblock %}
