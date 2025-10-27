@@ -3,8 +3,11 @@ from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from .managers import CargoManager, DocenteManager
+
 
 # Create your models here.
+
 
 
 class Area(models.Model):
@@ -114,6 +117,7 @@ class Docente(models.Model):
     documento = models.IntegerField(unique=True)
     legajo = models.IntegerField(unique=True)
     fecha_nacimiento = models.DateField(default="1900-01-01")
+    objects = DocenteManager()
 
     def clean(self):
         """Validaciones a nivel de modelo."""
@@ -247,6 +251,7 @@ class Cargo(models.Model):
     fecha_final = models.DateField(blank=True, null=True)
     fecha_vencimiento = models.DateField(blank=True, null=True)
     estado = models.CharField(choices=ESTADO_CHOICES, max_length=10, default="activo")
+    objects = CargoManager()
 
     def clean(self):
         """Validaciones a nivel de modelo."""
