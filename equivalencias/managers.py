@@ -4,6 +4,7 @@ Managers personalizados para equivalencias.
 """
 from django.db import models
 
+
 class SolicitudEquivalenciaQuerySet(models.QuerySet):
     """QuerySet optimizado para SolicitudEquivalencia."""
 
@@ -12,54 +13,54 @@ class SolicitudEquivalenciaQuerySet(models.QuerySet):
         Precarga relaciones para el dashboard.
         """
         return self.select_related(
-            'id_estudiante',
+            "id_estudiante",
         ).prefetch_related(
-            'detallesolicitud_set',
-            'detallesolicitud_set__id_asignatura',
-            'detallesolicitud_set__id_asignatura__asignatura',
-            'documentoadjunto_set',
+            "detallesolicitud_set",
+            "detallesolicitud_set__id_asignatura",
+            "detallesolicitud_set__id_asignatura__asignatura",
+            "documentoadjunto_set",
         )
 
     def with_full_detail(self):
         """
         Precarga todo para la vista de detalle.
         """
-        
+
         from .models import DetalleSolicitud
 
         # 1. Creamos el QuerySet filtrado Y optimizado para los detalles
         # (Asumo que tu modelo se llama 'DetalleSolicitud')
-        detalles_qs = DetalleSolicitud.objects.filter(
-            id_asignatura__asignatura__isnull=False,
-            id_asignatura__docente_responsable__isnull=False
-        ).select_related(
-            'id_asignatura__asignatura',
-            'id_asignatura__docente_responsable'
-        ).prefetch_related(
-            'id_asignatura__docente_responsable__correos'
+        detalles_qs = (
+            DetalleSolicitud.objects.filter(
+                id_asignatura__asignatura__isnull=False,
+                id_asignatura__docente_responsable__isnull=False,
+            )
+            .select_related(
+                "id_asignatura__asignatura", "id_asignatura__docente_responsable"
+            )
+            .prefetch_related("id_asignatura__docente_responsable__correos")
         )
 
         # 2. Creamos el objeto Prefetch
         prefetch_detalles = models.Prefetch(
-            'detallesolicitud_set',
-            queryset=detalles_qs
+            "detallesolicitud_set", queryset=detalles_qs
         )
 
         # 3. Lo usamos en el queryset principal
         return self.select_related(
-            'id_estudiante',
+            "id_estudiante",
         ).prefetch_related(
             prefetch_detalles,  # <-- El Prefetch corregido
-            'documentoadjunto_set',
+            "documentoadjunto_set",
         )
 
     def en_proceso(self):
         """Filtra solo las solicitudes en proceso."""
-        return self.filter(estado_general='En Proceso')
+        return self.filter(estado_general="En Proceso")
 
     def completadas(self):
         """Filtra solo las solicitudes completadas."""
-        return self.filter(estado_general='Completada')
+        return self.filter(estado_general="Completada")
 
 
 class SolicitudEquivalenciaManager(models.Manager):

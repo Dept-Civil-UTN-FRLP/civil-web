@@ -21,7 +21,7 @@ class CargoManagerTestCase(TestCase):
             apellido="Pérez",
             documento=12345678,
             legajo=1001,
-            fecha_nacimiento=date(1980, 1, 1)
+            fecha_nacimiento=date(1980, 1, 1),
         )
 
         cls.docente2 = Docente.objects.create(
@@ -29,57 +29,67 @@ class CargoManagerTestCase(TestCase):
             apellido="García",
             documento=87654321,
             legajo=1002,
-            fecha_nacimiento=date(1955, 6, 15)  # 69 años
+            fecha_nacimiento=date(1955, 6, 15),  # 69 años
         )
 
         # Crear asignatura
-        cls.asignatura = Asignatura.objects.create(
+        cls.asignatura1 = Asignatura.objects.create(
             nombre="Test Asignatura",
             nivel="i",
             departamento="civil",
             especialidad="civil",
             hora_semanal=4,
             hora_total=96,
-            dictado="a"
+            dictado="a",
+        )
+
+        cls.asignatura2 = Asignatura.objects.create(
+            nombre="Test Asignatura",
+            nivel="iI",
+            departamento="civil",
+            especialidad="civil",
+            hora_semanal=4,
+            hora_total=96,
+            dictado="a",
         )
 
         # Crear cargo activo que vence pronto
         cls.cargo_activo = Cargo.objects.create(
             docente=cls.docente1,
-            asignatura=cls.asignatura,
+            asignatura=cls.asignatura1,
             caracter="reg",
             categoria="adj",
             dedicacion="ds",
             cantidad_horas=10,
             fecha_inicio=date(2020, 1, 1),
             fecha_vencimiento=timezone.now().date() + timedelta(days=90),
-            estado='activo'
+            estado="activo",
         )
 
         # Crear cargo en licencia
         cls.cargo_licencia = Cargo.objects.create(
             docente=cls.docente2,
-            asignatura=cls.asignatura,
+            asignatura=cls.asignatura1,
             caracter="reg",
             categoria="adj",
             dedicacion="ds",
             cantidad_horas=10,
             fecha_inicio=date(2018, 1, 1),
             fecha_vencimiento=date(2025, 12, 31),
-            estado='licencia'
+            estado="licencia",
         )
 
         # Crear cargo vencido
         cls.cargo_vencido = Cargo.objects.create(
             docente=cls.docente1,
-            asignatura=cls.asignatura,
+            asignatura=cls.asignatura2,
             caracter="int",
             categoria="jtp",
             dedicacion="ds",
             cantidad_horas=10,
             fecha_inicio=date(2019, 1, 1),
             fecha_vencimiento=timezone.now().date() - timedelta(days=30),
-            estado='activo'
+            estado="activo",
         )
 
     def test_activos(self):
@@ -125,7 +135,7 @@ class DocenteManagerTestCase(TestCase):
             apellido="López",
             documento=11111111,
             legajo=2001,
-            fecha_nacimiento=date(1990, 3, 15)
+            fecha_nacimiento=date(1990, 3, 15),
         )
 
         # Docente próximo a 65
@@ -136,7 +146,7 @@ class DocenteManagerTestCase(TestCase):
             apellido="Martínez",
             documento=22222222,
             legajo=2002,
-            fecha_nacimiento=fecha_nac_64
+            fecha_nacimiento=fecha_nac_64,
         )
 
         # Docente mayor de 65
@@ -145,7 +155,7 @@ class DocenteManagerTestCase(TestCase):
             apellido="Sánchez",
             documento=33333333,
             legajo=2003,
-            fecha_nacimiento=date(1955, 1, 1)
+            fecha_nacimiento=date(1955, 1, 1),
         )
 
     def test_proximos_a_jubilarse(self):

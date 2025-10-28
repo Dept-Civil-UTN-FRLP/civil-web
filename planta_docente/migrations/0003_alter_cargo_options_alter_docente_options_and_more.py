@@ -6,20 +6,24 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('planta_docente', '0002_resolucion_fecha_fin_licencia_and_more'),
+        ("planta_docente", "0002_resolucion_fecha_fin_licencia_and_more"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='cargo',
-            options={'verbose_name': 'Cargo', 'verbose_name_plural': 'Cargos'},
+            name="cargo",
+            options={"verbose_name": "Cargo", "verbose_name_plural": "Cargos"},
         ),
         migrations.AlterModelOptions(
-            name='docente',
-            options={'verbose_name': 'Docente', 'verbose_name_plural': 'Docentes'},
+            name="docente",
+            options={"verbose_name": "Docente", "verbose_name_plural": "Docentes"},
         ),
         migrations.AlterModelOptions(
-            name='resolucion',
-            options={'ordering': ['-año', '-numero'], 'verbose_name': 'Resolución', 'verbose_name_plural': 'Resoluciones'},
+            name="resolucion",
+            options={
+                "ordering": ["-año", "-numero"],
+                "verbose_name": "Resolución",
+                "verbose_name_plural": "Resoluciones",
+            },
         ),
     ]

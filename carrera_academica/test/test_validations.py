@@ -21,7 +21,7 @@ class CarreraAcademicaValidationTestCase(TestCase):
             apellido="perez",
             documento=12345678,
             legajo=1001,
-            fecha_nacimiento=date(1980, 1, 1)
+            fecha_nacimiento=date(1980, 1, 1),
         )
 
         self.asignatura = Asignatura.objects.create(
@@ -31,7 +31,7 @@ class CarreraAcademicaValidationTestCase(TestCase):
             especialidad="civil",
             hora_semanal=4,
             hora_total=96,
-            dictado="a"
+            dictado="a",
         )
 
         self.cargo = Cargo.objects.create(
@@ -42,7 +42,7 @@ class CarreraAcademicaValidationTestCase(TestCase):
             dedicacion="ds",
             cantidad_horas=10,
             fecha_inicio=date(2020, 1, 1),
-            fecha_vencimiento=date(2025, 1, 1)
+            fecha_vencimiento=date(2025, 1, 1),
         )
 
     def test_caracter_invalido_para_ca(self):
@@ -55,9 +55,9 @@ class CarreraAcademicaValidationTestCase(TestCase):
             especialidad="civil",
             hora_semanal=4,
             hora_total=96,
-            dictado="a"
+            dictado="a",
         )
-    
+
         cargo_interino = Cargo.objects.create(
             docente=self.docente,
             asignatura=asignatura_interina,
@@ -65,26 +65,26 @@ class CarreraAcademicaValidationTestCase(TestCase):
             categoria="adj",
             dedicacion="ds",
             cantidad_horas=10,
-            fecha_inicio=date(2020, 1, 1)
+            fecha_inicio=date(2020, 1, 1),
         )
 
         ca = CarreraAcademica(
             cargo=cargo_interino,
             fecha_inicio=date(2020, 1, 1),
-            fecha_vencimiento_original=date(2025, 1, 1)
+            fecha_vencimiento_original=date(2025, 1, 1),
         )
 
         with self.assertRaises(ValidationError) as context:
             ca.full_clean()
 
-        self.assertIn('cargo', context.exception.message_dict)
+        self.assertIn("cargo", context.exception.message_dict)
 
     def test_fecha_vencimiento_antes_de_inicio(self):
         """Test que vencimiento debe ser posterior al inicio."""
         ca = CarreraAcademica(
             cargo=self.cargo,
             fecha_inicio=date(2020, 1, 1),
-            fecha_vencimiento_original=date(2019, 12, 31)  # Antes del inicio
+            fecha_vencimiento_original=date(2019, 12, 31),  # Antes del inicio
         )
 
         with self.assertRaises(ValidationError):
@@ -95,7 +95,7 @@ class CarreraAcademicaValidationTestCase(TestCase):
         ca = CarreraAcademica(
             cargo=self.cargo,
             fecha_inicio=date(2020, 1, 1),
-            fecha_vencimiento_original=date(2021, 1, 1)  # Solo 1 año
+            fecha_vencimiento_original=date(2021, 1, 1),  # Solo 1 año
         )
 
         with self.assertRaises(ValidationError):
@@ -125,7 +125,7 @@ class CarreraAcademicaValidationTestCase(TestCase):
             fecha_inicio=date(2020, 1, 1),
             fecha_vencimiento_original=date(2025, 1, 1),
             fecha_vencimiento_actual=date(2025, 1, 1),
-            estado='ACT'
+            estado="ACT",
         )
 
         # Intentar crear segunda CA activa
@@ -133,7 +133,7 @@ class CarreraAcademicaValidationTestCase(TestCase):
             cargo=self.cargo,
             fecha_inicio=date(2021, 1, 1),
             fecha_vencimiento_original=date(2026, 1, 1),
-            estado='ACT'
+            estado="ACT",
         )
 
         with self.assertRaises(ValidationError):
@@ -150,7 +150,7 @@ class EvaluacionValidationTestCase(TestCase):
             apellido="perez",
             documento=12345678,
             legajo=1001,
-            fecha_nacimiento=date(1980, 1, 1)
+            fecha_nacimiento=date(1980, 1, 1),
         )
 
         self.asignatura = Asignatura.objects.create(
@@ -160,7 +160,7 @@ class EvaluacionValidationTestCase(TestCase):
             especialidad="civil",
             hora_semanal=4,
             hora_total=96,
-            dictado="a"
+            dictado="a",
         )
 
         self.cargo = Cargo.objects.create(
@@ -171,7 +171,7 @@ class EvaluacionValidationTestCase(TestCase):
             dedicacion="ds",
             cantidad_horas=10,
             fecha_inicio=date(2020, 1, 1),
-            fecha_vencimiento=date(2025, 1, 1)
+            fecha_vencimiento=date(2025, 1, 1),
         )
 
         self.ca = CarreraAcademica.objects.create(
@@ -186,7 +186,7 @@ class EvaluacionValidationTestCase(TestCase):
         evaluacion = Evaluacion(
             carrera_academica=self.ca,
             numero_evaluacion=1,
-            anios_evaluados=[2019]  # Antes del inicio (2020)
+            anios_evaluados=[2019],  # Antes del inicio (2020)
         )
 
         with self.assertRaises(ValidationError):
@@ -199,7 +199,7 @@ class EvaluacionValidationTestCase(TestCase):
         evaluacion = Evaluacion(
             carrera_academica=self.ca,
             numero_evaluacion=1,
-            anios_evaluados=[anio_futuro]
+            anios_evaluados=[anio_futuro],
         )
 
         with self.assertRaises(ValidationError):
@@ -209,16 +209,14 @@ class EvaluacionValidationTestCase(TestCase):
         """Test que no puede haber solapamiento de años entre evaluaciones."""
         # Crear primera evaluación
         eval1 = Evaluacion.objects.create(
-            carrera_academica=self.ca,
-            numero_evaluacion=1,
-            anios_evaluados=[2020, 2021]
+            carrera_academica=self.ca, numero_evaluacion=1, anios_evaluados=[2020, 2021]
         )
 
         # Intentar crear segunda con años solapados
         eval2 = Evaluacion(
             carrera_academica=self.ca,
             numero_evaluacion=2,
-            anios_evaluados=[2021, 2022]  # 2021 ya está en eval1
+            anios_evaluados=[2021, 2022],  # 2021 ya está en eval1
         )
 
         with self.assertRaises(ValidationError):
@@ -229,7 +227,7 @@ class EvaluacionValidationTestCase(TestCase):
         evaluacion = Evaluacion(
             carrera_academica=self.ca,
             numero_evaluacion=1,
-            anios_evaluados=[2020, 2021, 2022]
+            anios_evaluados=[2020, 2021, 2022],
         )
 
         try:
@@ -250,7 +248,7 @@ class FormularioValidationTestCase(TestCase):
             apellido="perez",
             documento=12345678,
             legajo=1001,
-            fecha_nacimiento=date(1980, 1, 1)
+            fecha_nacimiento=date(1980, 1, 1),
         )
 
         self.asignatura = Asignatura.objects.create(
@@ -260,7 +258,7 @@ class FormularioValidationTestCase(TestCase):
             especialidad="civil",
             hora_semanal=4,
             hora_total=96,
-            dictado="a"
+            dictado="a",
         )
 
         self.cargo = Cargo.objects.create(
@@ -271,14 +269,14 @@ class FormularioValidationTestCase(TestCase):
             dedicacion="ds",
             cantidad_horas=10,
             fecha_inicio=date(2020, 1, 1),
-            fecha_vencimiento=date(2025, 1, 1)
+            fecha_vencimiento=date(2025, 1, 1),
         )
 
         self.ca = CarreraAcademica.objects.create(
             cargo=self.cargo,
             fecha_inicio=date(2020, 1, 1),
             fecha_vencimiento_original=date(2025, 1, 1),
-            fecha_vencimiento_actual=date(2025, 1, 1)
+            fecha_vencimiento_actual=date(2025, 1, 1),
         )
 
     def test_formulario_anual_sin_anio(self):
@@ -286,7 +284,7 @@ class FormularioValidationTestCase(TestCase):
         formulario = Formulario(
             carrera_academica=self.ca,
             tipo_formulario="F04",
-            anio_correspondiente=None  # Falta el año
+            anio_correspondiente=None,  # Falta el año
         )
 
         with self.assertRaises(ValidationError):
@@ -297,7 +295,7 @@ class FormularioValidationTestCase(TestCase):
         formulario = Formulario(
             carrera_academica=self.ca,
             tipo_formulario="F04",
-            anio_correspondiente=2030  # Fuera del rango 2020-2025
+            anio_correspondiente=2030,  # Fuera del rango 2020-2025
         )
 
         with self.assertRaises(ValidationError):
@@ -310,7 +308,7 @@ class FormularioValidationTestCase(TestCase):
             tipo_formulario="F04",
             anio_correspondiente=2020,
             estado="ENT",
-            archivo=None  # Sin archivo
+            archivo=None,  # Sin archivo
         )
 
         with self.assertRaises(ValidationError):

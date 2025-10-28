@@ -18,8 +18,7 @@ class PaginationTestCase(TestCase):
     def setUpTestData(cls):
         """Crear datos de prueba."""
         # Crear usuario para requests
-        cls.user = User.objects.create_user(
-            'testuser', 'test@test.com', 'password')
+        cls.user = User.objects.create_user("testuser", "test@test.com", "password")
 
         # Crear 60 docentes
         for i in range(60):
@@ -28,7 +27,7 @@ class PaginationTestCase(TestCase):
                 apellido=f"apellido{i}",
                 documento=10000000 + i,
                 legajo=1000 + i,
-                fecha_nacimiento=date(1980, 1, 1)
+                fecha_nacimiento=date(1980, 1, 1),
             )
 
         # Crear asignatura
@@ -39,7 +38,7 @@ class PaginationTestCase(TestCase):
             especialidad="civil",
             hora_semanal=4,
             hora_total=96,
-            dictado="a"
+            dictado="a",
         )
 
         # Crear 60 cargos y CAs
@@ -50,14 +49,16 @@ class PaginationTestCase(TestCase):
                 caracter="reg",
                 categoria="adj",
                 dedicacion="ds",
+                cantidad_horas=10,
                 fecha_inicio=date(2020, 1, 1),
-                fecha_vencimiento=date(2025, 1, 1)
+                fecha_vencimiento=date(2025, 1, 1),
             )
 
             CarreraAcademica.objects.create(
                 cargo=cargo,
                 fecha_inicio=date(2020, 1, 1),
-                fecha_vencimiento_original=date(2025, 1, 1)
+                fecha_vencimiento_original=date(2025, 1, 1),
+                fecha_vencimiento_actual=date(2025, 1, 1),
             )
 
     def setUp(self):
@@ -66,7 +67,7 @@ class PaginationTestCase(TestCase):
 
     def test_pagination_default_page_size(self):
         """Test que el tamaño de página por defecto es 25."""
-        request = self.factory.get('/test/')
+        request = self.factory.get("/test/")
         queryset = CarreraAcademica.objects.all()
 
         paginator = CustomPaginator(queryset, request)
@@ -76,7 +77,7 @@ class PaginationTestCase(TestCase):
 
     def test_pagination_custom_page_size(self):
         """Test que se puede cambiar el tamaño de página."""
-        request = self.factory.get('/test/?page_size=10')
+        request = self.factory.get("/test/?page_size=10")
         queryset = CarreraAcademica.objects.all()
 
         paginator = CustomPaginator(queryset, request)
@@ -86,7 +87,7 @@ class PaginationTestCase(TestCase):
 
     def test_pagination_max_page_size(self):
         """Test que no se puede exceder el máximo de página."""
-        request = self.factory.get('/test/?page_size=200')
+        request = self.factory.get("/test/?page_size=200")
         queryset = CarreraAcademica.objects.all()
 
         paginator = CustomPaginator(queryset, request)

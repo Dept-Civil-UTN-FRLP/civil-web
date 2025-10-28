@@ -22,7 +22,7 @@ class IndexTestCase(TestCase):
             apellido="docente",
             documento=12345678,
             legajo=1001,
-            fecha_nacimiento=date(1980, 1, 1)
+            fecha_nacimiento=date(1980, 1, 1),
         )
 
         # Crear asignatura
@@ -33,7 +33,7 @@ class IndexTestCase(TestCase):
             especialidad="civil",
             hora_semanal=4,
             hora_total=96,
-            dictado="a"
+            dictado="a",
         )
 
         # Crear cargo
@@ -46,7 +46,7 @@ class IndexTestCase(TestCase):
             cantidad_horas=10,
             fecha_inicio=date(2020, 1, 1),
             fecha_vencimiento=date(2025, 1, 1),
-            estado='activo'
+            estado="activo",
         )
 
         # Crear CA
@@ -56,24 +56,26 @@ class IndexTestCase(TestCase):
             fecha_inicio=date(2020, 1, 1),
             fecha_vencimiento_original=date(2025, 1, 1),
             fecha_vencimiento_actual=date(2025, 1, 1),
-            estado='ACT'
+            estado="ACT",
         )
 
     def test_ca_estado_index_exists(self):
         """Verifica que existe el índice de estado."""
         with connection.cursor() as cursor:
             # Para SQLite
-            if 'sqlite' in connection.settings_dict['ENGINE']:
-                cursor.execute("""
+            if "sqlite" in connection.settings_dict["ENGINE"]:
+                cursor.execute(
+                    """
                     SELECT name FROM sqlite_master 
                     WHERE type='index' AND name='ca_estado_idx'
-                """)
+                """
+                )
                 result = cursor.fetchone()
                 self.assertIsNotNone(result, "Índice ca_estado_idx no existe")
 
     def test_ca_filter_by_estado_uses_index(self):
         """Verifica que filtrar por estado usa el índice."""
-        qs = CarreraAcademica.objects.filter(estado='ACT')
+        qs = CarreraAcademica.objects.filter(estado="ACT")
         explain = str(qs.explain())
 
         # En producción con PostgreSQL, debería usar el índice
@@ -85,7 +87,7 @@ class IndexTestCase(TestCase):
         import time
 
         start = time.time()
-        list(CarreraAcademica.objects.filter(numero_expediente='12345/2024'))
+        list(CarreraAcademica.objects.filter(numero_expediente="12345/2024"))
         end = time.time()
 
         # Debe ser muy rápido (< 50ms)
@@ -96,17 +98,14 @@ class IndexTestCase(TestCase):
         # Crear formulario
         Formulario.objects.create(
             carrera_academica=self.ca,
-            tipo_formulario='F04',
-            estado='PEN',
-            anio_correspondiente=2024
+            tipo_formulario="F04",
+            estado="PEN",
+            anio_correspondiente=2024,
         )
 
     def test_cargo_estado_caracter_index(self):
         """Verifica índice compuesto de Cargo."""
-        qs = Cargo.objects.filter(
-            estado='activo',
-            caracter__in=['reg', 'ord']
-        )
+        qs = Cargo.objects.filter(estado="activo", caracter__in=["reg", "ord"])
 
         explain = str(qs.explain())
         self.assertIsNotNone(explain)

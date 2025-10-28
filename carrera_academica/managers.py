@@ -14,15 +14,15 @@ class CarreraAcademicaQuerySet(models.QuerySet):
         Reduce N+1 queries.
         """
         return self.select_related(
-            'cargo',
-            'cargo__docente',
-            'cargo__asignatura',
-            'resolucion_designacion',
-            'resolucion_puesta_en_funcion',
+            "cargo",
+            "cargo__docente",
+            "cargo__asignatura",
+            "resolucion_designacion",
+            "resolucion_puesta_en_funcion",
         ).prefetch_related(
-            'formularios',
-            'evaluaciones',
-            'cargo__resoluciones',
+            "formularios",
+            "evaluaciones",
+            "cargo__resoluciones",
         )
 
     def with_full_detail(self):
@@ -31,37 +31,38 @@ class CarreraAcademicaQuerySet(models.QuerySet):
         Incluye junta evaluadora y todos los formularios.
         """
         return self.select_related(
-            'cargo',
-            'cargo__docente',
-            'cargo__asignatura',
-            'junta_evaluadora',
-            'junta_evaluadora__miembro_interno_titular',
-            'junta_evaluadora__miembro_interno_suplente',
-            'junta_evaluadora__veedor_alumno_titular',
-            'junta_evaluadora__veedor_alumno_suplente',
-            'junta_evaluadora__veedor_graduado_titular',
-            'junta_evaluadora__veedor_graduado_suplente',
-            'resolucion_designacion',
-            'resolucion_puesta_en_funcion',
+            "cargo",
+            "cargo__docente",
+            "cargo__asignatura",
+            "junta_evaluadora",
+            "junta_evaluadora__miembro_interno_titular",
+            "junta_evaluadora__miembro_interno_suplente",
+            "junta_evaluadora__veedor_alumno_titular",
+            "junta_evaluadora__veedor_alumno_suplente",
+            "junta_evaluadora__veedor_graduado_titular",
+            "junta_evaluadora__veedor_graduado_suplente",
+            "resolucion_designacion",
+            "resolucion_puesta_en_funcion",
         ).prefetch_related(
-            'formularios',
-            'evaluaciones__formularios',
-            'cargo__resoluciones',
-            'junta_evaluadora__miembros_externos_titulares',
-            'junta_evaluadora__miembros_externos_suplentes',
+            "formularios",
+            "evaluaciones__formularios",
+            "cargo__resoluciones",
+            "junta_evaluadora__miembros_externos_titulares",
+            "junta_evaluadora__miembros_externos_suplentes",
         )
 
     def activas(self):
         """Filtra solo las CA activas."""
-        return self.filter(estado='ACT')
+        return self.filter(estado="ACT")
 
     def finalizadas(self):
         """Filtra solo las CA finalizadas."""
-        return self.filter(estado='FIN')
+        return self.filter(estado="FIN")
 
     def con_evaluaciones_pendientes(self):
         """Filtra CA que tienen años pendientes de evaluación."""
         from django.utils import timezone
+
         # Esta es una query compleja, mejor hacerla en la vista
         # pero dejamos el método para documentar la intención
         return self
@@ -93,11 +94,11 @@ class EvaluacionQuerySet(models.QuerySet):
     def with_related_data(self):
         """Precarga relaciones necesarias."""
         return self.select_related(
-            'carrera_academica',
-            'carrera_academica__cargo',
-            'carrera_academica__cargo__docente',
+            "carrera_academica",
+            "carrera_academica__cargo",
+            "carrera_academica__cargo__docente",
         ).prefetch_related(
-            'formularios',
+            "formularios",
         )
 
 

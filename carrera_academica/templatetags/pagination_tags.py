@@ -13,21 +13,21 @@ register = template.Library()
 def url_replace(context, **kwargs):
     """
     Reemplaza parámetros en la URL actual manteniendo los demás.
-    
+
     Uso en template:
     <a href="?{% url_replace page=2 %}">Página 2</a>
     """
-    query = context['request'].GET.copy()
+    query = context["request"].GET.copy()
     for key, value in kwargs.items():
         query[key] = value
     return query.urlencode()
 
 
-@register.inclusion_tag('pagination/pagination.html', takes_context=True)
+@register.inclusion_tag("pagination/pagination.html", takes_context=True)
 def render_pagination(context, page_obj, show_page_size=True):
     """
     Renderiza los controles de paginación.
-    
+
     Args:
         page_obj: Objeto de página de Django
         show_page_size: Si mostrar el selector de tamaño de página
@@ -50,7 +50,7 @@ def render_pagination(context, page_obj, show_page_size=True):
 
         # Primera elipsis
         if page_number > (on_each_side + on_ends + 1):
-            page_range.append('...')
+            page_range.append("...")
 
         # Páginas alrededor de la actual
         start = max(on_ends + 1, page_number - on_each_side)
@@ -59,17 +59,18 @@ def render_pagination(context, page_obj, show_page_size=True):
 
         # Segunda elipsis
         if page_number < (num_pages - on_each_side - on_ends):
-            page_range.append('...')
+            page_range.append("...")
 
         # Páginas del final
         page_range.extend(
-            range(max(num_pages - on_ends + 1, on_ends + 1), num_pages + 1))
+            range(max(num_pages - on_ends + 1, on_ends + 1), num_pages + 1)
+        )
 
     return {
-        'page_obj': page_obj,
-        'page_range': page_range,
-        'show_page_size': show_page_size,
-        'request': context['request'],
+        "page_obj": page_obj,
+        "page_range": page_range,
+        "show_page_size": show_page_size,
+        "request": context["request"],
     }
 
 
@@ -79,7 +80,7 @@ def multiply(value, arg):
     try:
         return int(value) * int(arg)
     except (ValueError, TypeError):
-        return ''
+        return ""
 
 
 @register.filter

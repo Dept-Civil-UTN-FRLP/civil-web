@@ -24,7 +24,7 @@ class QueryOptimizationTestCase(TestCase):
                 apellido=f"apellido{i}",
                 documento=10000000 + i,
                 legajo=1000 + i,
-                fecha_nacimiento=date(1980, 1, 1)
+                fecha_nacimiento=date(1980, 1, 1),
             )
 
         # Crear 5 asignaturas
@@ -36,7 +36,7 @@ class QueryOptimizationTestCase(TestCase):
                 especialidad="civil",
                 hora_semanal=4,
                 hora_total=96,
-                dictado="a"
+                dictado="a",
             )
 
         # Crear 20 cargos
@@ -52,7 +52,7 @@ class QueryOptimizationTestCase(TestCase):
                 dedicacion="ds",
                 cantidad_horas=8,
                 fecha_inicio=date(2020, 1, 1),
-                fecha_vencimiento=date(2025, 1, 1)
+                fecha_vencimiento=date(2025, 1, 1),
             )
 
         # Crear 10 CA
@@ -62,7 +62,7 @@ class QueryOptimizationTestCase(TestCase):
                 cargo=cargo,
                 fecha_inicio=date(2020, 1, 1),
                 fecha_vencimiento_original=date(2025, 1, 1),
-                fecha_vencimiento_actual=date(2025, 1, 1)
+                fecha_vencimiento_actual=date(2025, 1, 1),
             )
 
     def test_dashboard_query_count_without_optimization(self):
@@ -81,7 +81,7 @@ class QueryOptimizationTestCase(TestCase):
         self.assertGreaterEqual(
             query_count,
             20,
-            f"Sin optimización deberían ser más queries. Actual: {query_count}"
+            f"Sin optimización deberían ser más queries. Actual: {query_count}",
         )
 
     def test_dashboard_query_count_with_optimization(self):
@@ -100,7 +100,7 @@ class QueryOptimizationTestCase(TestCase):
         self.assertLessEqual(
             query_count,
             5,
-            f"Con optimización deberían ser menos de 5 queries. Actual: {query_count}"
+            f"Con optimización deberían ser menos de 5 queries. Actual: {query_count}",
         )
 
     def test_detail_query_count_without_optimization(self):
@@ -121,7 +121,7 @@ class QueryOptimizationTestCase(TestCase):
         self.assertGreaterEqual(
             query_count,
             5,
-            f"Sin optimización deberían ser más queries. Actual: {query_count}"
+            f"Sin optimización deberían ser más queries. Actual: {query_count}",
         )
 
     def test_detail_query_count_with_optimization(self):
@@ -144,5 +144,5 @@ class QueryOptimizationTestCase(TestCase):
         self.assertLessEqual(
             query_count,
             8,
-            f"Con optimización deberían ser menos de 8 queries. Actual: {query_count}"
+            f"Con optimización deberían ser menos de 8 queries. Actual: {query_count}",
         )

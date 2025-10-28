@@ -21,7 +21,9 @@ class PDFService:
     """Servicio centralizado para generación de PDFs."""
 
     @staticmethod
-    def consolidar_expediente(ca: CarreraAcademica) -> Tuple[Optional[io.BytesIO], list]:
+    def consolidar_expediente(
+        ca: CarreraAcademica,
+    ) -> Tuple[Optional[io.BytesIO], list]:
         """
         Consolida todo el expediente de una CA en un único PDF.
 
@@ -35,14 +37,13 @@ class PDFService:
         errores = []
 
         # Recopilar archivos de formularios
-        formularios_con_archivo = ca.formularios.exclude(
-            archivo__isnull=True
-        ).exclude(archivo="")
+        formularios_con_archivo = ca.formularios.exclude(archivo__isnull=True).exclude(
+            archivo=""
+        )
 
         for form in formularios_con_archivo:
             fecha_orden = PDFService._obtener_fecha_orden_formulario(form, ca)
-            archivos_a_unir.append(
-                {"fecha": fecha_orden, "ruta": form.archivo.path})
+            archivos_a_unir.append({"fecha": fecha_orden, "ruta": form.archivo.path})
 
         # Recopilar archivos de resoluciones
         resoluciones_con_archivo = ca.cargo.resoluciones.exclude(
@@ -51,9 +52,9 @@ class PDFService:
 
         for res in resoluciones_con_archivo:
             from datetime import date
+
             fecha_orden = date(res.año, 1, 1)
-            archivos_a_unir.append(
-                {"fecha": fecha_orden, "ruta": res.file.path})
+            archivos_a_unir.append({"fecha": fecha_orden, "ruta": res.file.path})
 
         if not archivos_a_unir:
             logger.warning(f"No hay archivos para consolidar en CA {ca.pk}")
@@ -83,12 +84,13 @@ class PDFService:
             return output_buffer, errores
 
         except Exception as e:
-            logger.error(
-                f"Error al escribir PDF consolidado para CA {ca.pk}: {e}")
+            logger.error(f"Error al escribir PDF consolidado para CA {ca.pk}: {e}")
             return None, [f"Error al generar PDF: {str(e)}"]
 
     @staticmethod
-    def generar_propuesta_jurado(ca: CarreraAcademica, signature_path: str) -> Optional[bytes]:
+    def generar_propuesta_jurado(
+        ca: CarreraAcademica, signature_path: str
+    ) -> Optional[bytes]:
         """
         Genera PDF de propuesta de jurado.
 
@@ -102,8 +104,7 @@ class PDFService:
         junta = getattr(ca, "junta_evaluadora", None)
 
         if not junta:
-            logger.error(
-                f"CA {ca.pk} no tiene junta evaluadora para generar PDF")
+            logger.error(f"CA {ca.pk} no tiene junta evaluadora para generar PDF")
             return None
 
         # Preparar datos de jurados
@@ -119,8 +120,7 @@ class PDFService:
 
         try:
             html_string = render_to_string(
-                "carrera_academica/planilla_jurado.html",
-                context
+                "carrera_academica/planilla_jurado.html", context
             )
 
             # Generar PDF silenciando stderr de WeasyPrint
@@ -154,21 +154,25 @@ class PDFService:
         if junta.miembro_interno_titular:
             docente = junta.miembro_interno_titular
             cargo = docente.cargo_docente.first()
-            jurados.append({
-                "nombre": str(docente),
-                "dependencia": "UTN-FRLP",
-                "cargo": cargo.get_categoria_display() if cargo else "N/A",
-                "email": PDFService._obtener_email_docente(docente),
-            })
+            jurados.append(
+                {
+                    "nombre": str(docente),
+                    "dependencia": "UTN-FRLP",
+                    "cargo": cargo.get_categoria_display() if cargo else "N/A",
+                    "email": PDFService._obtener_email_docente(docente),
+                }
+            )
 
         # Miembros externos titulares
         for externo in junta.miembros_externos_titulares.all():
-            jurados.append({
-                "nombre": externo.nombre_completo,
-                "dependencia": externo.universidad_origen,
-                "cargo": externo.cargo_info,
-                "email": externo.email,
-            })
+            jurados.append(
+                {
+                    "nombre": externo.nombre_completo,
+                    "dependencia": externo.universidad_origen,
+                    "cargo": externo.cargo_info,
+                    "email": externo.email,
+                }
+            )
 
         return jurados
 
@@ -181,21 +185,25 @@ class PDFService:
         if junta.miembro_interno_suplente:
             docente = junta.miembro_interno_suplente
             cargo = docente.cargo_docente.first()
-            jurados.append({
-                "nombre": str(docente),
-                "dependencia": "UTN-FRLP",
-                "cargo": cargo.get_categoria_display() if cargo else "N/A",
-                "email": PDFService._obtener_email_docente(docente),
-            })
+            jurados.append(
+                {
+                    "nombre": str(docente),
+                    "dependencia": "UTN-FRLP",
+                    "cargo": cargo.get_categoria_display() if cargo else "N/A",
+                    "email": PDFService._obtener_email_docente(docente),
+                }
+            )
 
         # Miembros externos suplentes
         for externo in junta.miembros_externos_suplentes.all():
-            jurados.append({
-                "nombre": externo.nombre_completo,
-                "dependencia": externo.universidad_origen,
-                "cargo": externo.cargo_info,
-                "email": externo.email,
-            })
+            jurados.append(
+                {
+                    "nombre": externo.nombre_completo,
+                    "dependencia": externo.universidad_origen,
+                    "cargo": externo.cargo_info,
+                    "email": externo.email,
+                }
+            )
 
         return jurados
 

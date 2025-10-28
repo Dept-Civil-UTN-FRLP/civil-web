@@ -21,7 +21,9 @@ class DocumentService:
     """Servicio para generación de documentos Word dinámicos."""
 
     @staticmethod
-    def generar_documento_dinamico(formulario: Formulario) -> Tuple[Optional[io.BytesIO], Optional[str]]:
+    def generar_documento_dinamico(
+        formulario: Formulario,
+    ) -> Tuple[Optional[io.BytesIO], Optional[str]]:
         """
         Genera un documento Word personalizado para un formulario.
 
@@ -52,8 +54,7 @@ class DocumentService:
             doc = Document(plantilla_maestra.archivo.path)
 
             # Reemplazar datos del cuerpo
-            contexto = DocumentService._preparar_contexto_reemplazo(
-                formulario, ca)
+            contexto = DocumentService._preparar_contexto_reemplazo(formulario, ca)
             DocumentService._reemplazar_texto_documento(doc, contexto)
 
             # Reemplazar datos del encabezado
@@ -70,12 +71,14 @@ class DocumentService:
             )
 
             logger.info(
-                f"Documento generado exitosamente para formulario {formulario.pk}")
+                f"Documento generado exitosamente para formulario {formulario.pk}"
+            )
             return buffer, filename
 
         except Exception as e:
             logger.error(
-                f"Error generando documento para formulario {formulario.pk}: {e}")
+                f"Error generando documento para formulario {formulario.pk}: {e}"
+            )
             return None, None
 
     @staticmethod
@@ -109,8 +112,7 @@ class DocumentService:
                         for run in p.runs:
                             for old_text, new_text in replacements.items():
                                 if old_text in run.text:
-                                    run.text = run.text.replace(
-                                        old_text, new_text)
+                                    run.text = run.text.replace(old_text, new_text)
 
     @staticmethod
     def _reemplazar_encabezado(doc: Document, membrete: MembreteAnual):

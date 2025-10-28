@@ -59,33 +59,33 @@ class CarreraAcademicaForm(forms.ModelForm):
 
     def clean_numero_expediente(self):
         """Validar formato del número de expediente."""
-        numero = self.cleaned_data.get('numero_expediente')
+        numero = self.cleaned_data.get("numero_expediente")
 
         if numero:
             # Formato esperado: NNNNN/AAAA (ej: 12345/2024)
             import re
-            pattern = r'^\d{4,6}/\d{4}$'
+
+            pattern = r"^\d{4,6}/\d{4}$"
 
             if not re.match(pattern, numero):
                 raise ValidationError(
-                    'El formato debe ser NNNNN/AAAA (ej: 12345/2024)',
-                    code='invalid_format'
+                    "El formato debe ser NNNNN/AAAA (ej: 12345/2024)",
+                    code="invalid_format",
                 )
 
             # Validar que el año sea razonable
-            year = int(numero.split('/')[1])
+            year = int(numero.split("/")[1])
             current_year = timezone.now().year
 
             if year > current_year:
                 raise ValidationError(
-                    f'El año no puede ser futuro. Año actual: {current_year}',
-                    code='future_year'
+                    f"El año no puede ser futuro. Año actual: {current_year}",
+                    code="future_year",
                 )
 
             if year < 2000:
                 raise ValidationError(
-                    'El año debe ser posterior a 2000',
-                    code='year_too_old'
+                    "El año debe ser posterior a 2000", code="year_too_old"
                 )
 
         return numero
@@ -124,27 +124,29 @@ class CargoForm(forms.ModelForm):
     def clean(self):
         """Validaciones cruzadas del formulario."""
         cleaned_data = super().clean()
-        caracter = cleaned_data.get('caracter')
-        fecha_vencimiento = cleaned_data.get('fecha_vencimiento')
-        dedicacion = cleaned_data.get('dedicacion')
+        caracter = cleaned_data.get("caracter")
+        fecha_vencimiento = cleaned_data.get("fecha_vencimiento")
+        dedicacion = cleaned_data.get("dedicacion")
 
         # Validar que solo reg/ord tengan fecha de vencimiento
-        if caracter not in ['reg', 'ord'] and fecha_vencimiento:
+        if caracter not in ["reg", "ord"] and fecha_vencimiento:
             raise ValidationError(
-                'Solo los cargos Regulares u Ordinarios deben tener fecha de vencimiento.',
-                code='invalid_vencimiento'
+                "Solo los cargos Regulares u Ordinarios deben tener fecha de vencimiento.",
+                code="invalid_vencimiento",
             )
 
         # Validar que reg/ord SÍ tengan fecha de vencimiento
-        if caracter in ['reg', 'ord'] and not fecha_vencimiento:
+        if caracter in ["reg", "ord"] and not fecha_vencimiento:
             self.add_error(
-                'fecha_vencimiento', 'Este campo es obligatorio para cargos Regulares y Ordinarios.')
+                "fecha_vencimiento",
+                "Este campo es obligatorio para cargos Regulares y Ordinarios.",
+            )
 
         # Validar combinación caracter-dedicacion
-        if caracter == 'adh' and dedicacion in ['de', 'se']:
+        if caracter == "adh" and dedicacion in ["de", "se"]:
             raise ValidationError(
-                'Los cargos Ad-Honorem no pueden tener dedicación exclusiva o semi-exclusiva.',
-                code='invalid_dedication'
+                "Los cargos Ad-Honorem no pueden tener dedicación exclusiva o semi-exclusiva.",
+                code="invalid_dedication",
             )
 
         return cleaned_data
@@ -189,21 +191,21 @@ class JuntaEvaluadoraForm(forms.ModelForm):
     def clean(self):
         """Validaciones cruzadas."""
         cleaned_data = super().clean()
-        tit_interno = cleaned_data.get('miembro_interno_titular')
-        sup_interno = cleaned_data.get('miembro_interno_suplente')
+        tit_interno = cleaned_data.get("miembro_interno_titular")
+        sup_interno = cleaned_data.get("miembro_interno_suplente")
 
         # Validar que titular y suplente no sean la misma persona
         if tit_interno and sup_interno and tit_interno == sup_interno:
             raise ValidationError(
-                'El miembro titular y suplente no pueden ser la misma persona.',
-                code='duplicate_member'
+                "El miembro titular y suplente no pueden ser la misma persona.",
+                code="duplicate_member",
             )
 
         # Validar que haya al menos un miembro interno
         if not tit_interno and not sup_interno:
             raise ValidationError(
-                'Debe haber al menos un miembro interno (titular o suplente).',
-                code='missing_internal_member'
+                "Debe haber al menos un miembro interno (titular o suplente).",
+                code="missing_internal_member",
             )
 
         return cleaned_data
@@ -236,12 +238,12 @@ class EvaluacionForm(forms.Form):
 
     def clean_anios_a_evaluar(self):
         """Validar que se seleccionó al menos un año."""
-        anios = self.cleaned_data.get('anios_a_evaluar')
+        anios = self.cleaned_data.get("anios_a_evaluar")
 
         if not anios:
             raise ValidationError(
-                'Debe seleccionar al menos un año para evaluar.',
-                code='no_years_selected'
+                "Debe seleccionar al menos un año para evaluar.",
+                code="no_years_selected",
             )
 
         # Validar que no haya años futuros
@@ -249,8 +251,7 @@ class EvaluacionForm(forms.Form):
         for anio in anios:
             if int(anio) > current_year:
                 raise ValidationError(
-                    f'No se puede evaluar el año futuro {anio}.',
-                    code='future_year'
+                    f"No se puede evaluar el año futuro {anio}.", code="future_year"
                 )
 
         return anios
