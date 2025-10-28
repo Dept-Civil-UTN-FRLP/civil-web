@@ -49,7 +49,6 @@ from carrera_academica.services.document_service import DocumentService
 logger = logging.getLogger(__name__)
 
 
-
 def replace_text_in_doc(doc, replacements):
     """
     Busca y reemplaza texto en párrafos y tablas, conservando el formato.
@@ -93,8 +92,7 @@ def dashboard_ca_view(request):
 
     # OPTIMIZACIÓN: Usar el manager personalizado
     carreras_qs = CarreraAcademica.objects.with_related_data().annotate(
-        total_formularios_debidos=Count(
-            "formularios", filter=q_formularios_debidos),
+        total_formularios_debidos=Count("formularios", filter=q_formularios_debidos),
         formularios_entregados=Count(
             "formularios", filter=Q(formularios__estado="ENT") & q_formularios_debidos
         ),
@@ -113,13 +111,11 @@ def dashboard_ca_view(request):
     carreras_qs = carreras_qs.order_by("fecha_vencimiento_actual")
 
     # ✅ PAGINACIÓN: Aplicar paginación
-    page_obj, pagination_context = paginate_queryset(
-        carreras_qs, request, page_size=25)
-
+    page_obj, pagination_context = paginate_queryset(carreras_qs, request, page_size=25)
 
     # OPTIMIZACIÓN: Ordenar sin queries adicionales
     contexto = {
-        'carreras': page_obj,
+        "carreras": page_obj,
         "search_query": search_query,
         "estado_filter": estado_filter,
         "estado_choices": CarreraAcademica.ESTADO_CHOICES,
@@ -133,10 +129,7 @@ def dashboard_ca_view(request):
 def detalle_ca_view(request, pk):
     """Vista de detalle optimizada."""
     # ✅ OPTIMIZACIÓN: Usar with_full_detail()
-    ca = get_object_or_404(
-        CarreraAcademica.objects.with_full_detail(),
-        pk=pk
-    )
+    ca = get_object_or_404(CarreraAcademica.objects.with_full_detail(), pk=pk)
 
     if request.method == "POST":
         formulario_id = request.POST.get("formulario_id")
@@ -178,8 +171,7 @@ def detalle_ca_view(request, pk):
             formularios_visibles.append(form)
 
     # Separar formularios para la plantilla
-    form_cv = next(
-        (f for f in formularios_visibles if f.tipo_formulario == "CV"), None)
+    form_cv = next((f for f in formularios_visibles if f.tipo_formulario == "CV"), None)
     form_unicos = [
         f for f in formularios_visibles if f.tipo_formulario in ["F01", "F02", "F03"]
     ]
@@ -250,8 +242,7 @@ def iniciar_evaluacion_view(request, pk):
 
     if request.method == "POST":
         form = EvaluacionForm(request.POST)
-        form.fields["anios_a_evaluar"].choices = [
-            (y, y) for y in anios_pendientes]
+        form.fields["anios_a_evaluar"].choices = [(y, y) for y in anios_pendientes]
 
         if form.is_valid():
             try:
@@ -259,8 +250,10 @@ def iniciar_evaluacion_view(request, pk):
 
                 # Obtener el siguiente número de evaluación
                 from django.db.models import Max
-                max_eval = ca.evaluaciones.aggregate(
-                    max_num=Max("numero_evaluacion"))["max_num"]
+
+                max_eval = ca.evaluaciones.aggregate(max_num=Max("numero_evaluacion"))[
+                    "max_num"
+                ]
                 nuevo_num = (max_eval or 0) + 1
 
                 # Crear la nueva evaluación
@@ -296,15 +289,14 @@ def iniciar_evaluacion_view(request, pk):
             except Exception as e:
                 logger.error(f"Error inesperado al crear evaluación: {e}")
                 messages.error(
-                    request, "Error al crear la evaluación. Contacte al administrador.")
+                    request, "Error al crear la evaluación. Contacte al administrador."
+                )
     else:
         form = EvaluacionForm()
-        form.fields["anios_a_evaluar"].choices = [
-            (y, y) for y in anios_pendientes]
+        form.fields["anios_a_evaluar"].choices = [(y, y) for y in anios_pendientes]
 
     return render(
-        request, "carrera_academica/iniciar_evaluacion.html", {
-            "form": form, "ca": ca}
+        request, "carrera_academica/iniciar_evaluacion.html", {"form": form, "ca": ca}
     )
 
 
@@ -403,7 +395,9 @@ def crear_ca_view(request):
                 except Exception as e:
                     logger.error(f"Error inesperado al crear CA: {e}")
                     messages.error(
-                        request, "Error al crear la Carrera Académica. Contacte al administrador.")
+                        request,
+                        "Error al crear la Carrera Académica. Contacte al administrador.",
+                    )
                     ca_form = form
             else:
                 ca_form = form
@@ -432,8 +426,7 @@ def crear_ca_view(request):
                     return redirect("dashboard_ca")
 
                 except ValidationError as e:
-                    logger.warning(
-                        f"Error de validación al crear cargo y CA: {e}")
+                    logger.warning(f"Error de validación al crear cargo y CA: {e}")
                     for field, errors in e.message_dict.items():
                         for error in errors:
                             messages.error(request, f"{field}: {error}")
@@ -442,7 +435,8 @@ def crear_ca_view(request):
                 except Exception as e:
                     logger.error(f"Error inesperado al crear cargo y CA: {e}")
                     messages.error(
-                        request, "Error al crear el cargo. Contacte al administrador.")
+                        request, "Error al crear el cargo. Contacte al administrador."
+                    )
                     cargo_form = form
             else:
                 cargo_form = form
@@ -459,15 +453,11 @@ def editar_junta_view(request, pk):
     """Vista optimizada para editar junta."""
     # ✅ OPTIMIZACIÓN: Precargar relaciones necesarias
     ca = get_object_or_404(
-        CarreraAcademica.objects.select_related(
-            'cargo__docente',
-            'cargo__asignatura'
-        ),
-        pk=pk
+        CarreraAcademica.objects.select_related("cargo__docente", "cargo__asignatura"),
+        pk=pk,
     )
 
-    junta, created = JuntaEvaluadora.objects.get_or_create(
-        carrera_academica=ca)
+    junta, created = JuntaEvaluadora.objects.get_or_create(carrera_academica=ca)
 
     if request.method == "POST":
         form = JuntaEvaluadoraForm(request.POST, instance=junta)
@@ -505,9 +495,11 @@ def asignar_expediente_view(request, pk):
 def docentes_filtrados_api_view(request):
     """API optimizada para filtrar docentes."""
     # ✅ OPTIMIZACIÓN: select_related para evitar queries adicionales
-    queryset = Docente.objects.filter(
-        cargo_docente__caracter__in=["ord", "reg"]
-    ).select_related().distinct()
+    queryset = (
+        Docente.objects.filter(cargo_docente__caracter__in=["ord", "reg"])
+        .select_related()
+        .distinct()
+    )
 
     categoria_seleccionada = request.GET.get("categoria")
     dedicacion_seleccionada = request.GET.get("dedicacion")
@@ -518,8 +510,7 @@ def docentes_filtrados_api_view(request):
         try:
             start_index = categorias_orden.index(categoria_seleccionada)
             categorias_validas = categorias_orden[start_index:]
-            queryset = queryset.filter(
-                cargo_docente__categoria__in=categorias_validas)
+            queryset = queryset.filter(cargo_docente__categoria__in=categorias_validas)
         except ValueError:
             pass
 
@@ -537,8 +528,7 @@ def docentes_filtrados_api_view(request):
 
     # ✅ OPTIMIZACIÓN: only() para traer solo los campos necesarios
     docentes_list = list(
-        queryset.only('id', 'apellido', 'nombre').values(
-            'id', 'apellido', 'nombre')
+        queryset.only("id", "apellido", "nombre").values("id", "apellido", "nombre")
     )
 
     for docente in docentes_list:
@@ -611,8 +601,7 @@ def notificar_pendientes_view(request, pk):
     """Vista para notificar formularios pendientes."""
     ca = get_object_or_404(CarreraAcademica, pk=pk)
 
-    exito, mensaje = EmailService.enviar_recordatorio_formularios_pendientes(
-        ca)
+    exito, mensaje = EmailService.enviar_recordatorio_formularios_pendientes(ca)
 
     if exito:
         messages.success(request, mensaje)
@@ -629,15 +618,14 @@ def descargar_plantilla_view(request, pk):
     tipos_dinamicos = ["F06", "F07", "F13", "ENC", "F04", "F05"]
 
     if formulario.tipo_formulario in tipos_dinamicos:
-        buffer, filename = DocumentService.generar_documento_dinamico(
-            formulario)
+        buffer, filename = DocumentService.generar_documento_dinamico(formulario)
 
         if buffer:
             return FileResponse(buffer, as_attachment=True, filename=filename)
         else:
             messages.error(
                 request,
-                "No se pudo generar el documento. Verifique plantillas y membretes."
+                "No se pudo generar el documento. Verifique plantillas y membretes.",
             )
             return redirect("detalle_ca", pk=formulario.carrera_academica.pk)
     else:
@@ -654,8 +642,7 @@ def descargar_plantilla_view(request, pk):
             )
         else:
             messages.error(
-                request,
-                f"No se encontró plantilla para {formulario.tipo_formulario}."
+                request, f"No se encontró plantilla para {formulario.tipo_formulario}."
             )
             return redirect("detalle_ca", pk=formulario.carrera_academica.pk)
 
@@ -666,13 +653,12 @@ def notificar_junta_view(request, pk):
     evaluacion = get_object_or_404(Evaluacion, pk=pk)
     ca = evaluacion.carrera_academica
 
-    emails_enviados, errores = EmailService.enviar_notificacion_junta(
-        evaluacion)
+    emails_enviados, errores = EmailService.enviar_notificacion_junta(evaluacion)
 
     if emails_enviados > 0:
         messages.success(
             request,
-            f"Se han enviado {emails_enviados} correos a los miembros de la junta."
+            f"Se han enviado {emails_enviados} correos a los miembros de la junta.",
         )
 
     for error in errores:

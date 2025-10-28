@@ -1,1 +1,1 @@
-default_app_config = 'planta_docente.apps.PlantaDocenteConfig'
+default_app_config = "planta_docente.apps.PlantaDocenteConfig"

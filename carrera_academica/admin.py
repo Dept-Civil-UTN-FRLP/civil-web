@@ -84,7 +84,7 @@ class DocenteAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         """Override para optimizar queries."""
         qs = super().get_queryset(request)
-        return qs.prefetch_related('correos')
+        return qs.prefetch_related("correos")
 
     def correo_principal(self, obj):
         correo_principal = obj.correos.filter(principal=True).first()
@@ -193,11 +193,11 @@ class CarreraAcademicaAdmin(admin.ModelAdmin):
         """Override para optimizar queries en el listado del admin."""
         qs = super().get_queryset(request)
         return qs.select_related(
-            'cargo',
-            'cargo__docente',
-            'cargo__asignatura',
+            "cargo",
+            "cargo__docente",
+            "cargo__asignatura",
         ).prefetch_related(
-            'formularios',
+            "formularios",
         )
 
     # Organizamos los campos en secciones para que el formulario sea más claro

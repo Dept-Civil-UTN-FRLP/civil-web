@@ -344,8 +344,7 @@ def dashboard_view(request):
     # Ordenamiento
     solicitudes = solicitudes.annotate(
         estado_ordenado=Case(
-            When(estado_general="Completada", then=Value(1)), 
-            default=Value(0)
+            When(estado_general="Completada", then=Value(1)), default=Value(0)
         )
     ).order_by("estado_ordenado", "-fecha_inicio")
 
@@ -353,8 +352,8 @@ def dashboard_view(request):
     page_obj, pagination_context = paginate_queryset(solicitudes, request, page_size=25)
 
     contexto = {
-        'solicitudes': page_obj,
-        'search_query': search_query,
+        "solicitudes": page_obj,
+        "search_query": search_query,
         **pagination_context,
     }
     return render(request, "equivalencias/dashboard.html", contexto)
@@ -365,8 +364,7 @@ def solicitud_detalle_view(request, pk):
     """Vista de detalle optimizada."""
     # ✅ OPTIMIZACIÓN: Usar with_full_detail()
     solicitud = get_object_or_404(
-        SolicitudEquivalencia.objects.with_full_detail(),
-        pk=pk
+        SolicitudEquivalencia.objects.with_full_detail(), pk=pk
     )
 
     if request.method == "POST":
@@ -375,8 +373,7 @@ def solicitud_detalle_view(request, pk):
 
         if detalle_id and nuevo_estado:
             # ✅ OPTIMIZACIÓN: Ya está precargado
-            detalle_a_actualizar = solicitud.detallesolicitud_set.get(
-                pk=detalle_id)
+            detalle_a_actualizar = solicitud.detallesolicitud_set.get(pk=detalle_id)
             detalle_a_actualizar.estado_asignatura = nuevo_estado
 
             if nuevo_estado == "Requiere PC":
@@ -631,17 +628,19 @@ def estadisticas_view(request):
     selected_year = request.GET.get("year")
 
     # ✅ OPTIMIZACIÓN: Solo traer años, no objetos completos
-    available_years = SolicitudEquivalencia.objects.dates(
-        "fecha_inicio", "year", order="DESC"
-    ).values_list('fecha_inicio__year', flat=True).distinct()
+    available_years = (
+        SolicitudEquivalencia.objects.dates("fecha_inicio", "year", order="DESC")
+        .values_list("fecha_inicio__year", flat=True)
+        .distinct()
+    )
 
     # ✅ OPTIMIZACIÓN: Usar select_related en el queryset base
     solicitudes_base = SolicitudEquivalencia.objects.select_related(
-        'id_estudiante'
+        "id_estudiante"
     ).prefetch_related(
-        'detallesolicitud_set',
-        'detallesolicitud_set__id_asignatura',
-        'detallesolicitud_set__id_asignatura__asignatura',
+        "detallesolicitud_set",
+        "detallesolicitud_set__id_asignatura",
+        "detallesolicitud_set__id_asignatura__asignatura",
     )
 
     titulo_periodo = "Promedio Histórico (todos los años)"
@@ -655,8 +654,7 @@ def estadisticas_view(request):
             titulo_periodo = f"Año {selected_year}"
             is_historical = False
 
-    stats = _calculate_statistics(
-        solicitudes_base, is_historical_view=is_historical)
+    stats = _calculate_statistics(solicitudes_base, is_historical_view=is_historical)
 
     contexto = {
         "stats": stats,

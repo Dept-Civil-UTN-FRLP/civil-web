@@ -12,7 +12,7 @@ from carrera_academica.models import (
     Evaluacion,
     Formulario,
     JuntaEvaluadora,
-    MiembroExterno
+    MiembroExterno,
 )
 from planta_docente.models import Docente
 
@@ -43,17 +43,18 @@ class EmailService:
 
         if not miembros:
             logger.warning(
-                f"No hay miembros activos en junta de evaluación {evaluacion.pk}")
+                f"No hay miembros activos en junta de evaluación {evaluacion.pk}"
+            )
             return 0, ["No hay miembros activos en la junta"]
 
         documentos = EmailService._obtener_documentos_pertinentes(
-            evaluacion.carrera_academica,
-            evaluacion.anios_evaluados
+            evaluacion.carrera_academica, evaluacion.anios_evaluados
         )
 
         if not documentos:
             logger.warning(
-                f"No hay documentos para enviar en evaluación {evaluacion.pk}")
+                f"No hay documentos para enviar en evaluación {evaluacion.pk}"
+            )
             return 0, ["No hay documentos entregados para enviar"]
 
         emails_enviados = 0
@@ -61,14 +62,13 @@ class EmailService:
 
         for miembro in miembros:
             try:
-                email_destinatario = EmailService._obtener_email_miembro(
-                    miembro)
+                email_destinatario = EmailService._obtener_email_miembro(miembro)
 
                 if email_destinatario:
                     EmailService._enviar_email_individual(
                         destinatario=email_destinatario,
                         evaluacion=evaluacion,
-                        documentos=documentos
+                        documentos=documentos,
                     )
                     emails_enviados += 1
                 else:
@@ -81,7 +81,9 @@ class EmailService:
         return emails_enviados, errores
 
     @staticmethod
-    def enviar_recordatorio_formularios_pendientes(ca: CarreraAcademica) -> tuple[bool, str]:
+    def enviar_recordatorio_formularios_pendientes(
+        ca: CarreraAcademica,
+    ) -> tuple[bool, str]:
         """
         Envía recordatorio de formularios pendientes al docente.
 
@@ -99,9 +101,7 @@ class EmailService:
 
         tipos_a_notificar = ["F02", "F04", "F05"]
         formularios_pendientes = Formulario.objects.filter(
-            carrera_academica=ca,
-            estado="PEN",
-            tipo_formulario__in=tipos_a_notificar
+            carrera_academica=ca, estado="PEN", tipo_formulario__in=tipos_a_notificar
         )
 
         if not formularios_pendientes.exists():
@@ -109,9 +109,7 @@ class EmailService:
 
         try:
             email = EmailService._preparar_email_recordatorio(
-                ca,
-                correo_principal.email,
-                formularios_pendientes
+                ca, correo_principal.email, formularios_pendientes
             )
             email.send()
 
@@ -147,19 +145,25 @@ class EmailService:
         return miembros
 
     @staticmethod
-    def _obtener_documentos_pertinentes(ca: CarreraAcademica, anios_evaluados: List[int]) -> List[Formulario]:
+    def _obtener_documentos_pertinentes(
+        ca: CarreraAcademica, anios_evaluados: List[int]
+    ) -> List[Formulario]:
         """Obtiene documentos pertinentes para una evaluación."""
         # Formularios generales
-        docs_generales = ca.formularios.filter(
-            estado="ENT",
-            anio_correspondiente__isnull=True
-        ).exclude(archivo__isnull=True).exclude(archivo="")
+        docs_generales = (
+            ca.formularios.filter(estado="ENT", anio_correspondiente__isnull=True)
+            .exclude(archivo__isnull=True)
+            .exclude(archivo="")
+        )
 
         # Formularios anuales de los años evaluados
-        docs_anuales = ca.formularios.filter(
-            estado="ENT",
-            anio_correspondiente__in=anios_evaluados
-        ).exclude(archivo__isnull=True).exclude(archivo="")
+        docs_anuales = (
+            ca.formularios.filter(
+                estado="ENT", anio_correspondiente__in=anios_evaluados
+            )
+            .exclude(archivo__isnull=True)
+            .exclude(archivo="")
+        )
 
         return list(docs_generales) + list(docs_anuales)
 
@@ -174,14 +178,16 @@ class EmailService:
             return miembro.email
 
     @staticmethod
-    def _enviar_email_individual(destinatario: str, evaluacion: Evaluacion, documentos: List[Formulario]):
+    def _enviar_email_individual(
+        destinatario: str, evaluacion: Evaluacion, documentos: List[Formulario]
+    ):
         """Envía email individual a un miembro de la junta."""
         ca = evaluacion.carrera_academica
 
         fecha_texto = (
-            evaluacion.fecha_evaluacion.strftime('%d/%m/%Y a las %H:%Mhs')
+            evaluacion.fecha_evaluacion.strftime("%d/%m/%Y a las %H:%Mhs")
             if evaluacion.fecha_evaluacion
-            else 'a confirmar'
+            else "a confirmar"
         )
 
         email = EmailMessage(
@@ -206,7 +212,9 @@ Departamento de Ingeniería Civil""",
         email.send()
 
     @staticmethod
-    def _preparar_email_recordatorio(ca: CarreraAcademica, destinatario: str, formularios_pendientes) -> EmailMessage:
+    def _preparar_email_recordatorio(
+        ca: CarreraAcademica, destinatario: str, formularios_pendientes
+    ) -> EmailMessage:
         """Prepara el email de recordatorio de formularios pendientes."""
         info_cargo = (
             f"{ca.cargo.get_categoria_display()} {ca.cargo.get_caracter_display()} "
@@ -231,9 +239,8 @@ Departamento de Ingeniería Civil""",
         # Aquí iría la lógica de adjuntar plantillas
         # (la movemos en el siguiente paso)
 
-        email.body = "\n".join(email_body_lines + [
-            "\nSaludos cordiales,",
-            "Departamento de Ing. Civil"
-        ])
+        email.body = "\n".join(
+            email_body_lines + ["\nSaludos cordiales,", "Departamento de Ing. Civil"]
+        )
 
         return email

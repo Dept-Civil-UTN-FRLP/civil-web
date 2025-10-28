@@ -17,7 +17,7 @@ class CustomPaginator:
     def __init__(self, queryset, request, page_size=None):
         """
         Inicializa el paginador.
-        
+
         Args:
             queryset: QuerySet de Django
             request: HttpRequest object
@@ -45,15 +45,14 @@ class CustomPaginator:
             return min(page_size, self.MAX_PAGE_SIZE)
 
         try:
-            size = int(self.request.GET.get(
-                'page_size', self.DEFAULT_PAGE_SIZE))
+            size = int(self.request.GET.get("page_size", self.DEFAULT_PAGE_SIZE))
             return min(max(size, 1), self.MAX_PAGE_SIZE)
         except (ValueError, TypeError):
             return self.DEFAULT_PAGE_SIZE
 
     def _get_page_number(self):
         """Obtiene el número de página."""
-        return self.request.GET.get('page', 1)
+        return self.request.GET.get("page", 1)
 
     def _get_page_obj(self):
         """Obtiene el objeto de página."""
@@ -67,12 +66,12 @@ class CustomPaginator:
     def get_context(self):
         """Retorna el contexto para el template."""
         return {
-            'page_obj': self.page_obj,
-            'paginator': self.paginator,
-            'page_size': self.page_size,
-            'page_size_options': self.PAGE_SIZE_OPTIONS,
-            'is_paginated': self.paginator.num_pages > 1,
-            'total_count': self.paginator.count,
+            "page_obj": self.page_obj,
+            "paginator": self.paginator,
+            "page_size": self.page_size,
+            "page_size_options": self.PAGE_SIZE_OPTIONS,
+            "is_paginated": self.paginator.num_pages > 1,
+            "total_count": self.paginator.count,
         }
 
     def get_page_range(self, on_each_side=3, on_ends=2):
@@ -121,12 +120,12 @@ class CustomPaginator:
 def paginate_queryset(queryset, request, page_size=None):
     """
     Función helper para paginar un queryset.
-    
+
     Args:
         queryset: QuerySet a paginar
         request: HttpRequest
         page_size: Tamaño de página opcional
-    
+
     Returns:
         tuple: (page_obj, context_dict)
     """
