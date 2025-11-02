@@ -24,6 +24,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("equivalencias.urls")),
     path("carrera/", include("carrera_academica.urls")),
+    path("planta/", include("planta_docente.urls")),
 ]
 
 # Debug toolbar (solo en desarrollo)
