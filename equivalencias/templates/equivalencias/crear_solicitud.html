@@ -1,57 +1,186 @@
 {% extends 'equivalencias/base.html' %}
 
 {% block content %}
-  <h2>Iniciar Nueva Solicitud de Equivalencia</h2>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-plus-circle"></i> Iniciar Nueva Solicitud de Equivalencia</h2>
+    <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+      <i class="bi bi-x-circle"></i> Cancelar
+    </a>
+  </div>
+  
   <hr>
+  
   <form method="POST" enctype="multipart/form-data">
     {% csrf_token %}
     
+    <!-- Paso 1: Estudiante -->
     <div class="card mb-3">
-        <div class="card-header">Paso 1: Seleccionar Estudiante</div>
-        <div class="card-body">
-            <p>Seleccioná un estudiante existente de la lista. Si no existe, dejá la lista como está y completá los campos de abajo.</p>
-            <label for="estudiante" class="form-label">Estudiante Existente</label>
-            <select name="estudiante" id="estudiante" class="form-select">
-                <option value="">--- Seleccione un estudiante... ---</option>
-                {% for est in estudiantes %}
-                <option value="{{ est.pk }}">{{ est.nombre_completo }} ({{ est.dni_pasaporte }})</option>
-                {% endfor %}
-            </select>
-            <hr>
-            <h5>O crear un nuevo estudiante:</h5>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="nuevo_estudiante_nombre" class="form-label">Nombre Completo del Nuevo Estudiante</label>
-                    <input type="text" name="nuevo_estudiante_nombre" class="form-control">
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label for="nuevo_estudiante_dni" class="form-label">DNI o Pasaporte</label>
-                    <input type="text" name="nuevo_estudiante_dni" class="form-control">
-                </div>
-            </div>
+      <div class="card-header">
+        <i class="bi bi-person-fill"></i> Paso 1: Seleccionar o Crear Estudiante
+      </div>
+      <div class="card-body">
+        <p class="text-muted">
+          Seleccioná un estudiante existente de la lista. Si no existe, dejá la lista como está y completá los campos de abajo para crear uno nuevo.
+        </p>
+        
+        <div class="mb-3">
+          <label for="estudiante" class="form-label">Estudiante Existente</label>
+          <select name="estudiante" id="estudiante" class="form-select">
+            <option value="">--- Seleccione un estudiante existente ---</option>
+            {% for est in estudiantes %}
+            <option value="{{ est.pk }}">
+              {{ est.nombre_completo }} 
+              {% if est.dni_pasaporte %}(DNI/Pass: {{ est.dni_pasaporte }}){% endif %}
+            </option>
+            {% endfor %}
+          </select>
         </div>
+        
+        <hr>
+        
+        <h5><i class="bi bi-person-plus"></i> O crear un nuevo estudiante:</h5>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="nuevo_estudiante_nombre" class="form-label">
+              Nombre Completo del Nuevo Estudiante
+            </label>
+            <input type="text" 
+                   name="nuevo_estudiante_nombre" 
+                   id="nuevo_estudiante_nombre"
+                   class="form-control"
+                   placeholder="Ej: Juan Pérez">
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="nuevo_estudiante_dni" class="form-label">
+              DNI o Pasaporte
+            </label>
+            <input type="text" 
+                   name="nuevo_estudiante_dni" 
+                   id="nuevo_estudiante_dni"
+                   class="form-control"
+                   placeholder="Ej: 12345678">
+          </div>
+        </div>
+        
+        <div class="alert alert-info mb-0">
+          <i class="bi bi-info-circle"></i> 
+          <strong>Nota:</strong> Si seleccionás un estudiante existente, los campos de "nuevo estudiante" serán ignorados.
+        </div>
+      </div>
     </div>
 
+    <!-- Paso 2: Asignaturas -->
     <div class="card mb-3">
-        <div class="card-header">Paso 2: Cargar Documentación</div>
-        <div class="card-body">
-            <div class="mb-3">
-                <label for="asignaturas" class="form-label">Asignaturas Solicitadas (mantén Ctrl para seleccionar varias)</label>
-                <select name="asignaturas" id="asignaturas" class="form-select" multiple required size="10">
-                    {% for asig in asignaturas %}
-                      <option value="{{ asig.pk }}">{{ asig.asignatura.nombre.title }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-    
-            <div class="mb-3">
-                <label for="documentacion" class="form-label">Documentación Adjunta (Analítico, Programas, etc.)</label>
-                <input type="file" name="documentacion" id="documentacion" class="form-control" required multiple>
-            </div>
+      <div class="card-header">
+        <i class="bi bi-book"></i> Paso 2: Seleccionar Asignaturas
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label for="asignaturas" class="form-label">
+            Asignaturas Solicitadas 
+            <small class="text-muted">(mantén Ctrl o Cmd para seleccionar varias)</small>
+          </label>
+          <select name="asignaturas" 
+                  id="asignaturas" 
+                  class="form-select" 
+                  multiple 
+                  required 
+                  size="12">
+            {% regroup asignaturas by asignatura.get_departamento_display as asignaturas_por_depto %}
+            {% for grupo in asignaturas_por_depto %}
+              <optgroup label="{{ grupo.grouper }}">
+                {% for asig in grupo.list %}
+                  <option value="{{ asig.pk }}">
+                    {{ asig.asignatura.nombre|title }}
+                    {% if asig.docente_responsable %}
+                      - (Resp: {{ asig.docente_responsable.apellido }})
+                    {% endif %}
+                  </option>
+                {% endfor %}
+              </optgroup>
+            {% endfor %}
+          </select>
+          <small class="form-text text-muted">
+            <i class="bi bi-lightbulb"></i> 
+            Las asignaturas están agrupadas por departamento. El docente responsable se mostrará entre paréntesis.
+          </small>
         </div>
+      </div>
+    </div>
+
+    <!-- Paso 3: Documentación -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <i class="bi bi-paperclip"></i> Paso 3: Cargar Documentación
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label for="documentacion" class="form-label">
+            Documentación Adjunta (Analítico, Programas, etc.)
+          </label>
+          <input type="file" 
+                 name="documentacion" 
+                 id="documentacion" 
+                 class="form-control" 
+                 required 
+                 multiple
+                 accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+          <small class="form-text text-muted">
+            <i class="bi bi-file-earmark-arrow-up"></i> 
+            Podés cargar múltiples archivos. Formatos aceptados: PDF, Word, imágenes.
+          </small>
+        </div>
+        
+        <div class="alert alert-warning mb-0">
+          <i class="bi bi-exclamation-triangle"></i> 
+          <strong>Importante:</strong> Asegurate de adjuntar toda la documentación necesaria: certificado analítico, programas de las asignaturas aprobadas, y cualquier otro documento relevante.
+        </div>
+      </div>
     </div>
     
-    <button type="submit" class="btn btn-success">Iniciar Proceso y Notificar a Cátedras</button>
-    <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancelar</a>
+    <!-- Botones -->
+    <div class="d-flex justify-content-between">
+      <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+        <i class="bi bi-x-circle"></i> Cancelar
+      </a>
+      <button type="submit" class="btn btn-success btn-lg">
+        <i class="bi bi-send-check"></i> Iniciar Proceso y Notificar a Cátedras
+      </button>
+    </div>
   </form>
+
+  <!-- Script para mejorar UX -->
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+      // Si se selecciona un estudiante existente, deshabilitar campos de nuevo
+      const selectEstudiante = document.getElementById('estudiante');
+      const nombreNuevo = document.getElementById('nuevo_estudiante_nombre');
+      const dniNuevo = document.getElementById('nuevo_estudiante_dni');
+      
+      selectEstudiante.addEventListener('change', function() {
+          if (this.value) {
+              nombreNuevo.disabled = true;
+              dniNuevo.disabled = true;
+              nombreNuevo.value = '';
+              dniNuevo.value = '';
+          } else {
+              nombreNuevo.disabled = false;
+              dniNuevo.disabled = false;
+          }
+      });
+      
+      // Validación del select de asignaturas
+      const selectAsignaturas = document.getElementById('asignaturas');
+      const form = document.querySelector('form');
+      
+      form.addEventListener('submit', function(e) {
+          if (selectAsignaturas.selectedOptions.length === 0) {
+              e.preventDefault();
+              alert('Debe seleccionar al menos una asignatura');
+              selectAsignaturas.focus();
+          }
+      });
+  });
+  </script>
+
 {% endblock %}

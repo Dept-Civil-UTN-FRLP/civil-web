@@ -4,14 +4,15 @@
 
 {% block content %}
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1>Dashboard de Solicitudes</h1>
+    <h1><i class="bi bi-file-earmark-text"></i> Dashboard de Solicitudes</h1>
     <a href="{% url 'crear_solicitud' %}" class="btn btn-success">
-        + Nueva Solicitud
+        <i class="bi bi-plus-circle"></i> Nueva Solicitud
     </a>
   </div>
 
   <form method="GET" class="mb-4">
     <div class="input-group">
+      <span class="input-group-text"><i class="bi bi-search"></i></span>
       <input type="text" name="q" class="form-control" placeholder="Buscar por nombre o apellido del estudiante..." value="{{ search_query }}">
       <button class="btn btn-outline-primary" type="submit">Buscar</button>
     </div>
@@ -20,57 +21,92 @@
   <!-- Información de resultados -->
   {% if is_paginated %}
   <div class="alert alert-info">
-    Se encontraron <strong>{{ total_count }}</strong> solicitudes. 
+    <i class="bi bi-info-circle"></i> Se encontraron <strong>{{ total_count }}</strong> solicitudes. 
     Mostrando página <strong>{{ page_obj.number }}</strong> de <strong>{{ paginator.num_pages }}</strong>.
   </div>
   {% endif %}
 
-  <table class="table table-striped table-hover">
-    <thead>
-      <tr>
-        <th>Estudiante</th>
-        <th>DNI/Pasaporte</th>
-        <th>Fecha de Inicio</th>
-        <th>Progreso</th>
-        <th>Estado General</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for solicitud in solicitudes %}
-      <tr class="{% if solicitud.estado_general == 'Completada' %}table-secondary text-muted{% endif %}">
-        <td>{{ solicitud.id_estudiante.nombre_completo }}</td>
-        <td>{{ solicitud.id_estudiante.dni_pasaporte }}</td>
-        <td>{{ solicitud.fecha_inicio|date:"d/m/Y" }}</td>
-        <td><strong>{{ solicitud.progreso }}</strong></td>
-        <td>
-            <span class="badge {% if solicitud.estado_general == 'Completada' %}bg-secondary{% else %}bg-info{% endif %}">
-                {{ solicitud.estado_general }}
-            </span>
-        </td>
-        <td>
-          <a href="{% url 'solicitud_detalle' pk=solicitud.pk %}" class="btn btn-primary btn-sm">
-            Ver Detalle
-          </a>
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="6" class="text-center">
-          {% if search_query %}
-            No se encontraron solicitudes que coincidan con la búsqueda.
-          {% else %}
-            No hay solicitudes registradas.
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="card">
+    <div class="card-header">
+      <i class="bi bi-table"></i> Solicitudes de Equivalencia
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Estudiante</th>
+              <th>DNI/Pasaporte</th>
+              <th>Fecha de Inicio</th>
+              <th>Progreso</th>
+              <th>Estado General</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for solicitud in solicitudes %}
+            <tr class="{% if solicitud.estado_general == 'Completada' %}table-secondary text-muted{% endif %}">
+              <td>
+                <strong>{{ solicitud.id_estudiante.nombre_completo }}</strong>
+              </td>
+              <td>{{ solicitud.id_estudiante.dni_pasaporte|default:"-" }}</td>
+              <td>
+                <small>{{ solicitud.fecha_inicio|date:"d/m/Y H:i" }}</small>
+              </td>
+              <td>
+                <strong>{{ solicitud.progreso }}</strong>
+              </td>
+              <td>
+                <span class="badge {% if solicitud.estado_general == 'Completada' %}bg-secondary{% elif solicitud.estado_general == 'Cancelada' %}bg-danger{% else %}bg-info{% endif %}">
+                  {{ solicitud.estado_general }}
+                </span>
+              </td>
+              <td class="text-end">
+                <a href="{% url 'solicitud_detalle' pk=solicitud.pk %}" 
+                   class="btn btn-primary btn-sm"
+                   data-bs-toggle="tooltip"
+                   title="Ver detalle completo">
+                  <i class="bi bi-eye"></i> Ver Detalle
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="text-center py-4 text-muted">
+                {% if search_query %}
+                  <i class="bi bi-search" style="font-size: 2rem;"></i>
+                  <p class="mb-0 mt-2">No se encontraron solicitudes que coincidan con la búsqueda.</p>
+                {% else %}
+                  <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                  <p class="mb-0 mt-2">No hay solicitudes registradas.</p>
+                  <a href="{% url 'crear_solicitud' %}" class="btn btn-success btn-sm mt-2">
+                    <i class="bi bi-plus-circle"></i> Crear Primera Solicitud
+                  </a>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
   <!-- Controles de paginación -->
   {% if is_paginated %}
-    {% render_pagination page_obj %}
+    <div class="mt-4">
+      {% render_pagination page_obj %}
+    </div>
   {% endif %}
+
+  <!-- Script para tooltips -->
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+      var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+      var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+          return new bootstrap.Tooltip(tooltipTriggerEl);
+      });
+  });
+  </script>
 
 {% endblock %}
