@@ -366,6 +366,7 @@ def solicitud_detalle_view(request, pk):
     solicitud = get_object_or_404(
         SolicitudEquivalencia.objects.with_full_detail(), pk=pk
     )
+    documentos = solicitud.documentoadjunto_set.all()
 
     if request.method == "POST":
         detalle_id = request.POST.get("detalle_id")
@@ -414,6 +415,7 @@ def solicitud_detalle_view(request, pk):
     contexto = {
         "solicitud": solicitud,
         "detalles": detalles,
+        'documentos': documentos,
         "estado_choices": estado_choices,
         "solicitud_completa": solicitud_completa,
     }

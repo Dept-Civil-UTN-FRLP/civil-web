@@ -5,30 +5,50 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Gestor de Expedientes</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-      <a class="navbar-brand" href="{% url 'dashboard' %}">Gestor de Expedientes</a>
+      <a class="navbar-brand" href="{% url 'dashboard' %}">
+        <i class="bi bi-folder2-open"></i> Gestor de Expedientes
+      </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'dashboard' %}">Equivalencias</a>
+            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'solicitud_detalle' or request.resolver_match.url_name == 'crear_solicitud' %}active{% endif %}" 
+               href="{% url 'dashboard' %}">
+              <i class="bi bi-file-earmark-text"></i> Equivalencias
+            </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'dashboard_ca' %}">Carrera Académica</a>
+            <a class="nav-link {% if 'carrera_academica' in request.path %}active{% endif %}" 
+               href="{% url 'dashboard_ca' %}">
+              <i class="bi bi-mortarboard"></i> Carrera Académica
+            </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'estadisticas' %}">Estadísticas</a>
+            <a class="nav-link {% if 'planta' in request.path %}active{% endif %}" 
+               href="{% url 'planta_docente:dashboard' %}">
+              <i class="bi bi-person-badge"></i> Planta Docente
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'estadisticas' %}active{% endif %}" 
+               href="{% url 'estadisticas' %}">
+              <i class="bi bi-bar-chart"></i> Estadísticas
+            </a>
           </li>
         </ul>
         <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
              <li class="nav-item">
-                <a class="nav-link" href="{% url 'admin:index' %}" target="_blank">Panel de Admin</a>
+                <a class="nav-link" href="{% url 'admin:index' %}" target="_blank">
+                  <i class="bi bi-gear"></i> Panel de Admin
+                </a>
              </li>
         </ul>
       </div>
