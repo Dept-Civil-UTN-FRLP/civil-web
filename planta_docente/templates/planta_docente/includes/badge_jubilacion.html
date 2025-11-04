@@ -1,0 +1,14 @@
+<!-- Badge de estado de jubilación -->
+<span class="badge {{ estado_jub.badge_class }}"
+      data-bs-toggle="tooltip"
+      title="{{ estado_jub.mensaje }}">
+    {% if estado_jub.estado == 'jubilado_70' %}
+        <i class="bi bi-exclamation-circle"></i> 70+ años
+    {% elif estado_jub.estado == 'jubilado_65' %}
+        <i class="bi bi-hourglass-split"></i> {{ estado_jub.edad_actual }} años
+    {% elif estado_jub.estado == 'proximo_65' %}
+        <i class="bi bi-clock-history"></i> {{ estado_jub.edad_actual }} años
+    {% else %}
+        <i class="bi bi-person-check"></i> {{ estado_jub.edad_actual }} años
+    {% endif %}
+</span>

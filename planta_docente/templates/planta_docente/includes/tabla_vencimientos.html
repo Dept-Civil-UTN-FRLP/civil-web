@@ -1,0 +1,99 @@
+<!-- Tabla reutilizable para mostrar cargos con vencimiento -->
+{% if cargos %}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>Docente</th>
+                <th>Cargo / Asignatura</th>
+                <th>Fecha Vencimiento</th>
+                <th>Días</th>
+                <th>Antigüedad</th>
+                <th>CA</th>
+                <th class="text-end">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cargo in cargos %}
+            <tr>
+                <!-- Docente -->
+                <td>
+                    <a href="{% url 'planta_docente:detalle_docente' pk=cargo.docente.pk %}" 
+                       class="text-decoration-none fw-bold">
+                        {{ cargo.docente }}
+                    </a>
+                    <br>
+                    <small class="text-muted">Leg. {{ cargo.docente.legajo }}</small>
+                </td>
+
+                <!-- Cargo -->
+                <td>
+                    <span class="badge bg-secondary">{{ cargo.get_categoria_display }}</span>
+                    <span class="badge bg-info">{{ cargo.get_caracter_display }}</span>
+                    <br>
+                    <small>{{ cargo.asignatura.nombre|title }}</small>
+                </td>
+
+                <!-- Fecha Vencimiento -->
+                <td>
+                    {{ cargo.fecha_vencimiento|date:"d/m/Y" }}
+                </td>
+
+                <!-- Días -->
+                <td>
+                    {% if tipo == 'vencido' %}
+                        <span class="badge bg-danger">
+                            <i class="bi bi-x-circle"></i> 
+                            Hace {{ cargo.estado_venc.dias }} días
+                        </span>
+                    {% elif tipo == 'critico' %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="bi bi-exclamation-triangle"></i> 
+                            En {{ cargo.estado_venc.dias }} días
+                        </span>
+                    {% else %}
+                        <span class="badge bg-info">
+                            <i class="bi bi-clock"></i> 
+                            En {{ cargo.estado_venc.dias }} días
+                        </span>
+                    {% endif %}
+                </td>
+
+                <!-- Antigüedad -->
+                <td>
+                    <strong>{{ cargo.antiguedad_años }}</strong> años
+                    <br>
+                    <small class="text-muted">{{ cargo.antiguedad_texto }}</small>
+                </td>
+
+                <!-- CA -->
+                <td class="text-center">
+                    {% if cargo.tiene_ca %}
+                        <i class="bi bi-check-circle text-success" 
+                           data-bs-toggle="tooltip" 
+                           title="Tiene CA"></i>
+                    {% else %}
+                        <i class="bi bi-dash-circle text-muted" 
+                           data-bs-toggle="tooltip" 
+                           title="Sin CA"></i>
+                    {% endif %}
+                </td>
+
+                <!-- Acciones -->
+                <td class="text-end">
+                    <a href="{% url 'planta_docente:detalle_cargo' pk=cargo.pk %}" 
+                       class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye"></i> Ver
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> 
+    No hay cargos en esta categoría.
+</div>
+{% endif %}
