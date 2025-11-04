@@ -1,0 +1,329 @@
+{% extends 'planta_docente/base_planta.html' %}
+
+{% block planta_content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-person-badge"></i> {{ docente }}</h2>
+    <a href="{% url 'planta_docente:dashboard' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Volver
+    </a>
+</div>
+
+<!-- Alertas de Jubilación si corresponde -->
+{% if estado_jub.urgente %}
+<div class="alert alert-{{ estado_jub.badge_class|slice:'3:' }} alert-dismissible fade show" role="alert">
+    <h6 class="alert-heading">
+        <i class="bi bi-hourglass-split"></i> Alerta de Jubilación
+    </h6>
+    <p class="mb-0">{{ estado_jub.mensaje }}</p>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<div class="row">
+    <!-- Columna Principal -->
+    <div class="col-md-8">
+        
+        <!-- Cargos Activos -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-briefcase-fill"></i> Cargos Activos</h5>
+                <span class="badge bg-light text-dark">{{ cargos_activos|length }}</span>
+            </div>
+            <div class="card-body p-0">
+                {% if cargos_activos %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Cargo / Asignatura</th>
+                                <th>Antigüedad</th>
+                                <th>Vencimiento</th>
+                                <th>CA</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cargo in cargos_activos %}
+                            <tr>
+                                <!-- Cargo / Asignatura -->
+                                <td>
+                                    <span class="badge bg-secondary">{{ cargo.get_categoria_display }}</span>
+                                    <span class="badge bg-info">{{ cargo.get_caracter_display }}</span>
+                                    <br>
+                                    <small class="fw-bold">{{ cargo.asignatura.nombre|title }}</small>
+                                    <br>
+                                    <small class="text-muted">
+                                        {{ cargo.get_dedicacion_display }} ({{ cargo.cantidad_horas }}hs)
+                                    </small>
+                                </td>
+
+                                <!-- Antigüedad -->
+                                <td>
+                                    <strong class="text-primary">{{ cargo.antiguedad_texto }}</strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        Desde {{ cargo.fecha_inicio|date:"d/m/Y" }}
+                                    </small>
+                                </td>
+
+                                <!-- Vencimiento -->
+                                <td>
+                                    {% if cargo.fecha_vencimiento %}
+                                        {% include 'planta_docente/includes/badge_vencimiento.html' with estado_venc=cargo.estado_venc %}
+                                        <br>
+                                        <small class="text-muted">{{ cargo.fecha_vencimiento|date:"d/m/Y" }}</small>
+                                    {% else %}
+                                        <span class="badge bg-secondary">S/V</span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- CA -->
+                                <td class="text-center">
+                                    {% if cargo.tiene_ca %}
+                                        <a href="{% url 'detalle_ca' pk=cargo.carrera_academica.pk %}" 
+                                           class="badge bg-success text-decoration-none"
+                                           data-bs-toggle="tooltip"
+                                           title="Ver Carrera Académica">
+                                            <i class="bi bi-check-circle"></i> Sí
+                                        </a>
+                                    {% elif cargo.caracter == 'reg' or cargo.caracter == 'ord' %}
+                                        <span class="badge bg-warning text-dark"
+                                              data-bs-toggle="tooltip"
+                                              title="Puede iniciar CA">
+                                            <i class="bi bi-dash-circle"></i> No
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- Acciones -->
+                                <td class="text-end">
+                                    <a href="{% url 'planta_docente:detalle_cargo' pk=cargo.pk %}" 
+                                       class="btn btn-sm btn-outline-primary"
+                                       data-bs-toggle="tooltip"
+                                       title="Ver detalle">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                    <p class="mb-0">No tiene cargos activos actualmente.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Historial de Cargos -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Historial de Cargos</h5>
+                <span class="badge bg-secondary">{{ cargos_historicos|length }}</span>
+            </div>
+            <div class="card-body p-0">
+                {% if cargos_historicos %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Cargo / Asignatura</th>
+                                <th>Período</th>
+                                <th>Estado</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cargo in cargos_historicos %}
+                            <tr class="text-muted">
+                                <!-- Cargo -->
+                                <td>
+                                    <span class="badge bg-secondary">{{ cargo.get_categoria_display }}</span>
+                                    <span class="badge bg-info">{{ cargo.get_caracter_display }}</span>
+                                    <br>
+                                    <small>{{ cargo.asignatura.nombre|title }}</small>
+                                </td>
+
+                                <!-- Período -->
+                                <td>
+                                    <small>
+                                        {{ cargo.fecha_inicio|date:"d/m/Y" }}
+                                        {% if cargo.fecha_final %}
+                                            - {{ cargo.fecha_final|date:"d/m/Y" }}
+                                        {% endif %}
+                                    </small>
+                                </td>
+
+                                <!-- Estado -->
+                                <td>
+                                    <span class="badge {% if cargo.estado == 'licencia' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                        {{ cargo.get_estado_display }}
+                                    </span>
+                                </td>
+
+                                <!-- Acciones -->
+                                <td class="text-end">
+                                    <a href="{% url 'planta_docente:detalle_cargo' pk=cargo.pk %}" 
+                                       class="btn btn-sm btn-outline-secondary"
+                                       data-bs-toggle="tooltip"
+                                       title="Ver detalle">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-3 text-center text-muted">
+                    <small>No hay registros históricos.</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-md-4">
+        
+        <!-- Información Personal -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <i class="bi bi-person-vcard"></i> Información Personal
+            </div>
+            <div class="card-body">
+                <p class="mb-2">
+                    <strong>Legajo:</strong> {{ docente.legajo }}
+                </p>
+                <p class="mb-2">
+                    <strong>DNI:</strong> {{ docente.documento }}
+                </p>
+                <p class="mb-2">
+                    <strong>Fecha de Nacimiento:</strong><br>
+                    {{ docente.fecha_nacimiento|date:"d/m/Y" }}
+                </p>
+                <p class="mb-0">
+                    <strong>Edad:</strong> {{ edad }} años
+                </p>
+            </div>
+        </div>
+
+        <!-- Estado de Jubilación -->
+        <div class="card mb-3 {% if estado_jub.urgente %}border-{{ estado_jub.badge_class|slice:'3:' }}{% endif %}">
+            <div class="card-header {% if estado_jub.urgente %}bg-{{ estado_jub.badge_class|slice:'3:' }} text-white{% endif %}">
+                <i class="bi bi-hourglass-split"></i> Estado de Jubilación
+            </div>
+            <div class="card-body">
+                <p class="mb-2">
+                    <strong>Edad actual:</strong> {{ estado_jub.edad_actual }} años
+                </p>
+                <p class="mb-2">
+                    <strong>Estado:</strong><br>
+                    {% include 'planta_docente/includes/badge_jubilacion.html' with estado_jub=estado_jub %}
+                </p>
+                
+                {% if estado_jub.dias_hasta_65 %}
+                <hr>
+                <p class="mb-0 small">
+                    <i class="bi bi-calendar-event"></i> 
+                    <strong>Cumple 65 años:</strong><br>
+                    {{ estado_jub.fecha_jub_65|date:"d/m/Y" }}
+                    <span class="text-muted">(en {{ estado_jub.dias_hasta_65 }} días)</span>
+                </p>
+                {% endif %}
+                
+                {% if estado_jub.dias_hasta_70 %}
+                <hr>
+                <p class="mb-0 small">
+                    <i class="bi bi-calendar-x"></i> 
+                    <strong>Cumple 70 años:</strong><br>
+                    {{ estado_jub.fecha_jub_70|date:"d/m/Y" }}
+                    <span class="text-muted">(en {{ estado_jub.dias_hasta_70 }} días)</span>
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Contacto -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <i class="bi bi-envelope"></i> Contacto
+            </div>
+            <div class="card-body">
+                {% if correo_principal %}
+                <p class="mb-2">
+                    <strong>Email Principal:</strong><br>
+                    <a href="mailto:{{ correo_principal.email }}" class="text-decoration-none">
+                        {{ correo_principal.email }}
+                    </a>
+                </p>
+                {% endif %}
+                
+                {% if otros_correos %}
+                <hr>
+                <p class="mb-1"><strong>Otros correos:</strong></p>
+                <ul class="list-unstyled mb-0 small">
+                    {% for correo in otros_correos %}
+                    <li>
+                        <a href="mailto:{{ correo.email }}" class="text-decoration-none">
+                            {{ correo.email }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                
+                {% if not correo_principal and not otros_correos %}
+                <p class="text-muted mb-0">
+                    <small>No hay correos registrados.</small>
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Resumen Rápido -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-graph-up"></i> Resumen
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Cargos Activos:</span>
+                    <strong class="text-success">{{ cargos_activos|length }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Cargos Históricos:</span>
+                    <strong class="text-muted">{{ cargos_historicos|length }}</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Con CA Activa:</span>
+                    <strong class="text-primary">
+                        {{ cargos_activos|length|add:"-1"|add:1 }}
+                        {% comment %}Contar cargos con CA{% endcomment %}
+                    </strong>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Script para tooltips -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+
+{% endblock %}

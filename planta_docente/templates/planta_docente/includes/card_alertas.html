@@ -1,0 +1,23 @@
+<!-- Card de alertas para un cargo -->
+{% if alertas %}
+<div class="alert alert-warning alert-dismissible fade show" role="alert">
+    <h6 class="alert-heading">
+        <i class="bi bi-exclamation-triangle"></i> Alertas
+    </h6>
+    <ul class="mb-0">
+        {% for alerta in alertas %}
+        <li>
+            <span class="badge {{ alerta.badge_class }}">
+                {% if alerta.tipo == 'vencimiento' %}
+                <i class="bi bi-calendar-x"></i>
+                {% else %}
+                <i class="bi bi-hourglass-split"></i>
+                {% endif %}
+            </span>
+            {{ alerta.mensaje }}
+        </li>
+        {% endfor %}
+    </ul>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
