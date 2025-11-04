@@ -1,0 +1,42 @@
+<!-- Componente de Tarjetas de Estadísticas -->
+<div class="row mb-4">
+    <!-- Total Cargos -->
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="mb-0">{{ stats.total_cargos }}</h3>
+                <p class="text-muted mb-0">Total Cargos</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cargos Activos -->
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="mb-0 text-success">{{ stats.cargos_activos }}</h3>
+                <p class="text-muted mb-0">Activos</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Próximos a Vencer -->
+    <div class="col-md-3">
+        <div class="card text-center border-warning">
+            <div class="card-body">
+                <h3 class="mb-0 text-warning">{{ stats.cargos_criticos }}</h3>
+                <p class="text-muted mb-0">Próx. a Vencer</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vencidos -->
+    <div class="col-md-3">
+        <div class="card text-center border-danger">
+            <div class="card-body">
+                <h3 class="mb-0 text-danger">{{ stats.cargos_vencidos }}</h3>
+                <p class="text-muted mb-0">Vencidos</p>
+            </div>
+        </div>
+    </div>
+</div>
