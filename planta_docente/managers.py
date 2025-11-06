@@ -169,6 +169,13 @@ class CargoQuerySet(models.QuerySet):
             QuerySet: Cargos con la categoría especificada
         """
         return self.filter(categoria=categoria)
+    
+    def sin_ca(self):
+        """
+        Filtra los cargos que NO tienen una carrera académica asociada.
+        """
+        # Asume que el campo se llama 'carrera_academica'
+        return self.filter(carrera_academica__isnull=True)
 
 
 class CargoManager(models.Manager):
@@ -253,6 +260,27 @@ class DocenteQuerySet(models.QuerySet):
             QuerySet: Docentes con cargos activos
         """
         return self.filter(cargo_docente__estado="activo").distinct()
+    
+    def activos(self):
+        """
+        Filtra docentes que NO están jubilados.
+        
+        Útil para reportes de planta activa.
+        
+        Returns:
+            QuerySet: Docentes activos (no jubilados)
+        """
+        return self.filter(jubilado=False)
+
+    def jubilados(self):
+        """
+        Filtra docentes que están jubilados.
+    
+        Returns:
+            QuerySet: Docentes jubilados
+        """
+        return self.filter(jubilado=True)
+    
 
     def proximos_a_jubilarse(self, años=2):
         """
@@ -287,7 +315,7 @@ class DocenteQuerySet(models.QuerySet):
         return self.filter(
             Q(fecha_nacimiento__range=(nacimiento_70_min, nacimiento_70_max))
             | Q(fecha_nacimiento__range=(nacimiento_65_min, nacimiento_65_max))
-        ).distinct()
+        ).filter(jubilado=False)
 
     def mayores_de_65(self):
         """
@@ -297,7 +325,9 @@ class DocenteQuerySet(models.QuerySet):
             QuerySet: Docentes de 65 años o más
         """
         fecha_65_anios = timezone.now().date() - timedelta(days=65 * 365)
-        return self.filter(fecha_nacimiento__lte=fecha_65_anios)
+        return self.filter(fecha_nacimiento__lte=fecha_65_anios,
+                           jubilado=False
+                           )
 
     def mayores_de_70(self):
         """
@@ -307,8 +337,9 @@ class DocenteQuerySet(models.QuerySet):
             QuerySet: Docentes de 70 años o más
         """
         fecha_70_anios = timezone.now().date() - timedelta(days=70 * 365)
-        return self.filter(fecha_nacimiento__lte=fecha_70_anios)
-
+        return self.filter(fecha_nacimiento__lte=fecha_70_anios,
+                           jubilado=False
+                           )
 
 class DocenteManager(models.Manager):
     """
@@ -334,6 +365,14 @@ class DocenteManager(models.Manager):
     def con_cargos_activos(self):
         """Proxy al método del QuerySet."""
         return self.get_queryset().con_cargos_activos()
+    
+    def activos(self):
+        """Proxy al método del QuerySet."""
+        return self.get_queryset().activos()
+
+    def jubilados(self):
+        """Proxy al método del QuerySet."""
+        return self.get_queryset().jubilados()
 
     def proximos_a_jubilarse(self, años=2):
         """Proxy al método del QuerySet."""

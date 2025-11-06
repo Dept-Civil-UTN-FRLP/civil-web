@@ -466,6 +466,12 @@ def crear_solicitud_view(request):
             try:
                 # La función se encarga de todo: generar Word, adjuntar y enviar.
                 _enviar_email_catedra(detalle_solicitud)
+
+                detalle_solicitud.estado_asignatura = "Enviada a Cátedra"
+                detalle_solicitud.save()
+
+                enviados_exitosamente += 1
+
             except Exception as e:
                 # Si algo falla en el envío, informamos al usuario.
                 messages.error(
@@ -473,9 +479,17 @@ def crear_solicitud_view(request):
                     f"No se pudo enviar el correo para {asig_para_equiv.asignatura.nombre}. Error: {e}",
                 )
 
-        messages.success(
-            request, "Solicitud creada y notificaciones enviadas exitosamente."
-        )
+        # Mensaje de éxito con contador
+        if enviados_exitosamente > 0:
+            messages.success(
+                request,
+                f"Solicitud creada. Se enviaron {enviados_exitosamente} de {len(asignatura_ids)} notificaciones exitosamente."
+            )
+        else:
+            messages.warning(
+                request,
+                "Solicitud creada, pero no se pudo enviar ninguna notificación."
+            )
         return redirect("dashboard")
 
     # --- Lógica para mostrar el formulario (GET) ---
