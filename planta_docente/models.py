@@ -110,6 +110,17 @@ class Docente(models.Model):
     legajo = models.IntegerField(unique=True)
     fecha_nacimiento = models.DateField(default="1900-01-01")
     objects = DocenteManager()
+    jubilado = models.BooleanField(
+        default=False,
+        verbose_name="Jubilado",
+        help_text="Marcar si el docente está jubilado. Se excluirá de reportes de planta activa."
+    )
+    fecha_jubilacion = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Jubilación",
+        help_text="Fecha en que el docente se jubiló"
+    )
 
     def clean(self):
         """Validaciones a nivel de modelo."""
@@ -137,6 +148,19 @@ class Docente(models.Model):
                 errors["fecha_nacimiento"] = ValidationError(
                     "El docente debe tener al menos 18 años.", code="underage"
                 )
+            # Si está jubilado, debe tener fecha
+            if self.jubilado and not self.fecha_jubilacion:
+                errors["fecha_jubilacion"] = ValidationError(
+                    "Si marca como jubilado, debe especificar la fecha de jubilación.",
+                    code="missing_jubilacion_date"
+                )
+
+            # Fecha de jubilación no puede ser futura
+            if self.fecha_jubilacion and self.fecha_jubilacion > timezone.now().date():
+                errors["fecha_jubilacion"] = ValidationError(
+                    "La fecha de jubilación no puede ser futura.",
+                    code="future_jubilacion_date"
+                )
 
         if errors:
             raise ValidationError(errors)
@@ -151,18 +175,16 @@ class Docente(models.Model):
         verbose_name_plural = "Docentes"
         # Agregar índices
         indexes = [
-            # Índice para búsqueda por legajo (único, pero útil)
             models.Index(fields=["legajo"], name="doc_legajo_idx"),
-            # Índice para búsqueda por documento (único, pero útil)
             models.Index(fields=["documento"], name="doc_documento_idx"),
-            # Índice para búsqueda por apellido (muy común en búsquedas)
             models.Index(fields=["apellido"], name="doc_apellido_idx"),
-            # Índice compuesto: apellido + nombre (búsqueda completa)
             models.Index(fields=["apellido", "nombre"], name="doc_apellido_nombre_idx"),
+            models.Index(fields=["jubilado"], name="doc_jubilado_idx")
         ]
 
     def __str__(self) -> str:
-        return f"{self.apellido.upper()}, {self.nombre.title()}"
+        sufijo = " (JUBILADO)" if self.jubilado else ""
+        return f"{self.apellido.upper()}, {self.nombre.title()}{sufijo}"
 
 
 class Correo(models.Model):

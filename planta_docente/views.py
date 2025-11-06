@@ -45,8 +45,14 @@ def dashboard_planta_view(request):
         - categoria: Filtro por categoría
         - alerta: Filtro por tipo de alerta (vencimiento, jubilacion)
     """
-    # ✅ OPTIMIZACIÓN: Usar manager personalizado
+    
+    # Usar manager personalizado y excluir jubilados
     cargos_qs = Cargo.objects.with_related_data()
+
+    # Excluir docentes jubilados por defecto
+    incluir_jubilados = request.GET.get('incluir_jubilados', 'false') == 'true'
+    if not incluir_jubilados:
+        cargos_qs = cargos_qs.filter(docente__jubilado=False)
 
     # Aplicar filtros
     search_query = request.GET.get('q', '').strip()
@@ -136,6 +142,7 @@ def dashboard_planta_view(request):
     contexto = {
         'cargos': page_obj,
         'stats': stats,
+        'incluir_jubilados': incluir_jubilados,
         'search_query': search_query,
         'estado_filter': estado_filter,
         'departamento_filter': departamento_filter,
@@ -179,6 +186,11 @@ def _calcular_estadisticas_dashboard(cargos_qs):
         fecha_vencimiento__lt=timezone.now().date()
     ).count()
 
+    # Cargos jubilados
+    total_docentes_jubilados = cargos_qs.filter(
+        docente__jubilado=True
+    ).values('docente').distinct().count()
+
     # Cargos regulares/ordinarios sin CA
     cargos_sin_ca = cargos_qs.filter(
         caracter__in=['reg', 'ord'],
@@ -199,6 +211,7 @@ def _calcular_estadisticas_dashboard(cargos_qs):
         'cargos_vencidos': cargos_vencidos,
         'cargos_sin_ca': cargos_sin_ca,
         'docentes_mayores_65': docentes_mayores_65,
+        'total_docentes_jubilados': total_docentes_jubilados,
     }
 
 
