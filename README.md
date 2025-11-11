@@ -75,3 +75,4 @@ python manage.py analyze_queries
 ### Ver Optimizaciones
 
 Consultar `docs/OPTIMIZACIONES.md` para detalles completos.
+

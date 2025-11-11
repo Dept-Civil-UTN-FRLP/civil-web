@@ -39,6 +39,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'cargos_renovacion' %}active{% endif %}" 
+                           href="{% url 'planta_docente:cargos_renovacion' %}">
+                          <i class="bi bi-arrow-repeat"></i> Renovaciones
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'sin_ca' %}active{% endif %}" 
                            href="{% url 'planta_docente:sin_ca' %}">
                             <i class="bi bi-exclamation-triangle"></i> Sin CA

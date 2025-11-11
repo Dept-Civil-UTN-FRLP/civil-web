@@ -1,10 +1,10 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
-from django.core.exceptions import ValidationError
 from django.utils import timezone
-from .managers import CargoManager, DocenteManager
 
+from .managers import CargoManager, DocenteManager
 
 # Create your models here.
 
@@ -113,13 +113,13 @@ class Docente(models.Model):
     jubilado = models.BooleanField(
         default=False,
         verbose_name="Jubilado",
-        help_text="Marcar si el docente está jubilado. Se excluirá de reportes de planta activa."
+        help_text="Marcar si el docente está jubilado. Se excluirá de reportes de planta activa.",
     )
     fecha_jubilacion = models.DateField(
         null=True,
         blank=True,
         verbose_name="Fecha de Jubilación",
-        help_text="Fecha en que el docente se jubiló"
+        help_text="Fecha en que el docente se jubiló",
     )
 
     def clean(self):
@@ -152,14 +152,14 @@ class Docente(models.Model):
             if self.jubilado and not self.fecha_jubilacion:
                 errors["fecha_jubilacion"] = ValidationError(
                     "Si marca como jubilado, debe especificar la fecha de jubilación.",
-                    code="missing_jubilacion_date"
+                    code="missing_jubilacion_date",
                 )
 
             # Fecha de jubilación no puede ser futura
             if self.fecha_jubilacion and self.fecha_jubilacion > timezone.now().date():
                 errors["fecha_jubilacion"] = ValidationError(
                     "La fecha de jubilación no puede ser futura.",
-                    code="future_jubilacion_date"
+                    code="future_jubilacion_date",
                 )
 
         if errors:
@@ -179,7 +179,7 @@ class Docente(models.Model):
             models.Index(fields=["documento"], name="doc_documento_idx"),
             models.Index(fields=["apellido"], name="doc_apellido_idx"),
             models.Index(fields=["apellido", "nombre"], name="doc_apellido_nombre_idx"),
-            models.Index(fields=["jubilado"], name="doc_jubilado_idx")
+            models.Index(fields=["jubilado"], name="doc_jubilado_idx"),
         ]
 
     def __str__(self) -> str:
@@ -257,9 +257,98 @@ class Cargo(models.Model):
     )
     fecha_inicio = models.DateField()
     fecha_final = models.DateField(blank=True, null=True)
-    fecha_vencimiento = models.DateField(blank=True, null=True)
+    fecha_vencimiento = models.DateField(
+        blank=True, null=True, verbose_name="Fecha de Vencimiento"
+    )
     estado = models.CharField(choices=ESTADO_CHOICES, max_length=10, default="activo")
+    renovacion_solicitada = models.BooleanField(
+        default=False,
+        verbose_name="Renovación Solicitada",
+        help_text="Marca si se solicitó la renovación para este cargo",
+    )
+    fecha_renovacion = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Solicitud de Renovación",
+        help_text="Fecha en que se solicitó la renovación",
+    )
+    fecha_vencimiento_anterior = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Vencimiento Anterior",
+        help_text="Fecha de vencimiento antes de la renovación (para poder revertir)",
+    )
+    usuario_renovacion = models.ForeignKey(
+        "auth.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Usuario que Renovó",
+        related_name="cargos_renovados",
+    )
     objects = CargoManager()
+
+    def solicitar_renovacion(self, usuario):
+        """Solicita la renovación del cargo."""
+        from django.utils import timezone
+
+        if self.caracter not in ["int", "adh"]:
+            return False, "Solo se pueden renovar cargos interinos o ad-honorem"
+
+        if self.estado != "activo":
+            return False, "Solo se pueden renovar cargos activos"
+
+        # Guardar fecha anterior
+        self.fecha_vencimiento_anterior = self.fecha_vencimiento
+
+        # Calcular próximo 31 de marzo
+        hoy = timezone.now().date()
+        año_actual = hoy.year
+        fecha_31_marzo = timezone.datetime(año_actual, 3, 31).date()
+
+        if hoy > fecha_31_marzo:
+            self.fecha_vencimiento = timezone.datetime(año_actual + 1, 3, 31).date()
+        else:
+            self.fecha_vencimiento = fecha_31_marzo
+
+        # Marcar como renovado
+        self.renovacion_solicitada = True
+        self.fecha_renovacion = hoy
+        self.usuario_renovacion = usuario
+        self.save()
+
+        return (
+            True,
+            f"Renovación solicitada. Nueva fecha: {self.fecha_vencimiento.strftime('%d/%m/%Y')}",
+        )
+
+    def cancelar_renovacion(self):
+        """Cancela la renovación."""
+        if not self.renovacion_solicitada:
+            return False, "Este cargo no tiene una renovación solicitada"
+
+        if self.fecha_vencimiento_anterior:
+            self.fecha_vencimiento = self.fecha_vencimiento_anterior
+
+        self.renovacion_solicitada = False
+        self.fecha_renovacion = None
+        self.fecha_vencimiento_anterior = None
+        self.usuario_renovacion = None
+        self.save()
+
+        return True, "Renovación cancelada exitosamente"
+
+    def get_jerarquia_display(self):
+        """Retorna jerarquía formateada."""
+        categoria_map = {
+            "tit": "Profesor Titular",
+            "aso": "Profesor Asociado",
+            "adj": "Profesor Adjunto",
+            "jtp": "Jefe de Trabajos Prácticos",
+            "atp1": "Ayudante de Primera",
+            "atp2": "Ayudante de Segunda",
+        }
+        return categoria_map.get(self.categoria, self.get_categoria_display())
 
     def clean(self):
         """Validaciones a nivel de modelo."""

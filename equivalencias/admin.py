@@ -1,12 +1,13 @@
 # equivalencias/admin.py
 
 from django.contrib import admin
+
 from .models import (
     AsignaturaParaEquivalencia,
-    Estudiante,
-    SolicitudEquivalencia,
     DetalleSolicitud,
     DocumentoAdjunto,
+    Estudiante,
+    SolicitudEquivalencia,
 )
 
 # Definimos una clase para mostrar los documentos "inline"

@@ -4,9 +4,9 @@ Servicio para generación de documentos PDF.
 """
 import io
 import logging
-from typing import Optional, Tuple
-from contextlib import redirect_stderr
 import os
+from contextlib import redirect_stderr
+from typing import Optional, Tuple
 
 from django.template.loader import render_to_string
 from pypdf import PdfWriter

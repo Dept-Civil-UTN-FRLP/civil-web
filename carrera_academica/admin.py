@@ -1,8 +1,10 @@
 # carrera_academica/admin.py
 
-from django.contrib import admin
-from .models import *
 from datetime import date  # Importamos date para el cálculo de la edad
+
+from django.contrib import admin
+
+from .models import *
 
 # ==============================================================================
 # REGISTROS SIMPLES

@@ -2,11 +2,12 @@
 """
 Tests para los managers personalizados de planta docente.
 """
-from django.test import TestCase
-from django.utils import timezone
 from datetime import date, timedelta
 
-from planta_docente.models import Docente, Cargo, Asignatura
+from django.test import TestCase
+from django.utils import timezone
+
+from planta_docente.models import Asignatura, Cargo, Docente
 
 
 class CargoManagerTestCase(TestCase):

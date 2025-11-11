@@ -2,8 +2,8 @@
 """
 Clases de paginación personalizadas para el proyecto.
 """
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.conf import settings
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 
 
 class CustomPaginator:

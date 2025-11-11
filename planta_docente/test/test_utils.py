@@ -2,22 +2,23 @@
 """
 Tests para las funciones utilitarias de planta docente.
 """
-from django.test import TestCase
-from django.utils import timezone
 from datetime import date, timedelta
 
-from planta_docente.models import Docente, Cargo, Asignatura
+from django.test import TestCase
+from django.utils import timezone
+
+from planta_docente.models import Asignatura, Cargo, Docente
 from planta_docente.utils import (
-    calcular_edad,
     calcular_antiguedad,
-    obtener_fecha_jubilacion,
+    calcular_edad,
+    calcular_proximo_vencimiento,
     dias_hasta_fecha,
-    obtener_estado_vencimiento,
-    obtener_estado_jubilacion,
     formatear_antiguedad,
     formatear_antiguedad_completa,
     obtener_alertas_cargo,
-    calcular_proximo_vencimiento,
+    obtener_estado_jubilacion,
+    obtener_estado_vencimiento,
+    obtener_fecha_jubilacion,
 )
 
 

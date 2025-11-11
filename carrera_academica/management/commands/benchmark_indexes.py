@@ -3,13 +3,14 @@
 Comando para hacer benchmark antes/después de índices.
 """
 import time
+
 from django.core.management.base import BaseCommand
 from django.db import connection, reset_queries
 from django.test.utils import override_settings
 
 from carrera_academica.models import CarreraAcademica, Formulario
-from planta_docente.models import Cargo, Docente
 from equivalencias.models import SolicitudEquivalencia
+from planta_docente.models import Cargo, Docente
 
 
 class Command(BaseCommand):

@@ -2,8 +2,9 @@
 
 import django.db.models.deletion
 import django.utils.timezone
-import equivalencias.models
 from django.db import migrations, models
+
+import equivalencias.models
 
 
 class Migration(migrations.Migration):

@@ -1,12 +1,16 @@
 # equivalencias/models.py
 
+import os
+import uuid
+
 from django.db import models
-from django.utils.text import slugify
 from django.utils import timezone
-import os, uuid
+from django.utils.text import slugify
 
 # <-- Apunta a la nueva app
-from planta_docente.models import Asignatura as AsignaturaCA, Docente as DocenteCA
+from planta_docente.models import Asignatura as AsignaturaCA
+from planta_docente.models import Docente as DocenteCA
+
 from .managers import SolicitudEquivalenciaManager
 
 

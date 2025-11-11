@@ -7,8 +7,8 @@ from django.db import connection
 from django.test.utils import override_settings
 
 from carrera_academica.models import CarreraAcademica, Evaluacion, Formulario
-from planta_docente.models import Cargo, Docente, Asignatura
-from equivalencias.models import SolicitudEquivalencia, DetalleSolicitud
+from equivalencias.models import DetalleSolicitud, SolicitudEquivalencia
+from planta_docente.models import Asignatura, Cargo, Docente
 
 
 class Command(BaseCommand):

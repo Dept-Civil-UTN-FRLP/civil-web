@@ -2,13 +2,14 @@
 """
 Tests para validaciones de modelos.
 """
-from django.test import TestCase
-from django.core.exceptions import ValidationError
-from django.utils import timezone
 from datetime import date, timedelta
 
+from django.core.exceptions import ValidationError
+from django.test import TestCase
+from django.utils import timezone
+
 from carrera_academica.models import CarreraAcademica, Evaluacion, Formulario
-from planta_docente.models import Cargo, Docente, Asignatura
+from planta_docente.models import Asignatura, Cargo, Docente
 
 
 class CarreraAcademicaValidationTestCase(TestCase):
