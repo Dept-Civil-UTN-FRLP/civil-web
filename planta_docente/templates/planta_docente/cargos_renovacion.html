@@ -1,0 +1,282 @@
+{% extends 'planta_docente/base_planta.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1><i class="bi bi-arrow-repeat"></i> Renovación de Cargos</h1>
+        <p class="text-muted mb-0">
+            <i class="bi bi-info-circle"></i> 
+            Los cargos interinos y ad-honorem se renuevan automáticamente al <strong>31 de Marzo</strong>
+        </p>
+    </div>
+    <a href="{% url 'planta_docente:exportar_renovaciones_excel' %}" 
+       class="btn btn-success">
+        <i class="bi bi-file-earmark-excel"></i> Exportar a Excel
+    </a>
+</div>
+
+<!-- Tarjetas de estadísticas -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="mb-0">{{ total_docentes }}</h3>
+                <p class="text-muted mb-0">Docentes</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="mb-0">{{ total_cargos }}</h3>
+                <p class="text-muted mb-0">Cargos Totales</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center border-warning">
+            <div class="card-body">
+                <h3 class="mb-0 text-warning">{{ total_pendientes }}</h3>
+                <p class="text-muted mb-0">Pendientes</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center border-success">
+            <div class="card-body">
+                <h3 class="mb-0 text-success">{{ total_renovados }}</h3>
+                <p class="text-muted mb-0">Renovados</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Listado de cargos -->
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-list-ul"></i> Cargos Interinos y Ad-Honorem
+    </div>
+    <div class="card-body">
+        {% for docente, cargos in docentes_con_cargos.items %}
+        <div class="card mb-3">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>{{ docente.apellido }}, {{ docente.nombre }}</strong>
+                    <span class="badge bg-secondary ms-2">{{ cargos|length }} cargo{{ cargos|length|pluralize }}</span>
+                </div>
+                <small class="text-muted">
+                    <i class="bi bi-person-badge"></i> Legajo: {{ docente.legajo }}
+                </small>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th width="5%">
+                                    <i class="bi bi-check-square" data-bs-toggle="tooltip" title="Renovación Solicitada"></i>
+                                </th>
+                                <th>Cargo y Jerarquía</th>
+                                <th>Dedicación</th>
+                                <th>Carácter</th>
+                                <th>Asignatura</th>
+                                <th>Vencimiento</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cargo in cargos %}
+                            <tr class="cargo-row" data-cargo-id="{{ cargo.id }}">
+                                <td class="text-center">
+                                    <div class="form-check">
+                                        <input class="form-check-input checkbox-renovacion" 
+                                               type="checkbox" 
+                                               id="cargo_{{ cargo.id }}"
+                                               data-cargo-id="{{ cargo.id }}"
+                                               {% if cargo.renovacion_solicitada %}checked{% endif %}>
+                                    </div>
+                                </td>
+                                <td>{{ cargo.get_jerarquia_display }}</td>
+                                <td>{{ cargo.get_dedicacion_display }}</td>
+                                <td>
+                                    <span class="badge {% if cargo.tipo_cargo == 'interino' %}bg-info{% else %}bg-secondary{% endif %}">
+                                        {{ cargo.get_caracter_display }}
+                                    </span>
+                                </td>
+                                <td>{{ cargo.asignatura.nombre|default:"-" }}</td>
+                                <td class="fecha-vencimiento-{{ cargo.id }}">
+                                    {% if cargo.fecha_vencimiento %}
+                                        {{ cargo.fecha_vencimiento|date:"d/m/Y" }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="estado-{{ cargo.id }}">
+                                    {% if cargo.renovacion_solicitada %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Renovado
+                                        </span>
+                                        <br>
+                                        <small class="text-muted info-renovacion-{{ cargo.id }}">
+                                            {{ cargo.fecha_renovacion|date:"d/m/Y" }}
+                                            {% if cargo.usuario_renovacion %}
+                                                - {{ cargo.usuario_renovacion.username }}
+                                            {% endif %}
+                                        </small>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="bi bi-clock"></i> Pendiente
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="alert alert-info text-center">
+            <i class="bi bi-info-circle" style="font-size: 2rem;"></i>
+            <p class="mb-0 mt-2">No hay cargos interinos o ad-honorem para renovar.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- JavaScript para manejar checkboxes -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Manejar clicks en checkboxes
+    document.querySelectorAll('.checkbox-renovacion').forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            const cargoId = this.dataset.cargoId;
+            const checked = this.checked;
+            const accion = checked ? 'renovar' : 'cancelar';
+            
+            // Deshabilitar checkbox mientras procesa
+            this.disabled = true;
+            
+            // Obtener CSRF token
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value 
+                           || getCookie('csrftoken');
+            
+            // Hacer petición AJAX
+            fetch(`/planta/renovaciones/cargo/${cargoId}/renovar/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrftoken
+                },
+                body: `accion=${accion}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Actualizar UI
+                    actualizarEstadoCargo(cargoId, data);
+                    
+                    // Mostrar mensaje de éxito
+                    mostrarMensaje('success', data.message);
+                } else {
+                    // Revertir checkbox
+                    checkbox.checked = !checked;
+                    mostrarMensaje('error', data.message);
+                }
+                
+                // Rehabilitar checkbox
+                checkbox.disabled = false;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                checkbox.checked = !checked;
+                checkbox.disabled = false;
+                mostrarMensaje('error', 'Error al procesar la solicitud');
+            });
+        });
+    });
+    
+    function actualizarEstadoCargo(cargoId, data) {
+        const estadoCell = document.querySelector(`.estado-${cargoId}`);
+        const fechaCell = document.querySelector(`.fecha-vencimiento-${cargoId}`);
+        
+        if (data.renovado) {
+            // Actualizar estado a "Renovado"
+            estadoCell.innerHTML = `
+                <span class="badge bg-success">
+                    <i class="bi bi-check-circle"></i> Renovado
+                </span>
+                <br>
+                <small class="text-muted info-renovacion-${cargoId}">
+                    ${data.fecha_renovacion}
+                    ${data.usuario ? ' - ' + data.usuario : ''}
+                </small>
+            `;
+            
+            // Actualizar fecha de vencimiento
+            if (data.fecha_vencimiento) {
+                fechaCell.innerHTML = data.fecha_vencimiento;
+            }
+        } else {
+            // Actualizar estado a "Pendiente"
+            estadoCell.innerHTML = `
+                <span class="badge bg-warning text-dark">
+                    <i class="bi bi-clock"></i> Pendiente
+                </span>
+            `;
+            
+            // Actualizar fecha de vencimiento (restaurada)
+            if (data.fecha_vencimiento) {
+                fechaCell.innerHTML = data.fecha_vencimiento;
+            }
+        }
+    }
+    
+    function mostrarMensaje(tipo, mensaje) {
+        const alertClass = tipo === 'success' ? 'alert-success' : 'alert-danger';
+        const iconClass = tipo === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle';
+        
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert ${alertClass} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+        alertDiv.style.zIndex = '9999';
+        alertDiv.innerHTML = `
+            <i class="bi ${iconClass}"></i> ${mensaje}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        // Auto-cerrar después de 3 segundos
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 3000);
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+
+<!-- CSRF Token para AJAX -->
+{% csrf_token %}
+
+{% endblock %}

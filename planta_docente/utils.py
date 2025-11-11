@@ -9,8 +9,9 @@ Este módulo contiene funciones puras para:
 - Formateo de datos para presentación
 """
 from datetime import date, timedelta
-from django.utils import timezone
 from typing import Dict, Optional, Tuple
+
+from django.utils import timezone
 
 
 def calcular_edad(fecha_nacimiento: date) -> int:
@@ -103,6 +104,90 @@ def calcular_antiguedad(
     total_dias = (fecha_fin - fecha_inicio).days
 
     return {"años": años, "meses": meses, "dias": dias, "total_dias": total_dias}
+
+
+def solicitar_renovacion(self, usuario):
+    """
+    Solicita la renovación del cargo, extendiendo la fecha de vencimiento
+    al próximo 31 de marzo.
+    Args:
+        usuario: Usuario que solicita la renovación
+    Returns:
+        tuple: (éxito, mensaje)
+    """
+    from django.utils import timezone
+
+    # Validar que es interino o ad-honorem
+    if self.tipo_cargo not in ["interino", "ad-honorem"]:
+        return False, "Solo se pueden renovar cargos interinos o ad-honorem"
+    # Validar que está activo
+    if self.estado != "activo":
+        return False, "Solo se pueden renovar cargos activos"
+    # Guardar fecha anterior (para poder revertir)
+    self.fecha_vencimiento_anterior = self.fecha_vencimiento
+    # Calcular próximo 31 de marzo
+    hoy = timezone.now().date()
+    año_actual = hoy.year
+    # Si ya pasó el 31/03 de este año, va al próximo
+    fecha_31_marzo = timezone.datetime(año_actual, 3, 31).date()
+    if hoy > fecha_31_marzo:
+        # Ya pasó el 31/03 de este año, va al próximo
+        self.fecha_vencimiento = timezone.datetime(año_actual + 1, 3, 31).date()
+    else:
+        # Todavía no pasó el 31/03 de este año, va a ese
+        self.fecha_vencimiento = fecha_31_marzo
+    # Marcar como renovado
+    self.renovacion_solicitada = True
+    self.fecha_renovacion = hoy
+    self.usuario_renovacion = usuario
+    self.save()
+    return (
+        True,
+        f"Renovación solicitada. Nueva fecha de vencimiento: {self.fecha_vencimiento.strftime('%d/%m/%Y')}",
+    )
+
+
+def cancelar_renovacion(self):
+    """
+    Cancela la renovación, restaurando la fecha de vencimiento anterior.
+
+    Returns:
+        tuple: (éxito, mensaje)
+    """
+    if not self.renovacion_solicitada:
+        return False, "Este cargo no tiene una renovación solicitada"
+
+    # Restaurar fecha anterior
+    if self.fecha_vencimiento_anterior:
+        self.fecha_vencimiento = self.fecha_vencimiento_anterior
+
+    # Limpiar campos de renovación
+    self.renovacion_solicitada = False
+    self.fecha_renovacion = None
+    self.fecha_vencimiento_anterior = None
+    self.usuario_renovacion = None
+
+    self.save()
+
+    return True, "Renovación cancelada exitosamente"
+
+
+def get_jerarquia_display(self):
+    """
+    Retorna la jerarquía formateada como 'Profesor Adjunto'.
+
+    Returns:
+        str: Jerarquía formateada
+    """
+    categoria_map = {
+        "titular": "Profesor Titular",
+        "asociado": "Profesor Asociado",
+        "adjunto": "Profesor Adjunto",
+        "jtp": "Jefe de Trabajos Prácticos",
+        "ayudante_1": "Ayudante de Primera",
+        "ayudante_2": "Ayudante de Segunda",
+    }
+    return categoria_map.get(self.categoria, self.get_categoria_display())
 
 
 def obtener_fecha_jubilacion(fecha_nacimiento: date, edad_jubilacion: int = 65) -> date:
@@ -463,6 +548,7 @@ def obtener_alertas_cargo(cargo) -> list:
             {
                 "tipo": "vencimiento",
                 "prioridad": prioridad,
+                "urgente": estado_venc["urgente"],
                 "mensaje": f"Cargo: {estado_venc['mensaje']}",
                 "badge_class": estado_venc["badge_class"],
             }
@@ -476,6 +562,7 @@ def obtener_alertas_cargo(cargo) -> list:
             {
                 "tipo": "jubilacion",
                 "prioridad": prioridad,
+                "urgente": estado_venc["urgente"],
                 "mensaje": f"Docente: {estado_jub['mensaje']}",
                 "badge_class": estado_jub["badge_class"],
             }
