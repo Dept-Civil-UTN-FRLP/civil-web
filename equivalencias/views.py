@@ -1,35 +1,34 @@
 # equivalencias/views.py
 # Django imports
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from django.conf import settings
-from django.http import HttpResponse
-from django.template.loader import render_to_string
-from django.core.mail import EmailMessage
-from django.db.models import Case, When, Value
-from django.contrib import messages
-from django.db.models import Count, Avg, F, DurationField
-from django.db.models.functions import TruncMonth, Trim, ExtractMonth
-from django.utils import timezone
-
 # Library imports
 import io
 import mimetypes
 import os
+from datetime import date
+
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.mail import EmailMessage
+from django.db.models import Avg, Case, Count, DurationField, F, Value, When
+from django.db.models.functions import ExtractMonth, Trim, TruncMonth
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
+from django.utils import timezone
 from docx import Document
 from weasyprint import HTML
-from datetime import date
+
+from config.pagination import paginate_queryset
 
 # Model imports
 from .models import (
-    Estudiante,
     AsignaturaParaEquivalencia,
-    SolicitudEquivalencia,
     DetalleSolicitud,
     DocumentoAdjunto,
+    Estudiante,
+    SolicitudEquivalencia,
 )
-
-from config.pagination import paginate_queryset
 
 
 def _enviar_email_catedra(detalle_solicitud):
@@ -415,7 +414,7 @@ def solicitud_detalle_view(request, pk):
     contexto = {
         "solicitud": solicitud,
         "detalles": detalles,
-        'documentos': documentos,
+        "documentos": documentos,
         "estado_choices": estado_choices,
         "solicitud_completa": solicitud_completa,
     }
@@ -454,6 +453,7 @@ def crear_solicitud_view(request):
             DocumentoAdjunto.objects.create(solicitud=nueva_solicitud, archivo=doc)
 
         # --- Bucle para procesar cada asignatura y enviar correo ---
+        enviados_exitosamente = 0
         for asig_id in asignatura_ids:
             asig_para_equiv = get_object_or_404(AsignaturaParaEquivalencia, pk=asig_id)
 
@@ -483,12 +483,12 @@ def crear_solicitud_view(request):
         if enviados_exitosamente > 0:
             messages.success(
                 request,
-                f"Solicitud creada. Se enviaron {enviados_exitosamente} de {len(asignatura_ids)} notificaciones exitosamente."
+                f"Solicitud creada. Se enviaron {enviados_exitosamente} de {len(asignatura_ids)} notificaciones exitosamente.",
             )
         else:
             messages.warning(
                 request,
-                "Solicitud creada, pero no se pudo enviar ninguna notificación."
+                "Solicitud creada, pero no se pudo enviar ninguna notificación.",
             )
         return redirect("dashboard")
 
@@ -570,7 +570,7 @@ def finalizar_solicitud_view(request, pk):
                 subject=f"Resolución de Equivalencias - {solicitud.id_estudiante.nombre_completo}",
                 body="Se adjunta el acta final de equivalencias para su registro en el legajo del estudiante.",
                 from_email=None,
-                to=["alumnos@frlp.utn.edu.ar"],  # <-- CAMBIA ESTE EMAIL
+                to=["magui@frlp.utn.edu.ar"],  # <-- CAMBIA ESTE EMAIL
             )
             email.attach_file(solicitud.acta_firmada.path)
             email.send()

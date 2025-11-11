@@ -4,15 +4,15 @@ Servicio para generación de documentos dinámicos (Word).
 """
 import io
 import logging
-from typing import Optional, Tuple
 from datetime import date
+from typing import Optional, Tuple
 
-from docx import Document
-from docx.shared import Inches
-from docx.enum.text import WD_ALIGN_PARAGRAPH
 from django.utils.text import slugify
+from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Inches
 
-from carrera_academica.models import Formulario, PlantillaDocumento, MembreteAnual
+from carrera_academica.models import Formulario, MembreteAnual, PlantillaDocumento
 
 logger = logging.getLogger(__name__)
 

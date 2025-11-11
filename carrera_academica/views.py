@@ -1,50 +1,49 @@
 # carrera_academica/views.py
 import io
+import logging
 import os
 from contextlib import redirect_stderr
 from datetime import date, timedelta
 
-from django.core.exceptions import ValidationError
-import logging
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.core.mail import EmailMessage
-from django.db.models import Count, Q, Max
-from django.http import HttpResponse, FileResponse, JsonResponse
-from django.shortcuts import render, get_object_or_404, redirect
+from django.db.models import Count, Max, Q
+from django.http import FileResponse, HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.text import slugify
-
+from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Inches
 from pypdf import PdfWriter
 from weasyprint import HTML
-from docx import Document
-from docx.shared import Inches
-from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-from .models import (
-    CarreraAcademica,
-    Formulario,
-    JuntaEvaluadora,
-    Cargo,
-    Docente,
-    Evaluacion,
-    PlantillaDocumento,
-    MembreteAnual,
-)
-from .forms import (
-    ResolucionForm,
-    CarreraAcademicaForm,
-    JuntaEvaluadoraForm,
-    CargoForm,
-    ExpedienteForm,
-    EvaluacionForm,
-)
-from config.pagination import paginate_queryset
+from carrera_academica.services.document_service import DocumentService
 from carrera_academica.services.email_service import EmailService
 from carrera_academica.services.pdf_service import PDFService
-from carrera_academica.services.document_service import DocumentService
+from config.pagination import paginate_queryset
+
+from .forms import (
+    CargoForm,
+    CarreraAcademicaForm,
+    EvaluacionForm,
+    ExpedienteForm,
+    JuntaEvaluadoraForm,
+    ResolucionForm,
+)
+from .models import (
+    Cargo,
+    CarreraAcademica,
+    Docente,
+    Evaluacion,
+    Formulario,
+    JuntaEvaluadora,
+    MembreteAnual,
+    PlantillaDocumento,
+)
 
 logger = logging.getLogger(__name__)
 

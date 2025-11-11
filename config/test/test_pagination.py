@@ -2,13 +2,14 @@
 """
 Tests para el sistema de paginación.
 """
-from django.test import TestCase, RequestFactory
-from django.contrib.auth.models import User
-
-from config.pagination import CustomPaginator, paginate_queryset
-from carrera_academica.models import CarreraAcademica
-from planta_docente.models import Cargo, Docente, Asignatura
 from datetime import date
+
+from django.contrib.auth.models import User
+from django.test import RequestFactory, TestCase
+
+from carrera_academica.models import CarreraAcademica
+from config.pagination import CustomPaginator, paginate_queryset
+from planta_docente.models import Asignatura, Cargo, Docente
 
 
 class PaginationTestCase(TestCase):

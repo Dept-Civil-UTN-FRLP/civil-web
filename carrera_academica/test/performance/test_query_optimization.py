@@ -2,12 +2,13 @@
 """
 Tests de performance para verificar optimizaciones.
 """
-from django.test import TestCase, override_settings
+from datetime import date
+
 from django.db import connection, reset_queries
+from django.test import TestCase, override_settings
 
 from carrera_academica.models import CarreraAcademica
-from planta_docente.models import Cargo, Docente, Asignatura
-from datetime import date
+from planta_docente.models import Asignatura, Cargo, Docente
 
 
 @override_settings(DEBUG=True)

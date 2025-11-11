@@ -5,12 +5,12 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from .models import (
-    Resolucion,
-    CarreraAcademica,
-    Cargo,
-    JuntaEvaluadora,
-    Docente,
     Asignatura,
+    Cargo,
+    CarreraAcademica,
+    Docente,
+    JuntaEvaluadora,
+    Resolucion,
 )
 
 

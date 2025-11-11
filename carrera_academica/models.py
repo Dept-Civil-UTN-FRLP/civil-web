@@ -1,14 +1,15 @@
 # carrera_academica/models.py
-from django.core.exceptions import ValidationError
-from django.utils import timezone
-from django.db import models
-from django.utils.text import slugify
 import os
 import uuid
 
-from planta_docente.models import *
-from .managers import CarreraAcademicaManager, EvaluacionManager
+from django.core.exceptions import ValidationError
+from django.db import models
+from django.utils import timezone
+from django.utils.text import slugify
 
+from planta_docente.models import *
+
+from .managers import CarreraAcademicaManager, EvaluacionManager
 
 # ==============================================================================
 # TUS MODELOS (CON PEQUEÑAS CORRECCIONES)

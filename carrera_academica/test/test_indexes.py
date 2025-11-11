@@ -2,12 +2,13 @@
 """
 Tests para verificar que los índices funcionan correctamente.
 """
-from django.test import TestCase
+from datetime import date
+
 from django.db import connection
+from django.test import TestCase
 
 from carrera_academica.models import CarreraAcademica, Formulario
-from planta_docente.models import Cargo, Docente, Asignatura
-from datetime import date
+from planta_docente.models import Asignatura, Cargo, Docente
 
 
 class IndexTestCase(TestCase):
