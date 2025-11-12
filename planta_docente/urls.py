@@ -37,4 +37,15 @@ urlpatterns = [
     ),
     path('cargo/nuevo/', views.crear_cargo_view, name='crear_cargo'),
     path('cargo/<int:pk>/editar/', views.editar_cargo_view, name='editar_cargo'),
+    path('cargo/<int:pk>/resoluciones/',
+         views.gestionar_resoluciones_cargo,
+         name='gestionar_resoluciones_cargo'),
+
+    path('cargo/<int:pk>/resoluciones/crear/',
+         views.crear_resolucion_cargo,
+         name='crear_resolucion_cargo'),
+
+    path('cargo/<int:cargo_pk>/resoluciones/<int:resolucion_pk>/eliminar/',
+         views.eliminar_resolucion_cargo,
+         name='eliminar_resolucion_cargo'),
 ]
