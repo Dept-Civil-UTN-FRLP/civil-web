@@ -35,4 +35,6 @@ urlpatterns = [
         views.exportar_renovaciones_excel,
         name="exportar_renovaciones_excel",
     ),
+    path('cargo/nuevo/', views.crear_cargo_view, name='crear_cargo'),
+    path('cargo/<int:pk>/editar/', views.editar_cargo_view, name='editar_cargo'),
 ]
