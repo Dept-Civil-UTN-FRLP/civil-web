@@ -17,7 +17,7 @@ from carrera_academica.models import CarreraAcademica
 from config.pagination import paginate_queryset
 from .forms import CargoForm
 
-from .models import Asignatura, Cargo, Docente
+from .models import Asignatura, Cargo, Docente, Resolucion
 from .utils import (
     calcular_antiguedad,
     calcular_edad,
@@ -849,3 +849,89 @@ def editar_cargo_view(request, pk):
     }
 
     return render(request, 'planta_docente/cargo_form.html', contexto)
+
+
+@login_required
+@staff_member_required
+def gestionar_resoluciones_cargo(request, pk):
+    """Vista para gestionar resoluciones de un cargo."""
+    cargo = get_object_or_404(Cargo, pk=pk)
+
+    # Resoluciones de este cargo
+    resoluciones_cargo = cargo.resoluciones.all().order_by('-año', '-numero')
+
+    # Todas las resoluciones para poder crear nuevas
+    # (esto se usará en el formulario de crear)
+
+    contexto = {
+        'cargo': cargo,
+        'resoluciones': resoluciones_cargo,
+    }
+
+    return render(request, 'planta_docente/gestionar_resoluciones.html', contexto)
+
+
+@login_required
+@staff_member_required
+def crear_resolucion_cargo(request, pk):
+    """Vista para crear una nueva resolución para un cargo."""
+    cargo = get_object_or_404(Cargo, pk=pk)
+
+    if request.method == 'POST':
+        # Obtener datos del formulario
+        numero = request.POST.get('numero')
+        año = request.POST.get('año')
+        objeto = request.POST.get('objeto')
+        origen = request.POST.get('origen')
+        file = request.FILES.get('file')
+
+        # Crear resolución
+        try:
+            resolucion = Resolucion.objects.create(
+                cargo=cargo,
+                numero=int(numero),
+                año=int(año),
+                objeto=objeto,
+                origen=origen,
+                file=file if file else None
+            )
+
+            messages.success(
+                request,
+                f'✓ Resolución {resolucion.get_origen_display()} {numero}/{año} creada exitosamente.'
+            )
+
+            return redirect('planta_docente:gestionar_resoluciones_cargo', pk=pk)
+
+        except Exception as e:
+            messages.error(request, f'Error al crear resolución: {str(e)}')
+
+    contexto = {
+        'cargo': cargo,
+        'objeto_choices': Resolucion.OBJETO_CHOICES,
+        'origen_choices': Resolucion.ORIGEN_CHOICES,
+    }
+
+    return render(request, 'planta_docente/crear_resolucion.html', contexto)
+
+
+@login_required
+@staff_member_required
+@require_POST
+def eliminar_resolucion_cargo(request, cargo_pk, resolucion_pk):
+    """Eliminar una resolución del cargo."""
+    cargo = get_object_or_404(Cargo, pk=cargo_pk)
+    resolucion = get_object_or_404(Resolucion, pk=resolucion_pk, cargo=cargo)
+
+    # Guardar info antes de eliminar
+    info_res = f'{resolucion.get_origen_display()} {resolucion.numero}/{resolucion.año}'
+
+    # Eliminar
+    resolucion.delete()
+
+    messages.warning(
+        request,
+        f'Resolución {info_res} eliminada.'
+    )
+
+    return redirect('planta_docente:gestionar_resoluciones_cargo', pk=cargo_pk)

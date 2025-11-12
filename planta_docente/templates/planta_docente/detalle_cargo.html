@@ -68,47 +68,53 @@
         </div>
 
         <!-- Resoluciones -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Historial de Resoluciones</h5>
-            </div>
-            <div class="card-body">
-                {% if resoluciones %}
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Resolución</th>
-                                <th>Objeto</th>
-                                <th>Archivo</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for res in resoluciones %}
-                            <tr>
-                                <td>
-                                    <strong>{{ res.get_origen_display|upper }} {{ res.numero }}/{{ res.año }}</strong>
-                                </td>
-                                <td>{{ res.get_objeto_display }}</td>
-                                <td>
-                                    {% if res.file %}
-                                    <a href="{{ res.file.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-file-pdf"></i> Ver
-                                    </a>
-                                    {% else %}
-                                    <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <p class="text-muted mb-0">No hay resoluciones registradas para este cargo.</p>
-                {% endif %}
-            </div>
+        div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Resoluciones del Cargo</h5>
+        <a href="{% url 'planta_docente:gestionar_resoluciones_cargo' pk=cargo.pk %}" 
+           class="btn btn-sm btn-primary">
+            <i class="bi bi-gear"></i> Gestionar
+        </a>
+    </div>
+    <div class="card-body">
+        {% if cargo.resoluciones.exists %}
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Resolución</th>
+                        <th>Objeto</th>
+                        <th>Archivo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for res in cargo.resoluciones.all %}
+                    <tr>
+                        <td><strong>{{ res.get_origen_display|upper }} {{ res.numero }}/{{ res.año }}</strong></td>
+                        <td>{{ res.get_objeto_display }}</td>
+                        <td>
+                            {% if res.file %}
+                            <a href="{{ res.file.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-file-pdf"></i> Ver
+                            </a>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+        {% else %}
+        <p class="text-muted mb-0">
+            No hay resoluciones para este cargo.
+            <a href="{% url 'planta_docente:gestionar_resoluciones_cargo' pk=cargo.pk %}">
+                Crear resolución
+            </a>
+        </p>
+        {% endif %}
+    </div>
 
         <!-- Carrera Académica -->
         {% if tiene_ca %}

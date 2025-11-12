@@ -1,0 +1,124 @@
+{% extends 'planta_docente/base_planta.html' %}
+
+{% block planta_content %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2><i class="bi bi-plus-circle"></i> Nueva Resolución</h2>
+            <a href="{% url 'planta_docente:gestionar_resoluciones_cargo' pk=cargo.pk %}" 
+               class="btn btn-secondary">
+                <i class="bi bi-x-circle"></i> Cancelar
+            </a>
+        </div>
+
+        <!-- Info del Cargo -->
+        <div class="alert alert-info">
+            <strong>Cargo:</strong> {{ cargo.docente.apellido }}, {{ cargo.docente.nombre }} - 
+            {{ cargo.get_categoria_display }} {{ cargo.get_caracter_display }} en {{ cargo.asignatura.nombre|title }}
+        </div>
+
+        <!-- Formulario -->
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <!-- Número y Año -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="numero" class="form-label">
+                                Número <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" 
+                                   name="numero" 
+                                   id="numero" 
+                                   class="form-control" 
+                                   required
+                                   min="1"
+                                   placeholder="Ej: 123">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="año" class="form-label">
+                                Año <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" 
+                                   name="año" 
+                                   id="año" 
+                                   class="form-control" 
+                                   required
+                                   min="1950"
+                                   max="2100"
+                                   value="{{ current_year }}"
+                                   placeholder="Ej: 2025">
+                        </div>
+                    </div>
+
+                    <!-- Origen -->
+                    <div class="mb-3">
+                        <label for="origen" class="form-label">
+                            Origen <span class="text-danger">*</span>
+                        </label>
+                        <select name="origen" id="origen" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            {% for value, text in origen_choices %}
+                            <option value="{{ value }}">{{ text }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Objeto -->
+                    <div class="mb-3">
+                        <label for="objeto" class="form-label">
+                            Objeto <span class="text-danger">*</span>
+                        </label>
+                        <select name="objeto" id="objeto" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            {% for value, text in objeto_choices %}
+                            <option value="{{ value }}">{{ text }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Archivo PDF -->
+                    <div class="mb-3">
+                        <label for="file" class="form-label">
+                            Archivo PDF (opcional)
+                        </label>
+                        <input type="file" 
+                               name="file" 
+                               id="file" 
+                               class="form-control"
+                               accept=".pdf">
+                        <small class="form-text text-muted">
+                            Solo archivos PDF. Máximo 10 MB.
+                        </small>
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="d-flex justify-content-between mt-4 pt-3 border-top">
+                        <a href="{% url 'planta_docente:gestionar_resoluciones_cargo' pk=cargo.pk %}" 
+                           class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-save"></i> Crear Resolución
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-completar año actual
+document.addEventListener('DOMContentLoaded', function() {
+    const añoInput = document.getElementById('año');
+    if (!añoInput.value) {
+        añoInput.value = new Date().getFullYear();
+    }
+});
+</script>
+
+{% endblock %}
