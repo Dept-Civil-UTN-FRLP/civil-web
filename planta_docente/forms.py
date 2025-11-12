@@ -1,7 +1,7 @@
 # planta_docente/forms.py
 
 from django import forms
-from .models import Cargo, Docente, Asignatura, CarreraAcademica
+from .models import Cargo, Docente, Asignatura
 from django.utils import timezone
 
 
@@ -15,11 +15,10 @@ class CargoForm(forms.ModelForm):
             'caracter',
             'categoria',
             'dedicacion',
+            'cantidad_horas',
             'asignatura',
-            'carrera_academica',
             'fecha_inicio',
             'fecha_vencimiento',
-            'resolucion',
             'estado',
         ]
         widgets = {
@@ -39,10 +38,12 @@ class CargoForm(forms.ModelForm):
                 'class': 'form-select',
                 'required': True
             }),
-            'asignatura': forms.Select(attrs={
-                'class': 'form-select'
+            'cantidad_horas': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'placeholder': 'Ej: 20'
             }),
-            'carrera_academica': forms.Select(attrs={
+            'asignatura': forms.Select(attrs={
                 'class': 'form-select'
             }),
             'fecha_inicio': forms.DateInput(attrs={
@@ -53,11 +54,6 @@ class CargoForm(forms.ModelForm):
             'fecha_vencimiento': forms.DateInput(attrs={
                 'class': 'form-control',
                 'type': 'date'
-            }),
-            'resolucion': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Ej: RES-2025-001-CD',
-                'required': True
             }),
             'estado': forms.Select(attrs={
                 'class': 'form-select',
@@ -78,10 +74,8 @@ class CargoForm(forms.ModelForm):
             'nombre')
         self.fields['asignatura'].required = False
 
-        # Carrera Académica opcional
-        if CarreraAcademica:
-            self.fields['carrera_academica'].queryset = CarreraAcademica.objects.all()
-        self.fields['carrera_academica'].required = False
+        # Cantidad de horas opcional
+        self.fields['cantidad_horas'].required = False
 
         # Estado por defecto: Activo (solo para nuevos)
         if not self.instance.pk:
@@ -89,14 +83,13 @@ class CargoForm(forms.ModelForm):
 
         # Labels mejorados
         self.fields['docente'].label = 'Docente'
-        self.fields['caracter'].label = 'Tipo de Cargo'
+        self.fields['caracter'].label = 'Carácter del Cargo'
         self.fields['categoria'].label = 'Categoría'
         self.fields['dedicacion'].label = 'Dedicación'
+        self.fields['cantidad_horas'].label = 'Cantidad de Horas (opcional)'
         self.fields['asignatura'].label = 'Asignatura (opcional)'
-        self.fields['carrera_academica'].label = 'Carrera Académica (opcional)'
         self.fields['fecha_inicio'].label = 'Fecha de Inicio'
         self.fields['fecha_vencimiento'].label = 'Fecha de Vencimiento'
-        self.fields['resolucion'].label = 'Resolución'
         self.fields['estado'].label = 'Estado'
 
     def clean(self):
