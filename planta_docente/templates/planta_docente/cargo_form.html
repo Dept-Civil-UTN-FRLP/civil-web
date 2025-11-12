@@ -1,0 +1,260 @@
+{% extends 'planta_docente/base_planta.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>
+                <i class="bi bi-{% if is_new %}plus-circle{% else %}pencil-square{% endif %}"></i>
+                {{ title }}
+            </h2>
+            <a href="{% url 'planta_docente:dashboard' %}" class="btn btn-secondary">
+                <i class="bi bi-x-circle"></i> Cancelar
+            </a>
+        </div>
+
+        <!-- Formulario -->
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Errores generales -->
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        {{ form.non_field_errors }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Docente -->
+                    <div class="mb-3">
+                        <label for="{{ form.docente.id_for_label }}" class="form-label">
+                            {{ form.docente.label }}
+                            <span class="text-danger">*</span>
+                        </label>
+                        {{ form.docente }}
+                        {% if form.docente.errors %}
+                        <div class="text-danger small mt-1">
+                            <i class="bi bi-exclamation-circle"></i> {{ form.docente.errors.0 }}
+                        </div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Solo se muestran docentes no jubilados
+                        </small>
+                    </div>
+
+                    <!-- Tipo de Cargo y Categoría -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.caracter.id_for_label }}" class="form-label">
+                                {{ form.caracter.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.caracter }}
+                            {% if form.caracter.errors %}
+                            <div class="text-danger small mt-1">
+                                <i class="bi bi-exclamation-circle"></i> {{ form.caracter.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.categoria.id_for_label }}" class="form-label">
+                                {{ form.categoria.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.categoria }}
+                            {% if form.categoria.errors %}
+                            <div class="text-danger small mt-1">
+                                <i class="bi bi-exclamation-circle"></i> {{ form.categoria.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Dedicación -->
+                    <div class="mb-3">
+                        <label for="{{ form.dedicacion.id_for_label }}" class="form-label">
+                            {{ form.dedicacion.label }}
+                            <span class="text-danger">*</span>
+                        </label>
+                        {{ form.dedicacion }}
+                        {% if form.dedicacion.errors %}
+                        <div class="text-danger small mt-1">
+                            <i class="bi bi-exclamation-circle"></i> {{ form.dedicacion.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Asignatura -->
+                    <div class="mb-3">
+                        <label for="{{ form.asignatura.id_for_label }}" class="form-label">
+                            {{ form.asignatura.label }}
+                        </label>
+                        {{ form.asignatura }}
+                        {% if form.asignatura.errors %}
+                        <div class="text-danger small mt-1">
+                            <i class="bi bi-exclamation-circle"></i> {{ form.asignatura.errors.0 }}
+                        </div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Dejá en blanco si no corresponde a una asignatura específica
+                        </small>
+                    </div>
+
+                    <!-- Carrera Académica -->
+                    <div class="mb-3">
+                        <label for="{{ form.carrera_academica.id_for_label }}" class="form-label">
+                            {{ form.carrera_academica.label }}
+                        </label>
+                        {{ form.carrera_academica }}
+                        {% if form.carrera_academica.errors %}
+                        <div class="text-danger small mt-1">
+                            <i class="bi bi-exclamation-circle"></i> {{ form.carrera_academica.errors.0 }}
+                        </div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Solo si el docente tiene Carrera Académica iniciada
+                        </small>
+                    </div>
+
+                    <!-- Fechas -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.fecha_inicio.id_for_label }}" class="form-label">
+                                {{ form.fecha_inicio.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.fecha_inicio }}
+                            {% if form.fecha_inicio.errors %}
+                            <div class="text-danger small mt-1">
+                                <i class="bi bi-exclamation-circle"></i> {{ form.fecha_inicio.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.fecha_vencimiento.id_for_label }}" class="form-label">
+                                {{ form.fecha_vencimiento.label }}
+                                <span class="text-danger" id="venc-asterisk" style="display:none;">*</span>
+                            </label>
+                            {{ form.fecha_vencimiento }}
+                            {% if form.fecha_vencimiento.errors %}
+                            <div class="text-danger small mt-1">
+                                <i class="bi bi-exclamation-circle"></i> {{ form.fecha_vencimiento.errors.0 }}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted" id="venc-help">
+                                Obligatoria para cargos interinos y ad-honorem
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Resolución -->
+                    <div class="mb-3">
+                        <label for="{{ form.resolucion.id_for_label }}" class="form-label">
+                            {{ form.resolucion.label }}
+                            <span class="text-danger">*</span>
+                        </label>
+                        {{ form.resolucion }}
+                        {% if form.resolucion.errors %}
+                        <div class="text-danger small mt-1">
+                            <i class="bi bi-exclamation-circle"></i> {{ form.resolucion.errors.0 }}
+                        </div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Formato: RES-AAAA-NNN-CD (ejemplo: RES-2025-001-CD)
+                        </small>
+                    </div>
+
+                    <!-- Estado -->
+                    <div class="mb-3">
+                        <label for="{{ form.estado.id_for_label }}" class="form-label">
+                            {{ form.estado.label }}
+                            <span class="text-danger">*</span>
+                        </label>
+                        {{ form.estado }}
+                        {% if form.estado.errors %}
+                        <div class="text-danger small mt-1">
+                            <i class="bi bi-exclamation-circle"></i> {{ form.estado.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="d-flex justify-content-between mt-4 pt-3 border-top">
+                        <a href="{% url 'planta_docente:dashboard' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-{% if is_new %}plus-circle{% else %}save{% endif %}"></i>
+                            {% if is_new %}Crear Cargo{% else %}Actualizar Cargo{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript para funcionalidades -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tipoCargo = document.getElementById('{{ form.caracter.id_for_label }}');
+    const fechaInicio = document.getElementById('{{ form.fecha_inicio.id_for_label }}');
+    const fechaVenc = document.getElementById('{{ form.fecha_vencimiento.id_for_label }}');
+    const vencAsterisk = document.getElementById('venc-asterisk');
+    const vencHelp = document.getElementById('venc-help');
+    
+    // Función para auto-calcular fecha de vencimiento
+    function calcularVencimiento() {
+        const tipo = tipoCargo.value;
+        const inicio = fechaInicio.value;
+        
+        // Si es interino o ad-honorem
+        if (['interino', 'ad-honorem'].includes(tipo)) {
+            // Mostrar que es obligatorio
+            vencAsterisk.style.display = 'inline';
+            vencHelp.classList.add('text-danger');
+            
+            // Auto-calcular si hay fecha de inicio
+            if (inicio && !fechaVenc.value) {
+                const fecha = new Date(inicio);
+                const año = fecha.getFullYear();
+                
+                // Próximo 31 de marzo
+                const vencimiento = new Date(año + 1, 2, 31);
+                
+                // Formatear a YYYY-MM-DD
+                const año_venc = vencimiento.getFullYear();
+                const mes_venc = String(vencimiento.getMonth() + 1).padStart(2, '0');
+                const dia_venc = String(vencimiento.getDate()).padStart(2, '0');
+                
+                fechaVenc.value = `${año_venc}-${mes_venc}-${dia_venc}`;
+                
+                // Mostrar mensaje
+                vencHelp.innerHTML = '<i class="bi bi-lightbulb"></i> Fecha auto-calculada: próximo 31/03';
+                vencHelp.classList.remove('text-muted');
+                vencHelp.classList.add('text-success');
+            }
+        } else {
+            // No es obligatorio
+            vencAsterisk.style.display = 'none';
+            vencHelp.classList.remove('text-danger', 'text-success');
+            vencHelp.classList.add('text-muted');
+            vencHelp.innerHTML = 'Obligatoria para cargos interinos y ad-honorem';
+        }
+    }
+    
+    // Ejecutar al cambiar tipo o fecha
+    tipoCargo.addEventListener('change', calcularVencimiento);
+    fechaInicio.addEventListener('change', calcularVencimiento);
+    
+    // Ejecutar al cargar si hay valores
+    if (tipoCargo.value || fechaInicio.value) {
+        calcularVencimiento();
+    }
+});
+</script>
+{% endblock %}
