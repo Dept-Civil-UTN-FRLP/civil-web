@@ -6,17 +6,16 @@ import openpyxl
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Prefetch, Q
+from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-from openpyxl.styles import Alignment, Font, PatternFill
 
 # 3. Importaciones Locales
-from carrera_academica.forms import CarreraAcademicaForm
 from carrera_academica.models import CarreraAcademica
 from config.pagination import paginate_queryset
+from .forms import CargoForm
 
 from .models import Asignatura, Cargo, Docente
 from .utils import (
@@ -781,3 +780,72 @@ def exportar_renovaciones_excel(request):
 
     wb.save(response)
     return response
+
+
+@login_required
+@staff_member_required
+def crear_cargo_view(request):
+    """Vista para crear un nuevo cargo docente."""
+
+    if request.method == 'POST':
+        form = CargoForm(request.POST)
+
+        if form.is_valid():
+            cargo = form.save()
+
+            messages.success(
+                request,
+                f'✓ Cargo creado exitosamente: {cargo.docente.apellido}, {cargo.docente.nombre} - '
+                f'{cargo.get_categoria_display()} {cargo.get_caracter_display()}'
+            )
+
+            return redirect('planta_docente:detalle_cargo', pk=cargo.pk)
+        else:
+            messages.error(
+                request, 'Por favor corrige los errores del formulario.')
+    else:
+        form = CargoForm()
+
+    contexto = {
+        'form': form,
+        'title': 'Nuevo Cargo Docente',
+        'is_new': True
+    }
+
+    return render(request, 'planta_docente/cargo_form.html', contexto)
+
+
+@login_required
+@staff_member_required
+def editar_cargo_view(request, pk):
+    """Vista para editar un cargo existente."""
+
+    cargo = get_object_or_404(Cargo, pk=pk)
+
+    if request.method == 'POST':
+        form = CargoForm(request.POST, instance=cargo)
+
+        if form.is_valid():
+            cargo = form.save()
+
+            messages.success(
+                request,
+                f'✓ Cargo actualizado exitosamente: {cargo.docente.apellido}, {cargo.docente.nombre} - '
+                f'{cargo.get_categoria_display()}'
+            )
+
+            return redirect('planta_docente:detalle_cargo', pk=cargo.pk)
+        else:
+            messages.error(
+                request, 'Por favor corrige los errores del formulario.')
+    else:
+        form = CargoForm(instance=cargo)
+
+    contexto = {
+        'form': form,
+        'cargo': cargo,
+        'title': 'Editar Cargo',
+        'is_new': False
+    }
+
+    return render(request, 'planta_docente/cargo_form.html', contexto)
