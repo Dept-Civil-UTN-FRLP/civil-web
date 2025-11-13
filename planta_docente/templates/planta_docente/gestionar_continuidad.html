@@ -1,0 +1,308 @@
+{% extends 'planta_docente/base_planta.html' %}
+
+{% block planta_content %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2><i class="bi bi-arrow-left-right"></i> Gestión de Continuidad</h2>
+            <a href="{% url 'planta_docente:detalle_cargo' pk=cargo.pk %}" 
+               class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+
+        <!-- Info del Cargo -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">{{ cargo.docente.apellido }}, {{ cargo.docente.nombre }}</h5>
+                <p class="mb-0">
+                    <span class="badge bg-secondary">{{ cargo.get_categoria_display }}</span>
+                    <span class="badge bg-info">{{ cargo.get_caracter_display }}</span>
+                    <span class="badge bg-primary">{{ cargo.asignatura.nombre|title }}</span>
+                    <br>
+                    <small class="text-muted mt-1">
+                        {{ cargo.fecha_inicio|date:"d/m/Y" }} 
+                        {% if cargo.fecha_final %}
+                            - {{ cargo.fecha_final|date:"d/m/Y" }}
+                        {% else %}
+                            - Actual
+                        {% endif %}
+                    </small>
+                </p>
+            </div>
+        </div>
+
+        <!-- Estado Actual de Continuidad -->
+        <div class="alert 
+            {% if info_continuidad.estado == 'activo' %}alert-success
+            {% elif info_continuidad.estado == 'finalizado_con_continuidad' %}alert-info
+            {% else %}alert-secondary{% endif %} border">
+            <div class="d-flex align-items-center">
+                <i class="bi 
+                    {% if info_continuidad.estado == 'activo' %}bi-check-circle
+                    {% elif info_continuidad.estado == 'finalizado_con_continuidad' %}bi-arrow-right-circle
+                    {% else %}bi-x-circle{% endif %} me-2" 
+                    style="font-size: 1.5rem;"></i>
+                <div>
+                    <strong>Estado:</strong> {{ info_continuidad.estado_display }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Cadena de Continuidad -->
+        {% if cadena.anteriores or cadena.siguiente %}
+        <div class="card mb-4 border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Cadena de Continuidad</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-center">
+                    <!-- Cargos Anteriores -->
+                    {% if cadena.anteriores %}
+                        {% for cargo_ant in cadena.anteriores %}
+                        <div class="text-center me-2">
+                            <small class="text-muted d-block">{{ cargo_ant.fecha_inicio|date:"Y" }}-{{ cargo_ant.fecha_final|date:"Y"|default:"Actual" }}</small>
+                            <a href="{% url 'planta_docente:detalle_cargo' pk=cargo_ant.pk %}" 
+                               class="btn btn-sm btn-outline-secondary">
+                                {{ cargo_ant.get_categoria_display }}
+                            </a>
+                        </div>
+                        <i class="bi bi-arrow-right text-muted me-2"></i>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <!-- Cargo Actual -->
+                    <div class="text-center me-2">
+                        <small class="text-muted d-block">{{ cargo.fecha_inicio|date:"Y" }}-{% if cargo.fecha_final %}{{ cargo.fecha_final|date:"Y" }}{% else %}Actual{% endif %}</small>
+                        <span class="btn btn-sm btn-primary">
+                            <strong>{{ cargo.get_categoria_display }}</strong>
+                        </span>
+                    </div>
+                    
+                    <!-- Cargo Siguiente -->
+                    {% if cadena.siguiente %}
+                        <i class="bi bi-arrow-right text-muted me-2"></i>
+                        <div class="text-center">
+                            <small class="text-muted d-block">{{ cadena.siguiente.fecha_inicio|date:"Y" }}-{% if cadena.siguiente.fecha_final %}{{ cadena.siguiente.fecha_final|date:"Y" }}{% else %}Actual{% endif %}</small>
+                            <a href="{% url 'planta_docente:detalle_cargo' pk=cadena.siguiente.pk %}" 
+                               class="btn btn-sm btn-outline-success">
+                                {{ cadena.siguiente.get_categoria_display }}
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Tabs de Acciones -->
+        {% if info_continuidad.estado == 'activo' %}
+        <ul class="nav nav-tabs mb-3" id="continuityTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" 
+                        id="sin-continuidad-tab" 
+                        data-bs-toggle="tab" 
+                        data-bs-target="#sin-continuidad" 
+                        type="button" 
+                        role="tab">
+                    <i class="bi bi-x-circle"></i> Finalizar Sin Continuidad
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" 
+                        id="con-continuidad-tab" 
+                        data-bs-toggle="tab" 
+                        data-bs-target="#con-continuidad" 
+                        type="button" 
+                        role="tab">
+                    <i class="bi bi-arrow-right-circle"></i> Finalizar Con Continuidad
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="continuityTabContent">
+            
+            <!-- TAB: Finalizar Sin Continuidad -->
+            <div class="tab-pane fade show active" id="sin-continuidad" role="tabpanel">
+                <div class="card border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-x-circle"></i> Finalizar Cargo Sin Continuidad
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            El cargo se marcará como <strong>finalizado definitivamente</strong> sin vínculo a otro cargo.
+                        </div>
+                        
+                        <form method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="finalizar_sin_continuidad">
+                            
+                            <div class="mb-3">
+                                <label for="razon_finalizacion" class="form-label">
+                                    Razón de Finalización <span class="text-danger">*</span>
+                                </label>
+                                <select name="razon_finalizacion" 
+                                        id="razon_finalizacion" 
+                                        class="form-select" 
+                                        required>
+                                    <option value="">Seleccionar...</option>
+                                    {% for value, text in razon_choices %}
+                                    <option value="{{ value }}">{{ text }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="observaciones_sin" class="form-label">
+                                    Observaciones
+                                </label>
+                                <textarea name="observaciones" 
+                                          id="observaciones_sin" 
+                                          class="form-control" 
+                                          rows="3"
+                                          placeholder="Información adicional sobre la finalización..."></textarea>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" 
+                                        class="btn btn-danger btn-lg"
+                                        onclick="return confirm('¿Confirma finalizar el cargo sin continuidad? Esta acción cambiará el estado del cargo.');">
+                                    <i class="bi bi-x-circle"></i> Finalizar Sin Continuidad
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Finalizar Con Continuidad -->
+            <div class="tab-pane fade" id="con-continuidad" role="tabpanel">
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-arrow-right-circle"></i> Finalizar Cargo Con Continuidad
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            El cargo se vinculará con otro cargo del mismo docente, 
+                            creando una cadena de continuidad.
+                        </div>
+                        
+                        <form method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="finalizar_con_continuidad">
+                            
+                            <div class="mb-3">
+                                <label for="cargo_siguiente_id" class="form-label">
+                                    Cargo Siguiente <span class="text-danger">*</span>
+                                </label>
+                                <select name="cargo_siguiente_id" 
+                                        id="cargo_siguiente_id" 
+                                        class="form-select" 
+                                        required>
+                                    <option value="">Seleccionar cargo...</option>
+                                    {% for cargo_pos in cargos_posibles %}
+                                    <option value="{{ cargo_pos.pk }}">
+                                        {{ cargo_pos.get_categoria_display }} 
+                                        {{ cargo_pos.get_dedicacion_display }} - 
+                                        {{ cargo_pos.asignatura.nombre|title }} 
+                                        ({{ cargo_pos.fecha_inicio|date:"d/m/Y" }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                {% if not cargos_posibles %}
+                                <small class="form-text text-muted">
+                                    No hay otros cargos activos del docente disponibles para vincular.
+                                </small>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="tipo_continuidad" class="form-label">
+                                    Tipo de Continuidad <span class="text-danger">*</span>
+                                </label>
+                                <select name="tipo_continuidad" 
+                                        id="tipo_continuidad" 
+                                        class="form-select" 
+                                        required>
+                                    <option value="">Seleccionar...</option>
+                                    {% for value, text in tipo_continuidad_choices %}
+                                    <option value="{{ value }}">{{ text }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="observaciones_con" class="form-label">
+                                    Observaciones
+                                </label>
+                                <textarea name="observaciones" 
+                                          id="observaciones_con" 
+                                          class="form-control" 
+                                          rows="3"
+                                          placeholder="Información adicional sobre la continuidad..."></textarea>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" 
+                                        class="btn btn-success btn-lg"
+                                        {% if not cargos_posibles %}disabled{% endif %}
+                                        onclick="return confirm('¿Confirma vincular este cargo con el cargo siguiente seleccionado?');">
+                                    <i class="bi bi-arrow-right-circle"></i> Finalizar Con Continuidad
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Cargo ya finalizado -->
+        <div class="card border-secondary">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle"></i> Cargo Finalizado
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">
+                    <strong>Estado:</strong> {{ info_continuidad.estado_display }}
+                </p>
+                
+                {% if info_continuidad.finalizacion %}
+                <p class="mb-2">
+                    <strong>Razón:</strong> {{ info_continuidad.finalizacion.razon }}
+                </p>
+                {% if info_continuidad.finalizacion.observaciones %}
+                <p class="mb-2">
+                    <strong>Observaciones:</strong> {{ info_continuidad.finalizacion.observaciones }}
+                </p>
+                {% endif %}
+                <p class="mb-0">
+                    <strong>Fecha de finalización:</strong> 
+                    {{ info_continuidad.finalizacion.fecha|date:"d/m/Y" }}
+                </p>
+                {% endif %}
+                
+                <hr>
+                
+                <form method="POST" onsubmit="return confirm('¿Confirma desvincular la continuidad? Esto revertirá el estado del cargo a activo.');">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="desvincular">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-arrow-counterclockwise"></i> Desvincular Continuidad
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

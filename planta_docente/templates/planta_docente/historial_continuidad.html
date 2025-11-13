@@ -1,0 +1,190 @@
+{% extends 'planta_docente/base_planta.html' %}
+
+{% block planta_content %}
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="bi bi-diagram-3"></i> Historial de Continuidad</h2>
+                <p class="text-muted mb-0">
+                    Docente: <strong>{{ docente.apellido }}, {{ docente.nombre }}</strong>
+                </p>
+            </div>
+            <a href="{% url 'planta_docente:dashboard' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card border-primary">
+                    <div class="card-body text-center">
+                        <h3 class="mb-0">{{ total_cargos }}</h3>
+                        <p class="text-muted mb-0">Total de Cargos</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-info">
+                    <div class="card-body text-center">
+                        <h3 class="mb-0">{{ cadenas|length }}</h3>
+                        <p class="text-muted mb-0">Cadenas de Continuidad</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-success">
+                    <div class="card-body text-center">
+                        <h3 class="mb-0">
+                            {% for cadena in cadenas %}
+                                {% with cadena|last as ultimo %}
+                                    {% if ultimo.estado == 'activo' %}1{% endif %}
+                                {% endwith %}
+                            {% empty %}0{% endfor %}
+                        </h3>
+                        <p class="text-muted mb-0">Cargos Activos</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cadenas de Continuidad -->
+        {% if cadenas %}
+            {% for cadena in cadenas %}
+            <div class="card mb-4 border-{% if cadena|last|attr:'estado' == 'activo' %}success{% else %}secondary{% endif %}">
+                <div class="card-header bg-{% if cadena|last|attr:'estado' == 'activo' %}success{% else %}light{% endif %} text-{% if cadena|last|attr:'estado' == 'activo' %}white{% else %}dark{% endif %}">
+                    <h5 class="mb-0">
+                        <i class="bi bi-arrow-right-circle"></i> 
+                        Cadena {{ forloop.counter }}
+                        {% if cadena|last|attr:'estado' == 'activo' %}
+                            <span class="badge bg-light text-success ms-2">Activa</span>
+                        {% else %}
+                            <span class="badge bg-secondary ms-2">Finalizada</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Timeline -->
+                    <div class="timeline">
+                        {% for cargo in cadena %}
+                        <div class="timeline-item {% if forloop.last %}active{% endif %}">
+                            <div class="timeline-marker 
+                                {% if cargo.estado == 'activo' %}bg-success
+                                {% elif cargo.estado_continuidad == 'finalizado_con_continuidad' %}bg-info
+                                {% else %}bg-secondary{% endif %}">
+                                {% if forloop.first %}
+                                    <i class="bi bi-play-circle"></i>
+                                {% elif forloop.last and cargo.estado == 'activo' %}
+                                    <i class="bi bi-circle-fill"></i>
+                                {% else %}
+                                    <i class="bi bi-arrow-right"></i>
+                                {% endif %}
+                            </div>
+                            <div class="timeline-content">
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-1">
+                                                    <strong>{{ cargo.get_categoria_display }}</strong>
+                                                    <span class="badge bg-secondary ms-2">{{ cargo.get_caracter_display }}</span>
+                                                    <span class="badge bg-primary ms-1">{{ cargo.get_dedicacion_display }}</span>
+                                                </h6>
+                                                <p class="mb-1 text-muted">
+                                                    <i class="bi bi-book"></i> {{ cargo.asignatura.nombre|title }}
+                                                </p>
+                                                <p class="mb-1">
+                                                    <i class="bi bi-calendar"></i>
+                                                    <strong>{{ cargo.fecha_inicio|date:"d/m/Y" }}</strong>
+                                                    {% if cargo.fecha_final %}
+                                                        → {{ cargo.fecha_final|date:"d/m/Y" }}
+                                                    {% else %}
+                                                        → <span class="text-success">Actual</span>
+                                                    {% endif %}
+                                                </p>
+                                                
+                                                {% if cargo.tipo_continuidad %}
+                                                <p class="mb-0 text-info small">
+                                                    <i class="bi bi-arrow-right-circle"></i>
+                                                    Tipo: {{ cargo.get_tipo_continuidad_display }}
+                                                </p>
+                                                {% endif %}
+                                                
+                                                {% if cargo.razon_finalizacion and cargo.razon_finalizacion != 'cambio_cargo' %}
+                                                <p class="mb-0 text-muted small">
+                                                    <i class="bi bi-info-circle"></i>
+                                                    Razón: {{ cargo.get_razon_finalizacion_display }}
+                                                </p>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <a href="{% url 'planta_docente:detalle_cargo' pk=cargo.pk %}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-eye"></i> Ver
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            No hay cargos registrados para este docente.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- CSS para Timeline -->
+<style>
+.timeline {
+    position: relative;
+    padding-left: 40px;
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 20px;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: -25px;
+    top: 35px;
+    bottom: -20px;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -35px;
+    top: 10px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.8rem;
+    box-shadow: 0 0 0 4px #fff;
+    z-index: 1;
+}
+
+.timeline-content {
+    margin-left: 0;
+}
+</style>
+
+{% endblock %}

@@ -52,4 +52,11 @@ urlpatterns = [
     path('cargo/<int:pk>/licencia/',
          views.gestionar_licencia_cargo,
          name='gestionar_licencia_cargo'),
+    path('cargo/<int:pk>/continuidad/',
+         views.gestionar_continuidad_cargo,
+         name='gestionar_continuidad_cargo'),
+
+    path('docente/<int:docente_pk>/historial-continuidad/',
+         views.ver_historial_continuidad_docente,
+         name='historial_continuidad_docente'),
 ]

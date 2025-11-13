@@ -260,6 +260,7 @@ def detalle_cargo_view(request, pk):
     
     #Licencias
     estado_licencia = cargo.get_estado_licencia_display()
+    info_continuidad = cargo.get_info_continuidad()
 
     # Verificar si tiene CA
     tiene_ca = hasattr(cargo, "carrera_academica")
@@ -284,6 +285,7 @@ def detalle_cargo_view(request, pk):
         "puede_iniciar_ca": puede_iniciar_ca,
         "correo_principal": correo_principal,
         'estado_licencia': estado_licencia,
+        'info_continuidad': info_continuidad,
         "resoluciones": resoluciones,
     }
 
@@ -1079,3 +1081,135 @@ def gestionar_licencia_cargo(request, pk):
     }
 
     return render(request, 'planta_docente/gestionar_licencia.html', contexto)
+
+
+@login_required
+@staff_member_required
+def gestionar_continuidad_cargo(request, pk):
+    """Vista para gestionar la continuidad de un cargo."""
+    cargo = get_object_or_404(Cargo, pk=pk)
+
+    if request.method == 'POST':
+        accion = request.POST.get('accion')
+
+        try:
+            if accion == 'finalizar_sin_continuidad':
+                razon = request.POST.get('razon_finalizacion')
+                observaciones = request.POST.get('observaciones')
+
+                exito, mensaje = cargo.finalizar_sin_continuidad(
+                    razon=razon,
+                    observaciones=observaciones,
+                    usuario=request.user
+                )
+
+                if exito:
+                    messages.success(request, mensaje)
+                else:
+                    messages.error(request, mensaje)
+
+            elif accion == 'finalizar_con_continuidad':
+                cargo_siguiente_id = request.POST.get('cargo_siguiente_id')
+                tipo_continuidad = request.POST.get('tipo_continuidad')
+                observaciones = request.POST.get('observaciones')
+
+                if not cargo_siguiente_id:
+                    messages.error(
+                        request, 'Debe seleccionar un cargo siguiente')
+                else:
+                    cargo_siguiente = get_object_or_404(
+                        Cargo, pk=cargo_siguiente_id)
+
+                    exito, mensaje = cargo.finalizar_con_continuidad(
+                        cargo_siguiente=cargo_siguiente,
+                        tipo_continuidad=tipo_continuidad,
+                        observaciones=observaciones,
+                        usuario=request.user
+                    )
+
+                    if exito:
+                        messages.success(request, mensaje)
+                    else:
+                        messages.error(request, mensaje)
+
+            elif accion == 'desvincular':
+                exito, mensaje = cargo.desvincular_continuidad()
+
+                if exito:
+                    messages.success(request, mensaje)
+                else:
+                    messages.error(request, mensaje)
+
+        except Exception as e:
+            messages.error(request, f'Error al procesar continuidad: {str(e)}')
+
+        return redirect('planta_docente:detalle_cargo', pk=pk)
+
+    # GET request
+    info_continuidad = cargo.get_info_continuidad()
+    cadena = cargo.obtener_cadena_continuidad()
+
+    # Obtener cargos posibles para continuidad (mismo docente, activos)
+    cargos_posibles = Cargo.objects.filter(
+        docente=cargo.docente,
+        estado='activo',
+        estado_continuidad='activo'
+    ).exclude(pk=cargo.pk).order_by('-fecha_inicio')
+
+    contexto = {
+        'cargo': cargo,
+        'info_continuidad': info_continuidad,
+        'cadena': cadena,
+        'cargos_posibles': cargos_posibles,
+        'razon_choices': Cargo.RAZON_FINALIZACION_CHOICES,
+        'tipo_continuidad_choices': Cargo.TIPO_CONTINUIDAD_CHOICES,
+    }
+
+    return render(request, 'planta_docente/gestionar_continuidad.html', contexto)
+
+
+@login_required
+def ver_historial_continuidad_docente(request, docente_pk):
+    """Vista para ver el historial completo de continuidad de un docente."""
+    docente = get_object_or_404(Docente, pk=docente_pk)
+
+    # Obtener todos los cargos del docente ordenados por fecha
+    cargos = Cargo.objects.filter(docente=docente).order_by('fecha_inicio')
+
+    # Construir cadenas de continuidad
+    cadenas = []
+    cargos_procesados = set()
+
+    for cargo in cargos:
+        if cargo.pk in cargos_procesados:
+            continue
+
+        # Encontrar el inicio de la cadena
+        inicio_cadena = cargo
+        while inicio_cadena.cargo_anterior:
+            inicio_cadena = inicio_cadena.cargo_anterior
+
+        # Construir la cadena completa desde el inicio
+        cadena_actual = []
+        cargo_temp = inicio_cadena
+
+        while cargo_temp:
+            cadena_actual.append(cargo_temp)
+            cargos_procesados.add(cargo_temp.pk)
+
+            # Buscar siguiente
+            if hasattr(cargo_temp, 'cargo_siguiente') and cargo_temp.cargo_siguiente:
+                cargo_temp = cargo_temp.cargo_siguiente
+            else:
+                cargo_temp = None
+
+        if cadena_actual:
+            cadenas.append(cadena_actual)
+
+    contexto = {
+        'docente': docente,
+        'cadenas': cadenas,
+        'total_cargos': cargos.count(),
+    }
+
+    return render(request, 'planta_docente/historial_continuidad.html', contexto)

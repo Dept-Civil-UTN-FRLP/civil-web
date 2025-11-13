@@ -245,7 +245,32 @@ class Cargo(models.Model):
         ("de", "Exclusiva"),
     ]
     ESTADO_CHOICES = [("activo", "Activo"), ("licencia", "Licencia"), ("baja", "Baja")]
-
+    
+    CONTINUIDAD_CHOICES = [
+        ('activo', 'Activo (en curso)'),
+        ('finalizado_sin_continuidad', 'Finalizado sin continuidad'),
+        ('finalizado_con_continuidad', 'Finalizado con continuidad'),
+    ]
+    
+    RAZON_FINALIZACION_CHOICES = [
+        ('renuncia', 'Renuncia'),
+        ('jubilacion', 'Jubilación'),
+        ('no_renovacion', 'No Renovación'),
+        ('vencimiento', 'Vencimiento'),
+        ('cambio_cargo', 'Cambio de Cargo'),
+        ('promocion', 'Promoción'),
+        ('redistribucion', 'Redistribución'),
+        ('otro', 'Otro'),
+    ]
+    
+    TIPO_CONTINUIDAD_CHOICES = [
+        ('mismo_cargo', 'Renovación en mismo cargo'),
+        ('promocion', 'Promoción (misma asignatura)'),
+        ('cambio_asignatura', 'Cambio de asignatura'),
+        ('cambio_dedicacion', 'Cambio de dedicación'),
+        ('otro', 'Otro'),
+    ]
+    
     docente = models.ForeignKey(
         "Docente", related_name="cargo_docente", on_delete=models.CASCADE
     )
@@ -325,6 +350,61 @@ class Cargo(models.Model):
         default=0,
         verbose_name="Días Acumulados en Licencia M.J.",
         help_text="Total de días en licencia por mayor jerarquía"
+    )
+    estado_continuidad = models.CharField(
+        max_length=30,
+        choices=CONTINUIDAD_CHOICES,
+        default='activo',
+        verbose_name="Estado de Continuidad",
+        help_text="Indica si el cargo está activo o cómo finalizó"
+    )
+    razon_finalizacion = models.CharField(
+        max_length=20,
+        choices=RAZON_FINALIZACION_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name="Razón de Finalización"
+    )
+    
+    observaciones_finalizacion = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name="Observaciones de Finalización",
+        help_text="Información adicional sobre la finalización"
+    )
+    
+    cargo_anterior = models.OneToOneField(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cargo_siguiente',
+        verbose_name="Cargo Anterior",
+        help_text="Cargo del cual este es continuación"
+    )
+    
+    tipo_continuidad = models.CharField(
+        max_length=20,
+        choices=TIPO_CONTINUIDAD_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name="Tipo de Continuidad",
+        help_text="Tipo de relación con el cargo anterior"
+    )
+    
+    usuario_registro_continuidad = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cargos_continuidad_registrada',
+        verbose_name="Usuario que Registró Continuidad"
+    )
+    
+    fecha_registro_continuidad = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Registro de Continuidad"
     )
     objects = CargoManager()
 
@@ -558,7 +638,143 @@ class Cargo(models.Model):
             'clase_badge': 'bg-success',
             'icono': 'bi-check-circle'
         }
-        
+    
+    def finalizar_sin_continuidad(self, razon, observaciones=None, usuario=None):
+        """
+        Finaliza el cargo sin continuidad (termina definitivamente).
+        """
+        from django.utils import timezone
+
+        if self.estado_continuidad != 'activo':
+            return False, "El cargo ya fue finalizado"
+
+        self.estado_continuidad = 'finalizado_sin_continuidad'
+        self.estado = 'baja'
+        self.razon_finalizacion = razon
+        self.observaciones_finalizacion = observaciones
+        self.fecha_final = timezone.now().date()
+        self.usuario_registro_continuidad = usuario
+        self.fecha_registro_continuidad = timezone.now()
+
+        self.save()
+
+        return True, f"Cargo finalizado sin continuidad. Razón: {self.get_razon_finalizacion_display()}"
+
+    def finalizar_con_continuidad(self, cargo_siguiente, tipo_continuidad, observaciones=None, usuario=None):
+        """
+        Finaliza el cargo estableciendo continuidad con un cargo siguiente.
+        """
+        from django.utils import timezone
+
+        if self.estado_continuidad != 'activo':
+            return False, "El cargo ya fue finalizado"
+
+        if cargo_siguiente.cargo_anterior is not None:
+            return False, "El cargo siguiente ya tiene un cargo anterior asignado"
+
+        # Actualizar este cargo
+        self.estado_continuidad = 'finalizado_con_continuidad'
+        self.estado = 'baja'
+        self.razon_finalizacion = 'cambio_cargo'
+        self.observaciones_finalizacion = observaciones
+        self.fecha_final = timezone.now().date()
+        self.usuario_registro_continuidad = usuario
+        self.fecha_registro_continuidad = timezone.now()
+        self.save()
+
+        # Vincular cargo siguiente
+        cargo_siguiente.cargo_anterior = self
+        cargo_siguiente.tipo_continuidad = tipo_continuidad
+        cargo_siguiente.usuario_registro_continuidad = usuario
+        cargo_siguiente.fecha_registro_continuidad = timezone.now()
+        cargo_siguiente.save()
+
+        return True, f"Cargo finalizado con continuidad en {cargo_siguiente}"
+
+    def desvincular_continuidad(self):
+        """
+        Desvincula la continuidad (útil si se cometió un error).
+        """
+        if self.estado_continuidad == 'activo':
+            return False, "El cargo está activo, no tiene continuidad que desvincular"
+
+        # Si este cargo tiene un siguiente, desvincularlo
+        if hasattr(self, 'cargo_siguiente') and self.cargo_siguiente:
+            cargo_sig = self.cargo_siguiente
+            cargo_sig.cargo_anterior = None
+            cargo_sig.tipo_continuidad = None
+            cargo_sig.usuario_registro_continuidad = None
+            cargo_sig.fecha_registro_continuidad = None
+            cargo_sig.save()
+
+        # Resetear este cargo
+        self.estado_continuidad = 'activo'
+        self.razon_finalizacion = None
+        self.observaciones_finalizacion = None
+        self.usuario_registro_continuidad = None
+        self.fecha_registro_continuidad = None
+        self.save()
+
+        return True, "Continuidad desvinculada exitosamente"
+
+    def obtener_cadena_continuidad(self):
+        """
+        Obtiene la cadena completa de continuidad (anterior y siguiente).
+        Retorna: {'anteriores': [cargos], 'siguiente': cargo}
+        """
+        cadena = {
+            'anteriores': [],
+            'siguiente': None
+        }
+
+        # Buscar todos los cargos anteriores
+        cargo_actual = self
+        while cargo_actual.cargo_anterior:
+            cadena['anteriores'].insert(0, cargo_actual.cargo_anterior)
+            cargo_actual = cargo_actual.cargo_anterior
+
+        # Buscar cargo siguiente
+        if hasattr(self, 'cargo_siguiente') and self.cargo_siguiente:
+            cadena['siguiente'] = self.cargo_siguiente
+
+        return cadena
+
+    def get_info_continuidad(self):
+        """
+        Retorna información detallada sobre la continuidad del cargo.
+        """
+        info = {
+            'estado': self.estado_continuidad,
+            'estado_display': self.get_estado_continuidad_display(),
+            'tiene_anterior': self.cargo_anterior is not None,
+            'tiene_siguiente': hasattr(self, 'cargo_siguiente') and self.cargo_siguiente is not None,
+        }
+
+        if self.cargo_anterior:
+            info['cargo_anterior'] = {
+                'id': self.cargo_anterior.pk,
+                'descripcion': str(self.cargo_anterior),
+                'periodo': f"{self.cargo_anterior.fecha_inicio.strftime('%d/%m/%Y')} - {self.cargo_anterior.fecha_final.strftime('%d/%m/%Y') if self.cargo_anterior.fecha_final else 'Actual'}",
+                'tipo_continuidad': self.get_tipo_continuidad_display() if self.tipo_continuidad else None,
+            }
+
+        if hasattr(self, 'cargo_siguiente') and self.cargo_siguiente:
+            info['cargo_siguiente'] = {
+                'id': self.cargo_siguiente.pk,
+                'descripcion': str(self.cargo_siguiente),
+                'periodo': f"{self.cargo_siguiente.fecha_inicio.strftime('%d/%m/%Y')} - {self.cargo_siguiente.fecha_final.strftime('%d/%m/%Y') if self.cargo_siguiente.fecha_final else 'Actual'}",
+                'tipo_continuidad': self.cargo_siguiente.get_tipo_continuidad_display() if self.cargo_siguiente.tipo_continuidad else None,
+            }
+
+        if self.razon_finalizacion:
+            info['finalizacion'] = {
+                'razon': self.get_razon_finalizacion_display(),
+                'observaciones': self.observaciones_finalizacion,
+                'fecha': self.fecha_final,
+            }
+
+        return info
+    
     def clean(self):
         """Validaciones a nivel de modelo."""
         super().clean()
