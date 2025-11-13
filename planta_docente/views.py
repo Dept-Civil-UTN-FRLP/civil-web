@@ -260,6 +260,7 @@ def detalle_cargo_view(request, pk):
     
     #Licencias
     estado_licencia = cargo.get_estado_licencia_display()
+    info_continuidad = cargo.get_info_continuidad()
 
     # Verificar si tiene CA
     tiene_ca = hasattr(cargo, "carrera_academica")
@@ -284,6 +285,7 @@ def detalle_cargo_view(request, pk):
         "puede_iniciar_ca": puede_iniciar_ca,
         "correo_principal": correo_principal,
         'estado_licencia': estado_licencia,
+        'info_continuidad': info_continuidad,
         "resoluciones": resoluciones,
     }
 

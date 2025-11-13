@@ -105,7 +105,83 @@
         {% endif %}
     </div>
 </div>
-
+<!-- Continuidad del Cargo -->
+<div class="card mb-4 border-{% if info_continuidad.tiene_anterior or info_continuidad.tiene_siguiente %}info{% else %}secondary{% endif %}">
+    <div class="card-header bg-{% if info_continuidad.tiene_anterior or info_continuidad.tiene_siguiente %}info{% else %}light{% endif %} text-{% if info_continuidad.tiene_anterior or info_continuidad.tiene_siguiente %}white{% else %}dark{% endif %} d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="bi bi-arrow-left-right"></i> Continuidad del Cargo
+        </h5>
+        <span class="badge 
+            {% if info_continuidad.estado == 'activo' %}bg-success
+            {% elif info_continuidad.estado == 'finalizado_con_continuidad' %}bg-primary
+            {% else %}bg-secondary{% endif %}">
+            {{ info_continuidad.estado_display }}
+        </span>
+    </div>
+    <div class="card-body">
+        <!-- Si tiene cargo anterior -->
+        {% if info_continuidad.tiene_anterior %}
+        <div class="alert alert-info mb-3">
+            <h6 class="alert-heading mb-2">
+                <i class="bi bi-arrow-left"></i> Continúa desde
+            </h6>
+            <p class="mb-1">
+                <strong>{{ info_continuidad.cargo_anterior.descripcion }}</strong>
+            </p>
+            <p class="mb-2 text-muted small">
+                {{ info_continuidad.cargo_anterior.periodo }}
+                {% if info_continuidad.cargo_anterior.tipo_continuidad %}
+                    <br>Tipo: {{ info_continuidad.cargo_anterior.tipo_continuidad }}
+                {% endif %}
+            </p>
+            <a href="{% url 'planta_docente:detalle_cargo' pk=cargo.cargo_anterior.pk %}" 
+               class="btn btn-sm btn-outline-info">
+                <i class="bi bi-eye"></i> Ver Cargo Anterior
+            </a>
+        </div>
+        {% endif %}
+        
+        <!-- Si tiene cargo siguiente -->
+        {% if info_continuidad.tiene_siguiente %}
+        <div class="alert alert-success mb-3">
+            <h6 class="alert-heading mb-2">
+                <i class="bi bi-arrow-right"></i> Continúa en
+            </h6>
+            <p class="mb-1">
+                <strong>{{ info_continuidad.cargo_siguiente.descripcion }}</strong>
+            </p>
+            <p class="mb-2 text-muted small">
+                {{ info_continuidad.cargo_siguiente.periodo }}
+                {% if info_continuidad.cargo_siguiente.tipo_continuidad %}
+                    <br>Tipo: {{ info_continuidad.cargo_siguiente.tipo_continuidad }}
+                {% endif %}
+            </p>
+            <a href="{% url 'planta_docente:detalle_cargo' pk=cargo.cargo_siguiente.pk %}" 
+               class="btn btn-sm btn-outline-success">
+                <i class="bi bi-eye"></i> Ver Cargo Siguiente
+            </a>
+        </div>
+        {% endif %}
+        
+        <!-- Si está activo sin continuidad -->
+        {% if info_continuidad.estado == 'activo' and not info_continuidad.tiene_siguiente and not info_continuidad.tiene_anterior %}
+        <p class="text-muted mb-0">
+            <i class="bi bi-info-circle"></i>
+            Este cargo no tiene continuidad registrada.
+        </p>
+        {% endif %}
+        
+        <!-- Botón de gestión -->
+        {% if perms.planta_docente.change_cargo and info_continuidad.estado == 'activo' %}
+        <div class="d-grid mt-3">
+            <a href="{% url 'planta_docente:gestionar_continuidad_cargo' pk=cargo.pk %}" 
+               class="btn btn-primary">
+                <i class="bi bi-gear"></i> Gestionar Continuidad
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
         <!-- Resoluciones -->
         <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
