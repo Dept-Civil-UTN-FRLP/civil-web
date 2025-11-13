@@ -43,7 +43,13 @@
                         {% if cargo.fecha_vencimiento %}
                         <p><strong>Fecha de Vencimiento:</strong> 
                             {{ cargo.fecha_vencimiento|date:"d/m/Y" }}
-                            {% include 'planta_docente/includes/badge_vencimiento.html' with estado_venc=estado_venc %}
+                            {% if cargo.en_licencia_mayor_jerarquia %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="bi bi-pause-circle"></i> Suspendido (Lic. M.J.)
+                                </span>
+                            {% else %}
+                                {% include 'planta_docente/includes/badge_vencimiento.html' with estado_venc=estado_venc %}
+                            {% endif %}
                         </p>
                         {% endif %}
                         <p><strong>Estado:</strong> 
@@ -67,8 +73,41 @@
             </div>
         </div>
 
+        <!-- Gestión de Licencias -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="bi bi-calendar-x"></i> Gestión de Licencias
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if estado_licencia.en_licencia %}
+            <!-- Mostrar estado actual si hay licencia -->
+            <div class="alert {{ estado_licencia.clase_badge }} border mb-3">
+                <div class="d-flex align-items-center">
+                    <i class="{{ estado_licencia.icono }} me-2" style="font-size: 1.5rem;"></i>
+                    <div>
+                        <strong>{{ estado_licencia.mensaje }}</strong>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <p class="mb-0 text-muted">
+                No hay licencias activas para este cargo.
+            </p>
+        {% endif %}
+        
+        {% if perms.planta_docente.change_cargo %}
+        <a href="{% url 'planta_docente:gestionar_licencia_cargo' pk=cargo.pk %}" 
+           class="btn btn-primary">
+            <i class="bi bi-gear"></i> Gestionar Licencias
+        </a>
+        {% endif %}
+    </div>
+</div>
+
         <!-- Resoluciones -->
-        div class="card mb-4">
+        <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Resoluciones del Cargo</h5>
         <a href="{% url 'planta_docente:gestionar_resoluciones_cargo' pk=cargo.pk %}" 
@@ -115,9 +154,11 @@
         </p>
         {% endif %}
     </div>
+    </div>
 
         <!-- Carrera Académica -->
         {% if tiene_ca %}
+
         <div class="card mb-4">
             <div class="card-header bg-success text-white">
                 <h5 class="mb-0"><i class="bi bi-mortarboard"></i> Carrera Académica</h5>

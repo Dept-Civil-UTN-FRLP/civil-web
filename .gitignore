@@ -247,3 +247,4 @@ config/local.py
 # ❌ Certificados SSL
 # ❌ Backups de base de datos
 # ❌ Archivos temporales
+issues.md

@@ -1,0 +1,415 @@
+{% extends 'planta_docente/base_planta.html' %}
+
+{% block planta_content %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2><i class="bi bi-calendar-x"></i> Gestión de Licencias</h2>
+            <a href="{% url 'planta_docente:detalle_cargo' pk=cargo.pk %}" 
+               class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+
+        <!-- Info del Cargo -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">
+                    {{ cargo.docente.apellido }}, {{ cargo.docente.nombre }}
+                </h5>
+                <p class="mb-1">
+                    <span class="badge bg-secondary">{{ cargo.get_categoria_display }}</span>
+                    <span class="badge bg-info">{{ cargo.get_caracter_display }}</span>
+                    <span class="badge bg-primary">{{ cargo.asignatura.nombre|title }}</span>
+                </p>
+                {% if cargo.fecha_vencimiento %}
+                <p class="mb-0">
+                    <strong>Vencimiento:</strong> {{ cargo.fecha_vencimiento|date:"d/m/Y" }}
+                    {% if cargo.en_licencia_mayor_jerarquia %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="bi bi-pause-circle"></i> Suspendido
+                        </span>
+                    {% endif %}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Estado Actual -->
+        <div class="alert {{ estado_licencia.clase_badge }} border">
+            <div class="d-flex align-items-center">
+                <i class="{{ estado_licencia.icono }} me-2" style="font-size: 1.5rem;"></i>
+                <div>
+                    <strong>Estado Actual:</strong> {{ estado_licencia.mensaje }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs de Tipos de Licencia -->
+        <ul class="nav nav-tabs mb-3" id="licenciaTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if not estado_licencia.en_licencia or estado_licencia.tipo == 'normal' %}active{% endif %}" 
+                        id="normal-tab" 
+                        data-bs-toggle="tab" 
+                        data-bs-target="#normal" 
+                        type="button" 
+                        role="tab">
+                    <i class="bi bi-calendar-event"></i> Licencia Normal
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if estado_licencia.tipo == 'mayor_jerarquia' %}active{% endif %}" 
+                        id="mayor-jerarquia-tab" 
+                        data-bs-toggle="tab" 
+                        data-bs-target="#mayor-jerarquia" 
+                        type="button" 
+                        role="tab">
+                    <i class="bi bi-pause-circle"></i> Licencia por Mayor Jerarquía
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="licenciaTabContent">
+            
+            <!-- ============================================ -->
+            <!-- TAB: LICENCIA NORMAL -->
+            <!-- ============================================ -->
+            <div class="tab-pane fade {% if not estado_licencia.en_licencia or estado_licencia.tipo == 'normal' %}show active{% endif %}" 
+                 id="normal" 
+                 role="tabpanel">
+                
+                {% if not cargo.en_licencia_normal %}
+                <!-- Formulario: Dar de ALTA Licencia Normal -->
+                <div class="card border-info">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-calendar-event"></i> Dar de Alta Licencia Normal
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            La licencia normal <strong>NO afecta</strong> la fecha de vencimiento del cargo.
+                            Es solo un cambio de estado temporal.
+                        </div>
+                        
+                        <form method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" name="tipo_licencia" value="normal">
+                            <input type="hidden" name="accion" value="alta">
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="fecha_inicio_normal" class="form-label">
+                                        Fecha de Inicio <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="date" 
+                                           name="fecha_inicio" 
+                                           id="fecha_inicio_normal" 
+                                           class="form-control" 
+                                           required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="fecha_fin_normal" class="form-label">
+                                        Fecha de Fin <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="date" 
+                                           name="fecha_fin" 
+                                           id="fecha_fin_normal" 
+                                           class="form-control" 
+                                           required>
+                                </div>
+                            </div>
+
+                            <hr>
+                            <h6>Datos de Resolución (opcional)</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="numero_resolucion_normal" class="form-label">Número</label>
+                                    <input type="number" 
+                                           name="numero_resolucion" 
+                                           id="numero_resolucion_normal" 
+                                           class="form-control"
+                                           placeholder="Ej: 123">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="año_resolucion_normal" class="form-label">Año</label>
+                                    <input type="number" 
+                                           name="año_resolucion" 
+                                           id="año_resolucion_normal" 
+                                           class="form-control"
+                                           placeholder="2025">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="origen_resolucion_normal" class="form-label">Origen</label>
+                                    <select name="origen_resolucion" id="origen_resolucion_normal" class="form-select">
+                                        <option value="">Seleccionar...</option>
+                                        {% for value, text in origen_choices %}
+                                        <option value="{{ value }}">{{ text }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-info btn-lg text-white">
+                                    <i class="bi bi-calendar-event"></i> Dar de Alta Licencia Normal
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Estado: Licencia Normal Activa -->
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-check-circle"></i> Licencia Normal Activa
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-success mb-3">
+                            <strong>Período:</strong> 
+                            {{ cargo.fecha_inicio_licencia_normal|date:"d/m/Y" }} al 
+                            {{ cargo.fecha_fin_licencia_normal|date:"d/m/Y" }}
+                            <br>
+                            <strong>Duración:</strong> 
+                            {{ estado_licencia.dias_totales }} días
+                            ({{ estado_licencia.dias_transcurridos }} días transcurridos)
+                        </div>
+
+                        <form method="POST" onsubmit="return confirm('¿Confirma dar de baja la licencia normal?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="tipo_licencia" value="normal">
+                            <input type="hidden" name="accion" value="baja">
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-danger btn-lg">
+                                    <i class="bi bi-x-circle"></i> Dar de Baja Licencia Normal
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- ============================================ -->
+            <!-- TAB: LICENCIA POR MAYOR JERARQUÍA -->
+            <!-- ============================================ -->
+            <div class="tab-pane fade {% if estado_licencia.tipo == 'mayor_jerarquia' %}show active{% endif %}" 
+                 id="mayor-jerarquia" 
+                 role="tabpanel">
+                
+                {% if not cargo.en_licencia_mayor_jerarquia %}
+                <!-- Formulario: Dar de ALTA Licencia M.J. -->
+                <div class="card border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="bi bi-pause-circle"></i> Dar de Alta Licencia por Mayor Jerarquía
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Al dar de alta esta licencia:
+                            <ul class="mb-0 mt-2">
+                                <li>El vencimiento del cargo quedará <strong>suspendido</strong></li>
+                                <li>Al dar de baja, se <strong>extenderá automáticamente</strong> por los días de licencia</li>
+                            </ul>
+                        </div>
+                        
+                        <form method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" name="tipo_licencia" value="mayor_jerarquia">
+                            <input type="hidden" name="accion" value="alta">
+                            
+                            <div class="mb-3">
+                                <label for="fecha_inicio_mj" class="form-label">
+                                    Fecha de Inicio de Licencia <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" 
+                                       name="fecha_inicio" 
+                                       id="fecha_inicio_mj" 
+                                       class="form-control" 
+                                       required>
+                                {% if cargo.fecha_vencimiento %}
+                                <small class="form-text text-muted">
+                                    Debe ser anterior al vencimiento actual ({{ cargo.fecha_vencimiento|date:"d/m/Y" }})
+                                </small>
+                                {% endif %}
+                            </div>
+
+                            <hr>
+                            <h6>Datos de Resolución (opcional)</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="numero_resolucion_mj" class="form-label">Número</label>
+                                    <input type="number" 
+                                           name="numero_resolucion" 
+                                           id="numero_resolucion_mj" 
+                                           class="form-control"
+                                           placeholder="Ej: 123">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="año_resolucion_mj" class="form-label">Año</label>
+                                    <input type="number" 
+                                           name="año_resolucion" 
+                                           id="año_resolucion_mj" 
+                                           class="form-control"
+                                           placeholder="2025">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="origen_resolucion_mj" class="form-label">Origen</label>
+                                    <select name="origen_resolucion" id="origen_resolucion_mj" class="form-select">
+                                        <option value="">Seleccionar...</option>
+                                        {% for value, text in origen_choices %}
+                                        <option value="{{ value }}">{{ text }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-warning btn-lg">
+                                    <i class="bi bi-pause-circle"></i> Dar de Alta Licencia M.J.
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Formulario: Dar de BAJA Licencia M.J. -->
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-play-circle"></i> Dar de Baja Licencia por Mayor Jerarquía
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning mb-3">
+                            <strong>Licencia Activa desde:</strong> 
+                            {{ cargo.fecha_inicio_licencia_mj|date:"d/m/Y" }}
+                            ({{ estado_licencia.dias_transcurridos }} días)
+                            <br>
+                            <strong>Vencimiento suspendido:</strong> 
+                            {{ cargo.fecha_vencimiento_original_pre_licencia|date:"d/m/Y" }}
+                        </div>
+
+                        <form method="POST" id="formBajaLicenciaMJ">
+                            {% csrf_token %}
+                            <input type="hidden" name="tipo_licencia" value="mayor_jerarquia">
+                            <input type="hidden" name="accion" value="baja">
+                            
+                            <div class="alert alert-info">
+                                <i class="bi bi-calculator"></i>
+                                <strong>Calculadora de Prórroga:</strong>
+                                <div id="calculoProrroga" class="mt-2"></div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="fecha_fin_mj" class="form-label">
+                                    Fecha de Fin de Licencia <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" 
+                                       name="fecha_fin" 
+                                       id="fecha_fin_mj" 
+                                       class="form-control" 
+                                       required
+                                       onchange="calcularProrroga()">
+                                <small class="form-text text-muted">
+                                    Debe ser posterior al {{ cargo.fecha_inicio_licencia_mj|date:"d/m/Y" }}
+                                </small>
+                            </div>
+
+                            <hr>
+                            <h6>Datos de Resolución (opcional)</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="numero_resolucion_baja" class="form-label">Número</label>
+                                    <input type="number" 
+                                           name="numero_resolucion" 
+                                           id="numero_resolucion_baja" 
+                                           class="form-control"
+                                           placeholder="Ej: 124">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="año_resolucion_baja" class="form-label">Año</label>
+                                    <input type="number" 
+                                           name="año_resolucion" 
+                                           id="año_resolucion_baja" 
+                                           class="form-control"
+                                           placeholder="2027">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="origen_resolucion_baja" class="form-label">Origen</label>
+                                    <select name="origen_resolucion" id="origen_resolucion_baja" class="form-select">
+                                        <option value="">Seleccionar...</option>
+                                        {% for value, text in origen_choices %}
+                                        <option value="{{ value }}">{{ text }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="bi bi-play-circle"></i> Dar de Baja Licencia M.J.
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript para cálculos -->
+<script>
+// Auto-completar año actual
+document.addEventListener('DOMContentLoaded', function() {
+    const añoInputs = document.querySelectorAll('[id^="año_resolucion"]');
+    añoInputs.forEach(input => {
+        if (!input.value) {
+            input.value = new Date().getFullYear();
+        }
+    });
+});
+
+// Calculadora de prórroga
+function calcularProrroga() {
+    const fechaInicio = new Date('{{ cargo.fecha_inicio_licencia_mj|date:"Y-m-d" }}');
+    const fechaFinInput = document.getElementById('fecha_fin_mj');
+    const fechaFin = new Date(fechaFinInput.value);
+    const fechaVencOriginal = new Date('{{ cargo.fecha_vencimiento_original_pre_licencia|date:"Y-m-d" }}');
+    
+    if (fechaFinInput.value && fechaFin > fechaInicio) {
+        // Calcular días de licencia
+        const diffTime = Math.abs(fechaFin - fechaInicio);
+        const diasLicencia = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        // Calcular nueva fecha de vencimiento
+        const nuevaFechaVenc = new Date(fechaVencOriginal);
+        nuevaFechaVenc.setDate(nuevaFechaVenc.getDate() + diasLicencia);
+        
+        // Mostrar cálculo
+        document.getElementById('calculoProrroga').innerHTML = `
+            <strong>Duración de licencia:</strong> ${diasLicencia} días<br>
+            <strong>Vencimiento original:</strong> ${fechaVencOriginal.toLocaleDateString('es-AR')}<br>
+            <strong>Nueva fecha de vencimiento:</strong> 
+            <span class="badge bg-success">${nuevaFechaVenc.toLocaleDateString('es-AR')}</span>
+        `;
+    } else {
+        document.getElementById('calculoProrroga').innerHTML = 
+            '<span class="text-muted">Ingrese una fecha válida para calcular la prórroga</span>';
+    }
+}
+</script>
+
+{% endblock %}
