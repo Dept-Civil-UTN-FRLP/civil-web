@@ -7,4 +7,5 @@ class CarreraAcademicaConfig(AppConfig):
     name = "carrera_academica"
 
     def ready(self):
-        import carrera_academica.signals  # <-- AÑADE ESTA LÍNEA
+        import carrera_academica.signals
+        import planta_docente.signals

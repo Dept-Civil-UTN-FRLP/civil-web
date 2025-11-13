@@ -535,7 +535,7 @@ class Cargo(models.Model):
         if fecha_inicio >= self.fecha_vencimiento:
             return False, "La fecha de inicio de licencia no puede ser posterior al vencimiento del cargo"
 
-        # Guardar estado anterior
+        # Guardar estado anterior (solo del cargo, que es la fuente de verdad)
         self.fecha_vencimiento_original_pre_licencia = self.fecha_vencimiento
         self.fecha_inicio_licencia_mj = fecha_inicio
 
@@ -590,10 +590,44 @@ class Cargo(models.Model):
 
         self.save()
 
-        return True, (
+        mensaje = (
             f"Licencia por mayor jerarquía finalizada. Duración: {duracion_licencia} días. "
             f"Nueva fecha de vencimiento: {nueva_fecha_vencimiento.strftime('%d/%m/%Y')}"
         )
+
+        # Agregar info de CA si existe
+        if hasattr(self, 'carrera_academica') and self.carrera_academica:
+            mensaje += f" (CA sincronizada automáticamente)"
+
+        return True, mensaje
+    
+    def prorrogar_vencimiento(self, dias, observaciones=None, usuario=None):
+        """
+        Prorroga la fecha de vencimiento del cargo.
+        La CA se sincroniza automáticamente.
+        """
+        from datetime import timedelta
+
+        if not self.fecha_vencimiento:
+            return False, "El cargo no tiene fecha de vencimiento"
+
+        if dias <= 0:
+            return False, "Los días de prórroga deben ser positivos"
+
+        fecha_anterior = self.fecha_vencimiento
+        self.fecha_vencimiento = self.fecha_vencimiento + timedelta(days=dias)
+        self.save()
+        # ↑ Signal sincroniza automáticamente la CA
+
+        mensaje = (
+            f"Prórroga de {dias} días aplicada. "
+            f"Vencimiento: {fecha_anterior.strftime('%d/%m/%Y')} → {self.fecha_vencimiento.strftime('%d/%m/%Y')}"
+        )
+
+        if hasattr(self, 'carrera_academica') and self.carrera_academica:
+            mensaje += " (CA sincronizada)"
+
+        return True, mensaje
 
     def get_estado_licencia_display(self):
         """Retorna información sobre el estado de licencia del cargo."""
