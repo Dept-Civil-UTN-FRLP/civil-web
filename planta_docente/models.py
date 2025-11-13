@@ -245,7 +245,32 @@ class Cargo(models.Model):
         ("de", "Exclusiva"),
     ]
     ESTADO_CHOICES = [("activo", "Activo"), ("licencia", "Licencia"), ("baja", "Baja")]
-
+    
+    CONTINUIDAD_CHOICES = [
+        ('activo', 'Activo (en curso)'),
+        ('finalizado_sin_continuidad', 'Finalizado sin continuidad'),
+        ('finalizado_con_continuidad', 'Finalizado con continuidad'),
+    ]
+    
+    RAZON_FINALIZACION_CHOICES = [
+        ('renuncia', 'Renuncia'),
+        ('jubilacion', 'Jubilación'),
+        ('no_renovacion', 'No Renovación'),
+        ('vencimiento', 'Vencimiento'),
+        ('cambio_cargo', 'Cambio de Cargo'),
+        ('promocion', 'Promoción'),
+        ('redistribucion', 'Redistribución'),
+        ('otro', 'Otro'),
+    ]
+    
+    TIPO_CONTINUIDAD_CHOICES = [
+        ('mismo_cargo', 'Renovación en mismo cargo'),
+        ('promocion', 'Promoción (misma asignatura)'),
+        ('cambio_asignatura', 'Cambio de asignatura'),
+        ('cambio_dedicacion', 'Cambio de dedicación'),
+        ('otro', 'Otro'),
+    ]
+    
     docente = models.ForeignKey(
         "Docente", related_name="cargo_docente", on_delete=models.CASCADE
     )
@@ -325,6 +350,61 @@ class Cargo(models.Model):
         default=0,
         verbose_name="Días Acumulados en Licencia M.J.",
         help_text="Total de días en licencia por mayor jerarquía"
+    )
+    estado_continuidad = models.CharField(
+        max_length=30,
+        choices=CONTINUIDAD_CHOICES,
+        default='activo',
+        verbose_name="Estado de Continuidad",
+        help_text="Indica si el cargo está activo o cómo finalizó"
+    )
+    razon_finalizacion = models.CharField(
+        max_length=20,
+        choices=RAZON_FINALIZACION_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name="Razón de Finalización"
+    )
+    
+    observaciones_finalizacion = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name="Observaciones de Finalización",
+        help_text="Información adicional sobre la finalización"
+    )
+    
+    cargo_anterior = models.OneToOneField(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cargo_siguiente',
+        verbose_name="Cargo Anterior",
+        help_text="Cargo del cual este es continuación"
+    )
+    
+    tipo_continuidad = models.CharField(
+        max_length=20,
+        choices=TIPO_CONTINUIDAD_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name="Tipo de Continuidad",
+        help_text="Tipo de relación con el cargo anterior"
+    )
+    
+    usuario_registro_continuidad = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cargos_continuidad_registrada',
+        verbose_name="Usuario que Registró Continuidad"
+    )
+    
+    fecha_registro_continuidad = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Registro de Continuidad"
     )
     objects = CargoManager()
 
