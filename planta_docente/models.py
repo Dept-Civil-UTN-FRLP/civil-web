@@ -237,6 +237,7 @@ class Cargo(models.Model):
         ("jtp", "Jefe de Trabajos Practicos"),
         ("atp1", "Ayudante de 1ra"),
         ("atp2", "Ayudante de 2da"),
+        ("ads", "Adscripto"),
     ]
     DEDICACION_CHOICES = [
         ("ds", "Simple"),
@@ -285,6 +286,45 @@ class Cargo(models.Model):
         blank=True,
         verbose_name="Usuario que Renovó",
         related_name="cargos_renovados",
+    )
+    # Licencia Normal
+    en_licencia_normal = models.BooleanField(
+        default=False,
+        verbose_name="En Licencia Normal",
+        help_text="Indica si el cargo está en licencia normal (no suspende vencimiento)"
+    )
+    fecha_inicio_licencia_normal = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha Inicio Licencia Normal"
+    )
+    fecha_fin_licencia_normal = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha Fin Licencia Normal"
+    )
+
+    # Licencia por Mayor Jerarquía (con prórroga)
+    en_licencia_mayor_jerarquia = models.BooleanField(
+        default=False,
+        verbose_name="En Licencia por Mayor Jerarquía",
+        help_text="Indica si está en licencia por mayor jerarquía (suspende y extiende vencimiento)"
+    )
+    fecha_inicio_licencia_mj = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha Inicio Licencia M.J."
+    )
+    fecha_vencimiento_original_pre_licencia = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha Vencimiento Original (pre-licencia)",
+        help_text="Guarda el vencimiento antes de la licencia M.J. para calcular prórroga"
+    )
+    dias_acumulados_licencia_mj = models.IntegerField(
+        default=0,
+        verbose_name="Días Acumulados en Licencia M.J.",
+        help_text="Total de días en licencia por mayor jerarquía"
     )
     objects = CargoManager()
 
@@ -350,6 +390,175 @@ class Cargo(models.Model):
         }
         return categoria_map.get(self.categoria, self.get_categoria_display())
 
+    def dar_alta_licencia_normal(self, fecha_inicio, fecha_fin, usuario=None):
+        """
+        Da de alta una licencia normal.
+        No afecta el vencimiento del cargo.
+        """
+        if self.en_licencia_normal:
+            return False, "El cargo ya está en licencia normal"
+
+        if self.en_licencia_mayor_jerarquia:
+            return False, "El cargo está en licencia por mayor jerarquía. Debe dar de baja esa licencia primero."
+
+        if self.estado not in ["activo", "licencia"]:
+            return False, "Solo se pueden licenciar cargos activos"
+
+        if fecha_fin <= fecha_inicio:
+            return False, "La fecha de fin debe ser posterior a la fecha de inicio"
+
+        # Aplicar licencia
+        self.en_licencia_normal = True
+        self.fecha_inicio_licencia_normal = fecha_inicio
+        self.fecha_fin_licencia_normal = fecha_fin
+        self.estado = "licencia"
+        self.save()
+
+        duracion = (fecha_fin - fecha_inicio).days
+        return True, f"Licencia normal aplicada del {fecha_inicio.strftime('%d/%m/%Y')} al {fecha_fin.strftime('%d/%m/%Y')} ({duracion} días). No afecta vencimiento."
+
+    def dar_baja_licencia_normal(self):
+        """
+        Da de baja una licencia normal.
+        """
+        if not self.en_licencia_normal:
+            return False, "El cargo no está en licencia normal"
+
+        # Limpiar campos
+        self.en_licencia_normal = False
+        self.fecha_inicio_licencia_normal = None
+        self.fecha_fin_licencia_normal = None
+
+        # Volver a activo si no hay otra licencia
+        if not self.en_licencia_mayor_jerarquia:
+            self.estado = "activo"
+
+        self.save()
+
+        return True, "Licencia normal finalizada."
+
+    def dar_alta_licencia_mayor_jerarquia(self, fecha_inicio, usuario=None):
+        """
+        Da de alta una licencia por mayor jerarquía.
+        Suspende el vencimiento del cargo.
+        """
+        if self.en_licencia_mayor_jerarquia:
+            return False, "El cargo ya está en licencia por mayor jerarquía"
+
+        if self.estado not in ["activo", "licencia"]:
+            return False, "Solo se pueden licenciar cargos activos"
+
+        if not self.fecha_vencimiento:
+            return False, "El cargo no tiene fecha de vencimiento"
+
+        # Validar que la fecha de inicio no sea posterior al vencimiento
+        if fecha_inicio >= self.fecha_vencimiento:
+            return False, "La fecha de inicio de licencia no puede ser posterior al vencimiento del cargo"
+
+        # Guardar estado anterior
+        self.fecha_vencimiento_original_pre_licencia = self.fecha_vencimiento
+        self.fecha_inicio_licencia_mj = fecha_inicio
+
+        # Aplicar licencia
+        self.en_licencia_mayor_jerarquia = True
+        self.estado = "licencia"
+        self.save()
+
+        return True, f"Licencia por mayor jerarquía iniciada el {fecha_inicio.strftime('%d/%m/%Y')}. Vencimiento suspendido."
+
+    def dar_baja_licencia_mayor_jerarquia(self, fecha_fin, usuario=None):
+        """
+        Da de baja una licencia por mayor jerarquía.
+        Calcula y aplica la prórroga de vencimiento.
+        """
+        from datetime import timedelta
+
+        if not self.en_licencia_mayor_jerarquia:
+            return False, "El cargo no está en licencia por mayor jerarquía"
+
+        if not self.fecha_inicio_licencia_mj:
+            return False, "No hay fecha de inicio de licencia registrada"
+
+        # Validar que la fecha fin sea posterior al inicio
+        if fecha_fin <= self.fecha_inicio_licencia_mj:
+            return False, "La fecha de fin debe ser posterior al inicio de la licencia"
+
+        # Calcular duración de la licencia
+        duracion_licencia = (fecha_fin - self.fecha_inicio_licencia_mj).days
+
+        # Calcular nueva fecha de vencimiento
+        if self.fecha_vencimiento_original_pre_licencia:
+            nueva_fecha_vencimiento = self.fecha_vencimiento_original_pre_licencia + \
+                timedelta(days=duracion_licencia)
+        else:
+            # Fallback: extender desde la fecha actual de vencimiento
+            nueva_fecha_vencimiento = self.fecha_vencimiento + \
+                timedelta(days=duracion_licencia)
+
+        # Actualizar campos
+        self.fecha_vencimiento = nueva_fecha_vencimiento
+        self.dias_acumulados_licencia_mj += duracion_licencia
+
+        # Resetear estado de licencia M.J.
+        self.en_licencia_mayor_jerarquia = False
+        self.fecha_inicio_licencia_mj = None
+        self.fecha_vencimiento_original_pre_licencia = None
+
+        # Volver a activo si no hay licencia normal
+        if not self.en_licencia_normal:
+            self.estado = "activo"
+
+        self.save()
+
+        return True, (
+            f"Licencia por mayor jerarquía finalizada. Duración: {duracion_licencia} días. "
+            f"Nueva fecha de vencimiento: {nueva_fecha_vencimiento.strftime('%d/%m/%Y')}"
+        )
+
+    def get_estado_licencia_display(self):
+        """Retorna información sobre el estado de licencia del cargo."""
+        from django.utils import timezone
+
+        if self.en_licencia_mayor_jerarquia:
+            dias = (timezone.now().date(
+            ) - self.fecha_inicio_licencia_mj).days if self.fecha_inicio_licencia_mj else 0
+            return {
+                'tipo': 'mayor_jerarquia',
+                'en_licencia': True,
+                'fecha_inicio': self.fecha_inicio_licencia_mj,
+                'dias_transcurridos': dias,
+                'fecha_vencimiento_suspendido': self.fecha_vencimiento_original_pre_licencia,
+                'mensaje': f'Licencia por Mayor Jerarquía desde {self.fecha_inicio_licencia_mj.strftime("%d/%m/%Y")} ({dias} días)',
+                'clase_badge': 'bg-warning text-dark',
+                'icono': 'bi-pause-circle'
+            }
+
+        if self.en_licencia_normal:
+            dias_totales = (self.fecha_fin_licencia_normal -
+                            self.fecha_inicio_licencia_normal).days if self.fecha_fin_licencia_normal and self.fecha_inicio_licencia_normal else 0
+            dias_transcurridos = (timezone.now().date(
+            ) - self.fecha_inicio_licencia_normal).days if self.fecha_inicio_licencia_normal else 0
+
+            return {
+                'tipo': 'normal',
+                'en_licencia': True,
+                'fecha_inicio': self.fecha_inicio_licencia_normal,
+                'fecha_fin': self.fecha_fin_licencia_normal,
+                'dias_transcurridos': dias_transcurridos,
+                'dias_totales': dias_totales,
+                'mensaje': f'Licencia Normal del {self.fecha_inicio_licencia_normal.strftime("%d/%m/%Y")} al {self.fecha_fin_licencia_normal.strftime("%d/%m/%Y")}',
+                'clase_badge': 'bg-info',
+                'icono': 'bi-calendar-event'
+            }
+
+        return {
+            'tipo': None,
+            'en_licencia': False,
+            'mensaje': 'Sin licencia',
+            'clase_badge': 'bg-success',
+            'icono': 'bi-check-circle'
+        }
+        
     def clean(self):
         """Validaciones a nivel de modelo."""
         super().clean()

@@ -257,6 +257,9 @@ def detalle_cargo_view(request, pk):
     antiguedad = calcular_antiguedad(cargo.fecha_inicio)
     antiguedad_texto = formatear_antiguedad(antiguedad)
     alertas = obtener_alertas_cargo(cargo)
+    
+    #Licencias
+    estado_licencia = cargo.get_estado_licencia_display()
 
     # Verificar si tiene CA
     tiene_ca = hasattr(cargo, "carrera_academica")
@@ -280,6 +283,7 @@ def detalle_cargo_view(request, pk):
         "tiene_ca": tiene_ca,
         "puede_iniciar_ca": puede_iniciar_ca,
         "correo_principal": correo_principal,
+        'estado_licencia': estado_licencia,
         "resoluciones": resoluciones,
     }
 
@@ -935,3 +939,143 @@ def eliminar_resolucion_cargo(request, cargo_pk, resolucion_pk):
     )
 
     return redirect('planta_docente:gestionar_resoluciones_cargo', pk=cargo_pk)
+
+
+@login_required
+@staff_member_required
+def gestionar_licencia_cargo(request, pk):
+    """Vista para gestionar licencias (normal y mayor jerarquía)."""
+    cargo = get_object_or_404(Cargo, pk=pk)
+
+    if request.method == 'POST':
+        tipo_licencia = request.POST.get('tipo_licencia')
+        accion = request.POST.get('accion')
+
+        try:
+            from datetime import datetime
+
+            # ====================================
+            # LICENCIA NORMAL
+            # ====================================
+            if tipo_licencia == 'normal':
+                if accion == 'alta':
+                    fecha_inicio = datetime.strptime(
+                        request.POST.get('fecha_inicio'), '%Y-%m-%d').date()
+                    fecha_fin = datetime.strptime(
+                        request.POST.get('fecha_fin'), '%Y-%m-%d').date()
+
+                    exito, mensaje = cargo.dar_alta_licencia_normal(
+                        fecha_inicio=fecha_inicio,
+                        fecha_fin=fecha_fin,
+                        usuario=request.user
+                    )
+
+                    if exito:
+                        messages.success(request, mensaje)
+
+                        # Crear resolución si se proporcionan datos
+                        numero = request.POST.get('numero_resolucion')
+                        año = request.POST.get('año_resolucion')
+                        origen = request.POST.get('origen_resolucion')
+
+                        if numero and año and origen:
+                            Resolucion.objects.create(
+                                cargo=cargo,
+                                numero=int(numero),
+                                año=int(año),
+                                objeto='licencia_alta',
+                                origen=origen,
+                                fecha_inicio_licencia=fecha_inicio,
+                                fecha_fin_licencia=fecha_fin,
+                                genera_prorroga_ca=False  # Licencia normal NO genera prórroga
+                            )
+                    else:
+                        messages.error(request, mensaje)
+
+                elif accion == 'baja':
+                    exito, mensaje = cargo.dar_baja_licencia_normal()
+
+                    if exito:
+                        messages.success(request, mensaje)
+                    else:
+                        messages.error(request, mensaje)
+
+            # ====================================
+            # LICENCIA POR MAYOR JERARQUÍA
+            # ====================================
+            elif tipo_licencia == 'mayor_jerarquia':
+                if accion == 'alta':
+                    fecha_inicio = datetime.strptime(
+                        request.POST.get('fecha_inicio'), '%Y-%m-%d').date()
+
+                    exito, mensaje = cargo.dar_alta_licencia_mayor_jerarquia(
+                        fecha_inicio=fecha_inicio,
+                        usuario=request.user
+                    )
+
+                    if exito:
+                        messages.success(request, mensaje)
+
+                        # Crear resolución si se proporcionan datos
+                        numero = request.POST.get('numero_resolucion')
+                        año = request.POST.get('año_resolucion')
+                        origen = request.POST.get('origen_resolucion')
+
+                        if numero and año and origen:
+                            Resolucion.objects.create(
+                                cargo=cargo,
+                                numero=int(numero),
+                                año=int(año),
+                                objeto='licencia_alta',
+                                origen=origen,
+                                fecha_inicio_licencia=fecha_inicio,
+                                genera_prorroga_ca=True  # Licencia M.J. SÍ genera prórroga
+                            )
+                    else:
+                        messages.error(request, mensaje)
+
+                elif accion == 'baja':
+                    fecha_fin = datetime.strptime(
+                        request.POST.get('fecha_fin'), '%Y-%m-%d').date()
+
+                    exito, mensaje = cargo.dar_baja_licencia_mayor_jerarquia(
+                        fecha_fin=fecha_fin,
+                        usuario=request.user
+                    )
+
+                    if exito:
+                        messages.success(request, mensaje)
+
+                        # Crear resolución si se proporcionan datos
+                        numero = request.POST.get('numero_resolucion')
+                        año = request.POST.get('año_resolucion')
+                        origen = request.POST.get('origen_resolucion')
+
+                        if numero and año and origen:
+                            Resolucion.objects.create(
+                                cargo=cargo,
+                                numero=int(numero),
+                                año=int(año),
+                                objeto='licencia_baja',
+                                origen=origen,
+                                fecha_fin_licencia=fecha_fin,
+                                genera_prorroga_ca=True
+                            )
+                    else:
+                        messages.error(request, mensaje)
+
+        except Exception as e:
+            messages.error(request, f'Error al procesar licencia: {str(e)}')
+
+        return redirect('planta_docente:detalle_cargo', pk=pk)
+
+    # GET request
+    estado_licencia = cargo.get_estado_licencia_display()
+
+    contexto = {
+        'cargo': cargo,
+        'estado_licencia': estado_licencia,
+        'origen_choices': Resolucion.ORIGEN_CHOICES,
+    }
+
+    return render(request, 'planta_docente/gestionar_licencia.html', contexto)
