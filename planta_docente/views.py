@@ -1276,14 +1276,23 @@ def gestionar_mayor_jerarquia_cargo(request, pk):
     info_mj = cargo.get_info_mayor_jerarquia()
 
     # Cargos posibles para vincular (mismo docente, activos)
+    # DEFINIR PRIMERO la variable base
+    cargos_posibles_mj = Cargo.objects.filter(
+        docente=cargo.docente,
+        estado='activo'
+    ).exclude(pk=cargo.pk).exclude(
+        es_cargo_mayor_jerarquia=True
+    )
+
+    # Si el cargo ya está en licencia M.J., filtrar más
     if cargo.en_licencia_mayor_jerarquia:
-        # Solo mostrar cargos que no estén ya en licencia
         cargos_posibles_mj = cargos_posibles_mj.exclude(
             en_licencia_mayor_jerarquia=True
         ).exclude(
             en_licencia_normal=True
         )
 
+    # Ordenar
     cargos_posibles_mj = cargos_posibles_mj.order_by('-categoria')
 
     contexto = {
