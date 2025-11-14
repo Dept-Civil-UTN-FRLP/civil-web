@@ -1213,3 +1213,80 @@ def ver_historial_continuidad_docente(request, docente_pk):
     }
 
     return render(request, 'planta_docente/historial_continuidad.html', contexto)
+
+
+@login_required
+@staff_member_required
+def gestionar_mayor_jerarquia_cargo(request, pk):
+    """Vista para gestionar vinculación cargo base-temporal M.J."""
+    cargo = get_object_or_404(Cargo, pk=pk)
+
+    if request.method == 'POST':
+        accion = request.POST.get('accion')
+
+        try:
+            if accion == 'vincular':
+                cargo_mj_id = request.POST.get('cargo_mj_id')
+                fecha_inicio_str = request.POST.get('fecha_inicio')
+
+                if not cargo_mj_id:
+                    messages.error(
+                        request, 'Debe seleccionar un cargo de mayor jerarquía')
+                else:
+                    cargo_mj = get_object_or_404(Cargo, pk=cargo_mj_id)
+
+                    from datetime import datetime
+                    fecha_inicio = datetime.strptime(
+                        fecha_inicio_str, '%Y-%m-%d').date() if fecha_inicio_str else None
+
+                    exito, mensaje = cargo.vincular_cargo_mayor_jerarquia(
+                        cargo_mj=cargo_mj,
+                        fecha_inicio=fecha_inicio,
+                        usuario=request.user
+                    )
+
+                    if exito:
+                        messages.success(request, mensaje)
+                    else:
+                        messages.error(request, mensaje)
+
+            elif accion == 'desvincular':
+                fecha_fin_str = request.POST.get('fecha_fin')
+
+                from datetime import datetime
+                fecha_fin = datetime.strptime(
+                    fecha_fin_str, '%Y-%m-%d').date() if fecha_fin_str else None
+
+                exito, mensaje = cargo.desvincular_cargo_mayor_jerarquia(
+                    fecha_fin=fecha_fin,
+                    usuario=request.user
+                )
+
+                if exito:
+                    messages.success(request, mensaje)
+                else:
+                    messages.error(request, mensaje)
+
+        except Exception as e:
+            messages.error(request, f'Error: {str(e)}')
+
+        return redirect('planta_docente:detalle_cargo', pk=pk)
+
+    # GET request
+    info_mj = cargo.get_info_mayor_jerarquia()
+
+    # Cargos posibles para vincular (mismo docente, activos)
+    cargos_posibles_mj = Cargo.objects.filter(
+        docente=cargo.docente,
+        estado='activo'
+    ).exclude(pk=cargo.pk).exclude(
+        es_cargo_mayor_jerarquia=True
+    ).order_by('-categoria')
+
+    contexto = {
+        'cargo': cargo,
+        'info_mj': info_mj,
+        'cargos_posibles_mj': cargos_posibles_mj,
+    }
+
+    return render(request, 'planta_docente/gestionar_mayor_jerarquia.html', contexto)
