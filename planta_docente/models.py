@@ -406,6 +406,33 @@ class Cargo(models.Model):
         blank=True,
         verbose_name="Fecha de Registro de Continuidad"
     )
+    cargo_base = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cargo_temporal_mj',
+        verbose_name="Cargo Base",
+        help_text="Cargo del cual salió en licencia por mayor jerarquía para tomar este cargo temporal"
+    )
+
+    es_cargo_mayor_jerarquia = models.BooleanField(
+        default=False,
+        verbose_name="Es Cargo de Mayor Jerarquía",
+        help_text="Indica si este cargo es temporal por mayor jerarquía"
+    )
+
+    fecha_inicio_cargo_mj = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha Inicio Cargo M.J."
+    )
+
+    fecha_fin_cargo_mj = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha Fin Cargo M.J."
+    )
     objects = CargoManager()
 
     def solicitar_renovacion(self, usuario):
@@ -809,6 +836,158 @@ class Cargo(models.Model):
 
         return info
     
+    def vincular_cargo_mayor_jerarquia(self, cargo_mj, fecha_inicio=None, usuario=None):
+        """
+        Vincula este cargo (base) con un cargo de mayor jerarquía.
+        Este cargo pasa a licencia M.J., el otro cargo queda activo.
+        """
+        from django.utils import timezone
+
+        print(f"🔍 DEBUG vincular_cargo_mayor_jerarquia")
+        print(f"   Cargo base (self): {self.pk} - {self}")
+        print(f"   Cargo M.J.: {cargo_mj.pk} - {cargo_mj}")
+        print(f"   Fecha inicio: {fecha_inicio}")
+
+        if not fecha_inicio:
+            fecha_inicio = timezone.now().date()
+            print(f"   Fecha inicio auto: {fecha_inicio}")
+
+        # Validaciones
+        if self.docente != cargo_mj.docente:
+            print(f"   ❌ Docentes diferentes")
+            return False, "Ambos cargos deben ser del mismo docente"
+
+        if self.en_licencia_mayor_jerarquia:
+            print(f"   ❌ Ya está en licencia M.J.")
+            return False, "Este cargo ya está en licencia por mayor jerarquía"
+
+        if self == cargo_mj:
+            print(f"   ❌ Mismo cargo")
+            return False, "No se puede vincular un cargo consigo mismo"
+        
+        print(f"   ✅ Validaciones OK")
+
+        # Dar de alta licencia M.J. en cargo base
+        print(f"   Dando de alta licencia M.J. en cargo base...")
+        exito, mensaje = self.dar_alta_licencia_mayor_jerarquia(
+            fecha_inicio=fecha_inicio,
+            usuario=usuario
+        )
+        
+        print(f"   Resultado alta licencia: {exito} - {mensaje}")
+
+        if not exito:
+            print(f"   ❌ Falló dar de alta licencia")
+            return False, mensaje
+
+        # Marcar el cargo de mayor jerarquía como temporal
+        print(f"   Marcando cargo M.J. como temporal...")
+        cargo_mj.es_cargo_mayor_jerarquia = True
+        cargo_mj.cargo_base = self
+        cargo_mj.fecha_inicio_cargo_mj = fecha_inicio
+        cargo_mj.estado = 'activo'
+        cargo_mj.save()
+        
+        print(f"   ✅ Cargo M.J. guardado")
+        print(f"   ✅ Vinculación completa!")
+
+        return True, (
+            f"Vinculación exitosa. {self.get_categoria_display()} en licencia M.J. "
+            f"para tomar {cargo_mj.get_categoria_display()}"
+        )
+
+    def desvincular_cargo_mayor_jerarquia(self, fecha_fin=None, usuario=None):
+        """
+        Desvincula cargo de mayor jerarquía de su cargo base.
+        Cargo base vuelve a activo, cargo M.J. se finaliza.
+        Se llama desde el cargo de MAYOR JERARQUÍA.
+        """
+        from django.utils import timezone
+
+        if not self.es_cargo_mayor_jerarquia:
+            return False, "Este cargo no es un cargo de mayor jerarquía"
+
+        if not self.cargo_base:
+            return False, "Este cargo no tiene un cargo base vinculado"
+
+        if not fecha_fin:
+            fecha_fin = timezone.now().date()
+
+        cargo_base = self.cargo_base
+
+        # Dar de baja licencia M.J. en cargo base
+        exito, mensaje_baja = cargo_base.dar_baja_licencia_mayor_jerarquia(
+            fecha_fin=fecha_fin,
+            usuario=usuario
+        )
+
+        if not exito:
+            return False, mensaje_baja
+
+        # Marcar este cargo (M.J.) como finalizado
+        self.fecha_fin_cargo_mj = fecha_fin
+        self.estado = 'baja'
+        self.save()
+
+        return True, (
+            f"Desvinculación exitosa. Vuelve a {cargo_base.get_categoria_display()} "
+            f"({cargo_base.asignatura.nombre}). {mensaje_baja}"
+        )
+
+    def get_cargo_efectivo_docente(self):
+        """
+        Retorna el cargo efectivo actual del docente.
+        Si está en licencia M.J., retorna el cargo temporal.
+        """
+        if self.en_licencia_mayor_jerarquia and hasattr(self, 'cargo_temporal_mj'):
+            cargo_temp = self.cargo_temporal_mj.filter(
+                es_cargo_mayor_jerarquia=True,
+                estado='activo'
+            ).first()
+            return cargo_temp if cargo_temp else self
+
+        return self
+
+    def get_info_mayor_jerarquia(self):
+        """
+        Retorna información sobre la situación de mayor jerarquía.
+        """
+        info = {
+            'es_cargo_mj': self.es_cargo_mayor_jerarquia,
+            'tiene_cargo_temporal': False,
+            'cargo_base': None,
+            'cargo_temporal': None,
+        }
+
+        # Si este cargo es de mayor jerarquía
+        if self.es_cargo_mayor_jerarquia and self.cargo_base:
+            info['cargo_base'] = {
+                'id': self.cargo_base.pk,
+                'descripcion': str(self.cargo_base),
+                'categoria': self.cargo_base.get_categoria_display(),
+                'asignatura': self.cargo_base.asignatura.nombre,
+                'fecha_inicio_licencia': self.cargo_base.fecha_inicio_licencia_mj,
+            }
+
+        # Si este cargo tiene un temporal activo
+        if hasattr(self, 'cargo_temporal_mj'):
+            cargo_temp = self.cargo_temporal_mj.filter(
+                es_cargo_mayor_jerarquia=True,
+                estado='activo'
+            ).first()
+
+            if cargo_temp:
+                info['tiene_cargo_temporal'] = True
+                info['cargo_temporal'] = {
+                    'id': cargo_temp.pk,
+                    'descripcion': str(cargo_temp),
+                    'categoria': cargo_temp.get_categoria_display(),
+                    'asignatura': cargo_temp.asignatura.nombre,
+                    'fecha_inicio': cargo_temp.fecha_inicio_cargo_mj,
+                }
+
+        return info
+    
     def clean(self):
         """Validaciones a nivel de modelo."""
         super().clean()
@@ -861,16 +1040,16 @@ class Cargo(models.Model):
                 )
 
         # Validación 6: No puede haber cargos solapados para el mismo docente en la misma asignatura
-        if self.estado == "activo":
-            cargos_solapados = Cargo.objects.filter(
-                docente=self.docente, asignatura=self.asignatura, estado="activo"
-            ).exclude(pk=self.pk)
-
-            if cargos_solapados.exists():
-                errors["asignatura"] = ValidationError(
-                    f"El docente ya tiene un cargo activo en {self.asignatura.nombre}.",
-                    code="duplicate_active_cargo",
-                )
+        #if self.estado == "activo":
+        #    cargos_solapados = Cargo.objects.filter(
+        #        docente=self.docente, asignatura=self.asignatura, estado="activo"
+        #    ).exclude(pk=self.pk)
+        #
+        #    if cargos_solapados.exists():
+        #        errors["asignatura"] = ValidationError(
+        #            f"El docente ya tiene un cargo activo en {self.asignatura.nombre}.",
+        #            code="duplicate_active_cargo",
+        #        )
 
         if errors:
             raise ValidationError(errors)

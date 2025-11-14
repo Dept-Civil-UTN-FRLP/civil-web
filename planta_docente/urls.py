@@ -59,4 +59,7 @@ urlpatterns = [
     path('docente/<int:docente_pk>/historial-continuidad/',
          views.ver_historial_continuidad_docente,
          name='historial_continuidad_docente'),
+    path('cargo/<int:pk>/mayor-jerarquia/',
+         views.gestionar_mayor_jerarquia_cargo,
+         name='gestionar_mayor_jerarquia_cargo'),
 ]
