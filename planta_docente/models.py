@@ -406,6 +406,33 @@ class Cargo(models.Model):
         blank=True,
         verbose_name="Fecha de Registro de Continuidad"
     )
+    cargo_base = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cargo_temporal_mj',
+        verbose_name="Cargo Base",
+        help_text="Cargo del cual salió en licencia por mayor jerarquía para tomar este cargo temporal"
+    )
+
+    es_cargo_mayor_jerarquia = models.BooleanField(
+        default=False,
+        verbose_name="Es Cargo de Mayor Jerarquía",
+        help_text="Indica si este cargo es temporal por mayor jerarquía"
+    )
+
+    fecha_inicio_cargo_mj = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha Inicio Cargo M.J."
+    )
+
+    fecha_fin_cargo_mj = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha Fin Cargo M.J."
+    )
     objects = CargoManager()
 
     def solicitar_renovacion(self, usuario):
