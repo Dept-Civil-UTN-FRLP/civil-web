@@ -105,6 +105,99 @@
         {% endif %}
     </div>
 </div>
+<!-- Mayor Jerarquía -->
+{% with info_mj=cargo.get_info_mayor_jerarquia %}
+{% if info_mj.es_cargo_mj or info_mj.tiene_cargo_temporal %}
+<div class="card mb-4 border-warning">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0">
+            <i class="bi bi-arrow-up-circle"></i> Cargo de Mayor Jerarquía
+        </h5>
+    </div>
+    <div class="card-body">
+        
+        <!-- Si ESTE cargo es de mayor jerarquía (temporal) -->
+        {% if info_mj.es_cargo_mj and info_mj.cargo_base %}
+        <div class="alert alert-info">
+            <h6 class="alert-heading">
+                <i class="bi bi-info-circle"></i> Este es un cargo temporal de mayor jerarquía
+            </h6>
+            <hr>
+            <p class="mb-1">
+                <strong>Cargo base en licencia M.J.:</strong>
+            </p>
+            <p class="mb-2">
+                {{ info_mj.cargo_base.categoria }} - {{ info_mj.cargo_base.asignatura }}
+                <br>
+                <small class="text-muted">
+                    Licencia desde: {{ info_mj.cargo_base.fecha_inicio_licencia|date:"d/m/Y" }}
+                </small>
+            </p>
+            <a href="{% url 'planta_docente:detalle_cargo' pk=info_mj.cargo_base.id %}" 
+               class="btn btn-sm btn-outline-info">
+                <i class="bi bi-eye"></i> Ver Cargo Base
+            </a>
+            
+            {% if perms.planta_docente.change_cargo %}
+            <hr>
+            <a href="{% url 'planta_docente:gestionar_mayor_jerarquia_cargo' pk=cargo.pk %}" 
+               class="btn btn-warning">
+                <i class="bi bi-arrow-down-circle"></i> Finalizar y Volver al Cargo Base
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Si ESTE cargo tiene un cargo temporal activo -->
+        {% if info_mj.tiene_cargo_temporal and info_mj.cargo_temporal %}
+        <div class="alert alert-warning">
+            <h6 class="alert-heading">
+                <i class="bi bi-exclamation-triangle"></i> Este cargo está en licencia por mayor jerarquía
+            </h6>
+            <hr>
+            <p class="mb-1">
+                <strong>Cargo temporal activo:</strong>
+            </p>
+            <p class="mb-2">
+                {{ info_mj.cargo_temporal.categoria }} - {{ info_mj.cargo_temporal.asignatura }}
+                <br>
+                <small class="text-muted">
+                    Desde: {{ info_mj.cargo_temporal.fecha_inicio|date:"d/m/Y" }}
+                </small>
+            </p>
+            <a href="{% url 'planta_docente:detalle_cargo' pk=info_mj.cargo_temporal.id %}" 
+               class="btn btn-sm btn-outline-warning">
+                <i class="bi bi-eye"></i> Ver Cargo de Mayor Jerarquía
+            </a>
+        </div>
+        {% endif %}
+        
+    </div>
+</div>
+{% elif perms.planta_docente.change_cargo and cargo.estado == 'activo' %}
+<!-- Botón para vincular -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-arrow-up-circle"></i> Mayor Jerarquía
+        </h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-3">
+            <i class="bi bi-info-circle"></i>
+            Permite vincular este cargo con un cargo de mayor jerarquía temporal.
+            Al finalizar el cargo temporal, el docente vuelve automáticamente a este cargo.
+        </p>
+        <div class="d-grid">
+            <a href="{% url 'planta_docente:gestionar_mayor_jerarquia_cargo' pk=cargo.pk %}" 
+               class="btn btn-primary">
+                <i class="bi bi-link"></i> Vincular con Cargo de Mayor Jerarquía
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endwith %}
 <!-- Continuidad del Cargo -->
 <div class="card mb-4 border-{% if info_continuidad.tiene_anterior or info_continuidad.tiene_siguiente %}info{% else %}secondary{% endif %}">
     <div class="card-header bg-{% if info_continuidad.tiene_anterior or info_continuidad.tiene_siguiente %}info{% else %}light{% endif %} text-{% if info_continuidad.tiene_anterior or info_continuidad.tiene_siguiente %}white{% else %}dark{% endif %} d-flex justify-content-between align-items-center">
