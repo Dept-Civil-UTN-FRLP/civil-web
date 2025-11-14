@@ -843,34 +843,53 @@ class Cargo(models.Model):
         """
         from django.utils import timezone
 
+        print(f"🔍 DEBUG vincular_cargo_mayor_jerarquia")
+        print(f"   Cargo base (self): {self.pk} - {self}")
+        print(f"   Cargo M.J.: {cargo_mj.pk} - {cargo_mj}")
+        print(f"   Fecha inicio: {fecha_inicio}")
+
         if not fecha_inicio:
             fecha_inicio = timezone.now().date()
+            print(f"   Fecha inicio auto: {fecha_inicio}")
 
         # Validaciones
         if self.docente != cargo_mj.docente:
+            print(f"   ❌ Docentes diferentes")
             return False, "Ambos cargos deben ser del mismo docente"
 
         if self.en_licencia_mayor_jerarquia:
+            print(f"   ❌ Ya está en licencia M.J.")
             return False, "Este cargo ya está en licencia por mayor jerarquía"
 
         if self == cargo_mj:
+            print(f"   ❌ Mismo cargo")
             return False, "No se puede vincular un cargo consigo mismo"
+        
+        print(f"   ✅ Validaciones OK")
 
         # Dar de alta licencia M.J. en cargo base
+        print(f"   Dando de alta licencia M.J. en cargo base...")
         exito, mensaje = self.dar_alta_licencia_mayor_jerarquia(
             fecha_inicio=fecha_inicio,
             usuario=usuario
         )
+        
+        print(f"   Resultado alta licencia: {exito} - {mensaje}")
 
         if not exito:
+            print(f"   ❌ Falló dar de alta licencia")
             return False, mensaje
 
         # Marcar el cargo de mayor jerarquía como temporal
+        print(f"   Marcando cargo M.J. como temporal...")
         cargo_mj.es_cargo_mayor_jerarquia = True
         cargo_mj.cargo_base = self
         cargo_mj.fecha_inicio_cargo_mj = fecha_inicio
         cargo_mj.estado = 'activo'
         cargo_mj.save()
+        
+        print(f"   ✅ Cargo M.J. guardado")
+        print(f"   ✅ Vinculación completa!")
 
         return True, (
             f"Vinculación exitosa. {self.get_categoria_display()} en licencia M.J. "
@@ -1021,16 +1040,16 @@ class Cargo(models.Model):
                 )
 
         # Validación 6: No puede haber cargos solapados para el mismo docente en la misma asignatura
-        if self.estado == "activo":
-            cargos_solapados = Cargo.objects.filter(
-                docente=self.docente, asignatura=self.asignatura, estado="activo"
-            ).exclude(pk=self.pk)
-
-            if cargos_solapados.exists():
-                errors["asignatura"] = ValidationError(
-                    f"El docente ya tiene un cargo activo en {self.asignatura.nombre}.",
-                    code="duplicate_active_cargo",
-                )
+        #if self.estado == "activo":
+        #    cargos_solapados = Cargo.objects.filter(
+        #        docente=self.docente, asignatura=self.asignatura, estado="activo"
+        #    ).exclude(pk=self.pk)
+        #
+        #    if cargos_solapados.exists():
+        #        errors["asignatura"] = ValidationError(
+        #            f"El docente ya tiene un cargo activo en {self.asignatura.nombre}.",
+        #            code="duplicate_active_cargo",
+        #        )
 
         if errors:
             raise ValidationError(errors)
