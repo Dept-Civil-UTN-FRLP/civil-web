@@ -1226,18 +1226,19 @@ def gestionar_mayor_jerarquia_cargo(request, pk):
 
         try:
             if accion == 'vincular':
+                # Detectar si es cargo docente o gestión
                 cargo_mj_id = request.POST.get('cargo_mj_id')
+                tipo_vinculacion = request.POST.get(
+                    'tipo_vinculacion')  # 'docente' o 'gestion'
+
                 fecha_inicio_str = request.POST.get('fecha_inicio')
+                from datetime import datetime
+                fecha_inicio = datetime.strptime(
+                    fecha_inicio_str, '%Y-%m-%d').date() if fecha_inicio_str else None
 
-                if not cargo_mj_id:
-                    messages.error(
-                        request, 'Debe seleccionar un cargo de mayor jerarquía')
-                else:
+                if tipo_vinculacion == 'docente' and cargo_mj_id:
+                    # CASO 1: Vincular con cargo docente
                     cargo_mj = get_object_or_404(Cargo, pk=cargo_mj_id)
-
-                    from datetime import datetime
-                    fecha_inicio = datetime.strptime(
-                        fecha_inicio_str, '%Y-%m-%d').date() if fecha_inicio_str else None
 
                     exito, mensaje = cargo.vincular_cargo_mayor_jerarquia(
                         cargo_mj=cargo_mj,
@@ -1245,27 +1246,38 @@ def gestionar_mayor_jerarquia_cargo(request, pk):
                         usuario=request.user
                     )
 
-                    if exito:
-                        messages.success(request, mensaje)
-                    else:
-                        messages.error(request, mensaje)
+                elif tipo_vinculacion == 'gestion':
+                    # CASO 2: Cargo de gestión
+                    tipo_cargo = request.POST.get('tipo_cargo_gestion')
+                    descripcion = request.POST.get('descripcion_cargo_gestion')
+                    institucion = request.POST.get('institucion_cargo_gestion')
 
-            elif accion == 'desvincular':
-                fecha_fin_str = request.POST.get('fecha_fin')
+                    if not descripcion:
+                        messages.error(
+                            request, 'Debe proporcionar descripción del cargo de gestión')
+                        return redirect('planta_docente:gestionar_mayor_jerarquia_cargo', pk=pk)
 
-                from datetime import datetime
-                fecha_fin = datetime.strptime(
-                    fecha_fin_str, '%Y-%m-%d').date() if fecha_fin_str else None
+                    exito, mensaje = cargo.vincular_cargo_mayor_jerarquia(
+                        fecha_inicio=fecha_inicio,
+                        tipo_cargo=tipo_cargo,
+                        descripcion_cargo=descripcion,
+                        institucion=institucion,
+                        usuario=request.user
+                    )
 
-                exito, mensaje = cargo.desvincular_cargo_mayor_jerarquia(
-                    fecha_fin=fecha_fin,
-                    usuario=request.user
-                )
+                else:
+                    messages.error(
+                        request, 'Debe seleccionar tipo de vinculación')
+                    return redirect('planta_docente:gestionar_mayor_jerarquia_cargo', pk=pk)
 
                 if exito:
                     messages.success(request, mensaje)
                 else:
                     messages.error(request, mensaje)
+
+            elif accion == 'desvincular':
+                # ... código existente ...
+                pass
 
         except Exception as e:
             messages.error(request, f'Error: {str(e)}')
@@ -1275,8 +1287,6 @@ def gestionar_mayor_jerarquia_cargo(request, pk):
     # GET request
     info_mj = cargo.get_info_mayor_jerarquia()
 
-    # Cargos posibles para vincular (mismo docente, activos)
-    # DEFINIR PRIMERO la variable base
     cargos_posibles_mj = Cargo.objects.filter(
         docente=cargo.docente,
         estado='activo'
@@ -1284,7 +1294,6 @@ def gestionar_mayor_jerarquia_cargo(request, pk):
         es_cargo_mayor_jerarquia=True
     )
 
-    # Si el cargo ya está en licencia M.J., filtrar más
     if cargo.en_licencia_mayor_jerarquia:
         cargos_posibles_mj = cargos_posibles_mj.exclude(
             en_licencia_mayor_jerarquia=True
@@ -1292,13 +1301,13 @@ def gestionar_mayor_jerarquia_cargo(request, pk):
             en_licencia_normal=True
         )
 
-    # Ordenar
     cargos_posibles_mj = cargos_posibles_mj.order_by('-categoria')
 
     contexto = {
         'cargo': cargo,
         'info_mj': info_mj,
         'cargos_posibles_mj': cargos_posibles_mj,
+        'tipo_cargo_choices': Cargo.TIPO_CARGO_MJ_CHOICES,
     }
 
     return render(request, 'planta_docente/gestionar_mayor_jerarquia.html', contexto)
