@@ -240,6 +240,7 @@ class Cargo(models.Model):
         ("ads", "Adscripto"),
     ]
     DEDICACION_CHOICES = [
+        ("ms", "0.5 Simple"),
         ("ds", "Simple"),
         ("se", "Semi-Exclusiva"),
         ("de", "Exclusiva"),
@@ -268,6 +269,15 @@ class Cargo(models.Model):
         ('promocion', 'Promoción (misma asignatura)'),
         ('cambio_asignatura', 'Cambio de asignatura'),
         ('cambio_dedicacion', 'Cambio de dedicación'),
+        ('otro', 'Otro'),
+    ]
+    
+    TIPO_CARGO_MJ_CHOICES = [
+        ('docente', 'Cargo Docente'),
+        ('gestion_facultad', 'Gestión en Facultad'),
+        ('gestion_universidad', 'Gestión en Universidad'),
+        ('gestion_dpto', 'Gestión en Departamento'),
+        ('externo', 'Cargo Externo'),
         ('otro', 'Otro'),
     ]
     
@@ -433,6 +443,30 @@ class Cargo(models.Model):
         blank=True,
         verbose_name="Fecha Fin Cargo M.J."
     )
+    tipo_cargo_mj = models.CharField(
+        max_length=30,
+        choices=TIPO_CARGO_MJ_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name="Tipo de Cargo M.J.",
+        help_text="Tipo de cargo de mayor jerarquía"
+    )
+
+    descripcion_cargo_mj = models.CharField(
+        max_length=200,
+        null=True,
+        blank=True,
+        verbose_name="Descripción Cargo M.J.",
+        help_text="Descripción del cargo de mayor jerarquía (si no es cargo docente)"
+    )
+
+    institucion_cargo_mj = models.CharField(
+        max_length=200,
+        null=True,
+        blank=True,
+        verbose_name="Institución",
+        help_text="Institución donde ejerce el cargo de mayor jerarquía"
+    )
     objects = CargoManager()
 
     def solicitar_renovacion(self, usuario):
@@ -544,10 +578,10 @@ class Cargo(models.Model):
 
         return True, "Licencia normal finalizada."
 
-    def dar_alta_licencia_mayor_jerarquia(self, fecha_inicio, usuario=None):
+    def dar_alta_licencia_mayor_jerarquia(self, fecha_inicio, tipo_cargo=None, descripcion_cargo=None, institucion=None, usuario=None):
         """
         Da de alta una licencia por mayor jerarquía.
-        Suspende el vencimiento del cargo.
+        Puede ser para cargo docente (vinculado) o cargo de gestión (descriptivo).
         """
         if self.en_licencia_mayor_jerarquia:
             return False, "El cargo ya está en licencia por mayor jerarquía"
@@ -558,13 +592,20 @@ class Cargo(models.Model):
         if not self.fecha_vencimiento:
             return False, "El cargo no tiene fecha de vencimiento"
 
-        # Validar que la fecha de inicio no sea posterior al vencimiento
         if fecha_inicio >= self.fecha_vencimiento:
             return False, "La fecha de inicio de licencia no puede ser posterior al vencimiento del cargo"
 
-        # Guardar estado anterior (solo del cargo, que es la fuente de verdad)
+        # Guardar estado anterior
         self.fecha_vencimiento_original_pre_licencia = self.fecha_vencimiento
         self.fecha_inicio_licencia_mj = fecha_inicio
+
+        # Guardar info del cargo de gestión si se proporciona
+        if tipo_cargo:
+            self.tipo_cargo_mj = tipo_cargo
+        if descripcion_cargo:
+            self.descripcion_cargo_mj = descripcion_cargo
+        if institucion:
+            self.institucion_cargo_mj = institucion
 
         # Aplicar licencia
         self.en_licencia_mayor_jerarquia = True
@@ -836,65 +877,83 @@ class Cargo(models.Model):
 
         return info
     
-    def vincular_cargo_mayor_jerarquia(self, cargo_mj, fecha_inicio=None, usuario=None):
+    def vincular_cargo_mayor_jerarquia(self, cargo_mj=None, fecha_inicio=None,
+                                       tipo_cargo=None, descripcion_cargo=None,
+                                       institucion=None, usuario=None):
         """
         Vincula este cargo (base) con un cargo de mayor jerarquía.
-        Este cargo pasa a licencia M.J., el otro cargo queda activo.
+        
+        Dos modalidades:
+        1. cargo_mj: Vincular con otro cargo docente del sistema
+        2. tipo_cargo + descripcion: Describir cargo de gestión/externo
         """
         from django.utils import timezone
 
-        print(f"🔍 DEBUG vincular_cargo_mayor_jerarquia")
-        print(f"   Cargo base (self): {self.pk} - {self}")
-        print(f"   Cargo M.J.: {cargo_mj.pk} - {cargo_mj}")
-        print(f"   Fecha inicio: {fecha_inicio}")
-
         if not fecha_inicio:
             fecha_inicio = timezone.now().date()
-            print(f"   Fecha inicio auto: {fecha_inicio}")
 
-        # Validaciones
-        if self.docente != cargo_mj.docente:
-            print(f"   ❌ Docentes diferentes")
-            return False, "Ambos cargos deben ser del mismo docente"
+        # Validación: debe proporcionar cargo docente O descripción
+        if not cargo_mj and not descripcion_cargo:
+            return False, "Debe vincular con un cargo docente o proporcionar descripción del cargo de gestión"
 
-        if self.en_licencia_mayor_jerarquia:
-            print(f"   ❌ Ya está en licencia M.J.")
-            return False, "Este cargo ya está en licencia por mayor jerarquía"
+        if cargo_mj and descripcion_cargo:
+            return False, "No puede vincular cargo docente y cargo de gestión simultáneamente"
 
-        if self == cargo_mj:
-            print(f"   ❌ Mismo cargo")
-            return False, "No se puede vincular un cargo consigo mismo"
-        
-        print(f"   ✅ Validaciones OK")
+        # CASO 1: Vinculación con cargo docente
+        if cargo_mj:
+            # Validaciones existentes
+            if self.docente != cargo_mj.docente:
+                return False, "Ambos cargos deben ser del mismo docente"
 
-        # Dar de alta licencia M.J. en cargo base
-        print(f"   Dando de alta licencia M.J. en cargo base...")
-        exito, mensaje = self.dar_alta_licencia_mayor_jerarquia(
-            fecha_inicio=fecha_inicio,
-            usuario=usuario
-        )
-        
-        print(f"   Resultado alta licencia: {exito} - {mensaje}")
+            if self.en_licencia_mayor_jerarquia:
+                return False, "Este cargo ya está en licencia por mayor jerarquía"
 
-        if not exito:
-            print(f"   ❌ Falló dar de alta licencia")
-            return False, mensaje
+            if self == cargo_mj:
+                return False, "No se puede vincular un cargo consigo mismo"
 
-        # Marcar el cargo de mayor jerarquía como temporal
-        print(f"   Marcando cargo M.J. como temporal...")
-        cargo_mj.es_cargo_mayor_jerarquia = True
-        cargo_mj.cargo_base = self
-        cargo_mj.fecha_inicio_cargo_mj = fecha_inicio
-        cargo_mj.estado = 'activo'
-        cargo_mj.save()
-        
-        print(f"   ✅ Cargo M.J. guardado")
-        print(f"   ✅ Vinculación completa!")
+            # Dar de alta licencia M.J. en cargo base
+            exito, mensaje = self.dar_alta_licencia_mayor_jerarquia(
+                fecha_inicio=fecha_inicio,
+                tipo_cargo='docente',
+                usuario=usuario
+            )
 
-        return True, (
-            f"Vinculación exitosa. {self.get_categoria_display()} en licencia M.J. "
-            f"para tomar {cargo_mj.get_categoria_display()}"
-        )
+            if not exito:
+                return False, mensaje
+
+            # Marcar el cargo de mayor jerarquía como temporal
+            cargo_mj.es_cargo_mayor_jerarquia = True
+            cargo_mj.cargo_base = self
+            cargo_mj.fecha_inicio_cargo_mj = fecha_inicio
+            cargo_mj.estado = 'activo'
+            cargo_mj.save()
+
+            return True, (
+                f"Vinculación exitosa. {self.get_categoria_display()} en licencia M.J. "
+                f"para tomar {cargo_mj.get_categoria_display()}"
+            )
+
+        # CASO 2: Cargo de gestión (no docente)
+        else:
+            exito, mensaje = self.dar_alta_licencia_mayor_jerarquia(
+                fecha_inicio=fecha_inicio,
+                tipo_cargo=tipo_cargo or 'otro',
+                descripcion_cargo=descripcion_cargo,
+                institucion=institucion,
+                usuario=usuario
+            )
+
+            if not exito:
+                return False, mensaje
+
+            cargo_display = descripcion_cargo
+            if institucion:
+                cargo_display += f" ({institucion})"
+
+            return True, (
+                f"Licencia M.J. registrada exitosamente. "
+                f"{self.get_categoria_display()} en licencia para: {cargo_display}"
+            )
 
     def desvincular_cargo_mayor_jerarquia(self, fecha_fin=None, usuario=None):
         """
@@ -955,11 +1014,13 @@ class Cargo(models.Model):
         info = {
             'es_cargo_mj': self.es_cargo_mayor_jerarquia,
             'tiene_cargo_temporal': False,
+            'es_cargo_gestion': False,
             'cargo_base': None,
             'cargo_temporal': None,
+            'cargo_gestion': None,
         }
 
-        # Si este cargo es de mayor jerarquía
+        # Si este cargo es de mayor jerarquía (temporal docente)
         if self.es_cargo_mayor_jerarquia and self.cargo_base:
             info['cargo_base'] = {
                 'id': self.cargo_base.pk,
@@ -969,7 +1030,7 @@ class Cargo(models.Model):
                 'fecha_inicio_licencia': self.cargo_base.fecha_inicio_licencia_mj,
             }
 
-        # Si este cargo tiene un temporal activo
+        # Si este cargo tiene un temporal docente activo
         if hasattr(self, 'cargo_temporal_mj'):
             cargo_temp = self.cargo_temporal_mj.filter(
                 es_cargo_mayor_jerarquia=True,
@@ -985,6 +1046,16 @@ class Cargo(models.Model):
                     'asignatura': cargo_temp.asignatura.nombre,
                     'fecha_inicio': cargo_temp.fecha_inicio_cargo_mj,
                 }
+
+        # Si este cargo está en licencia por cargo de gestión
+        if self.en_licencia_mayor_jerarquia and self.tipo_cargo_mj and self.tipo_cargo_mj != 'docente':
+            info['es_cargo_gestion'] = True
+            info['cargo_gestion'] = {
+                'tipo': self.get_tipo_cargo_mj_display(),
+                'descripcion': self.descripcion_cargo_mj,
+                'institucion': self.institucion_cargo_mj,
+                'fecha_inicio': self.fecha_inicio_licencia_mj,
+            }
 
         return info
     
@@ -1024,7 +1095,7 @@ class Cargo(models.Model):
             )
 
         # Validación 5: Validar horas según dedicación
-        horas_esperadas = {"ds": 10, "se": 20, "de": 40}
+        horas_esperadas = {"ms": 5, "ds": 10, "se": 20, "de": 40}
 
         if self.dedicacion in horas_esperadas:
             # 80% del esperado
