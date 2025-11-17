@@ -25,6 +25,7 @@ from .utils import (
     obtener_alertas_cargo,
     obtener_estado_jubilacion,
     obtener_estado_vencimiento,
+    obtener_cargo_efectivo,
 )
 
 # planta_docente/views.py
@@ -33,12 +34,10 @@ from .utils import (
 @login_required
 def dashboard_planta_view(request):
     """
-    Dashboard principal de planta docente.
+    Dashboard principal de planta docente mostrando cargos efectivos.
 
-    Muestra resumen de:
-    - Cargos activos con alertas
-    - Estadísticas generales
-    - Filtros por estado, departamento, dedicación
+    Muestra los cargos que los docentes están ejerciendo REALMENTE ahora,
+    considerando licencias por mayor jerarquía.
 
     Args:
         request: HttpRequest
@@ -50,15 +49,12 @@ def dashboard_planta_view(request):
         - dedicacion: Filtro por dedicación
         - categoria: Filtro por categoría
         - alerta: Filtro por tipo de alerta (vencimiento, jubilacion)
+        - incluir_inactivos: Incluir cargos de baja, vencidos, jubilados
+        - solo_licencia_mj: Mostrar solo cargos en licencia M.J.
     """
 
-    # Usar manager personalizado y excluir jubilados
+    # Usar manager personalizado
     cargos_qs = Cargo.objects.with_related_data()
-
-    # Excluir docentes jubilados por defecto
-    incluir_jubilados = request.GET.get("incluir_jubilados", "false") == "true"
-    if not incluir_jubilados:
-        cargos_qs = cargos_qs.filter(docente__jubilado=False)
 
     # Aplicar filtros
     search_query = request.GET.get("q", "").strip()
@@ -68,6 +64,10 @@ def dashboard_planta_view(request):
     categoria_filter = request.GET.get("categoria", "")
     alerta_filter = request.GET.get("alerta", "")
 
+    # Nuevos filtros para cargos efectivos
+    incluir_inactivos = request.GET.get("incluir_inactivos", "false") == "true"
+    solo_licencia_mj = request.GET.get("solo_licencia_mj", "false") == "true"
+
     # Filtro de búsqueda
     if search_query:
         cargos_qs = cargos_qs.filter(
@@ -76,17 +76,31 @@ def dashboard_planta_view(request):
             | Q(docente__legajo__icontains=search_query)
         )
 
-    # Filtro por estado
-    if estado_filter:
+    # FILTRO PRINCIPAL: Por defecto solo cargos activos efectivos
+    if not incluir_inactivos:
+        # Excluir cargos de baja
+        cargos_qs = cargos_qs.exclude(estado='baja')
+
+        # Excluir docentes jubilados
+        cargos_qs = cargos_qs.exclude(docente__jubilado=True)
+
+        # Excluir cargos vencidos
+        cargos_qs = cargos_qs.exclude(
+            fecha_vencimiento__lt=timezone.now().date()
+        )
+
+    # Filtro: Solo licencia M.J.
+    if solo_licencia_mj:
+        cargos_qs = cargos_qs.filter(en_licencia_mayor_jerarquia=True)
+
+    # Filtro por estado (solo si no está activo el filtro de licencia M.J.)
+    if estado_filter and not solo_licencia_mj:
         if estado_filter == "activo":
             cargos_qs = cargos_qs.activos()
         elif estado_filter == "licencia":
             cargos_qs = cargos_qs.en_licencia()
         elif estado_filter == "baja":
             cargos_qs = cargos_qs.dados_de_baja()
-    else:
-        # Por defecto mostrar solo activos y en licencia
-        cargos_qs = cargos_qs.filter(estado__in=["activo", "licencia"])
 
     # Filtro por departamento
     if departamento_filter:
@@ -102,24 +116,28 @@ def dashboard_planta_view(request):
 
     # Filtro por tipo de alerta
     if alerta_filter == "vencimiento":
-        # Cargos que vencen en 6 meses o ya vencidos
         cargos_qs = cargos_qs.filter(
             Q(fecha_vencimiento__lte=timezone.now().date() + timedelta(days=180))
             | Q(fecha_vencimiento__lt=timezone.now().date())
         )
     elif alerta_filter == "jubilacion":
-        # Docentes mayores de 65 años
         fecha_65_años = timezone.now().date() - timedelta(days=65 * 365)
-        cargos_qs = cargos_qs.filter(docente__fecha_nacimiento__lte=fecha_65_años)
+        cargos_qs = cargos_qs.filter(
+            docente__fecha_nacimiento__lte=fecha_65_años)
 
-    # Ordenar: primero los que tienen alertas urgentes
-    cargos_qs = cargos_qs.order_by("-estado", "fecha_vencimiento", "docente__apellido")
+    # Ordenar por apellido del docente
+    cargos_qs = cargos_qs.order_by(
+        "docente__apellido", "docente__nombre", "-categoria")
 
     # ✅ PAGINACIÓN
-    page_obj, pagination_context = paginate_queryset(cargos_qs, request, page_size=25)
+    page_obj, pagination_context = paginate_queryset(
+        cargos_qs, request, page_size=25)
 
     # Enriquecer cada cargo con información calculada
     for cargo in page_obj:
+        # ✅ NUEVO: Obtener cargo efectivo
+        cargo.cargo_efectivo = obtener_cargo_efectivo(cargo)
+
         # Estado de vencimiento
         cargo.estado_venc = obtener_estado_vencimiento(cargo)
 
@@ -138,20 +156,21 @@ def dashboard_planta_view(request):
         # Verificar si tiene CA
         cargo.tiene_ca = hasattr(cargo, "carrera_academica")
 
-    # Calcular estadísticas generales (solo para el queryset filtrado, no paginado)
-    stats = _calcular_estadisticas_dashboard(cargos_qs)
+    # Calcular estadísticas generales (solo para cargos activos efectivos)
+    stats = _calcular_estadisticas_dashboard(cargos_qs, incluir_inactivos)
 
     # Preparar contexto
     contexto = {
         "cargos": page_obj,
         "stats": stats,
-        "incluir_jubilados": incluir_jubilados,
         "search_query": search_query,
         "estado_filter": estado_filter,
         "departamento_filter": departamento_filter,
         "dedicacion_filter": dedicacion_filter,
         "categoria_filter": categoria_filter,
         "alerta_filter": alerta_filter,
+        "incluir_inactivos": incluir_inactivos,
+        "solo_licencia_mj": solo_licencia_mj,
         "estado_choices": Cargo.ESTADO_CHOICES,
         "departamento_choices": Asignatura.DEPTO_CHOICES,
         "dedicacion_choices": Cargo.DEDICACION_CHOICES,
@@ -162,47 +181,108 @@ def dashboard_planta_view(request):
     return render(request, "planta_docente/dashboard.html", contexto)
 
 
-def _calcular_estadisticas_dashboard(cargos_qs):
+def _calcular_estadisticas_dashboard(cargos_qs, incluir_inactivos=False):
     """
-    Calcula estadísticas para el dashboard.
+    Calcula estadísticas para el dashboard basadas en cargos efectivos.
 
     Args:
         cargos_qs: QuerySet de cargos (ya filtrado)
+        incluir_inactivos: Si se están incluyendo cargos inactivos
 
     Returns:
         dict: Diccionario con estadísticas
     """
-    total_cargos = cargos_qs.count()
+    # Si NO incluir inactivos, las stats son sobre cargos activos efectivos
+    if not incluir_inactivos:
+        # Total de cargos activos efectivos
+        total_cargos = cargos_qs.exclude(estado='baja').exclude(
+            docente__jubilado=True
+        ).exclude(
+            fecha_vencimiento__lt=timezone.now().date()
+        ).count()
 
-    # Cargos por estado
-    cargos_activos = cargos_qs.filter(estado="activo").count()
-    cargos_licencia = cargos_qs.filter(estado="licencia").count()
+        # Cargos activos (sin considerar licencias)
+        cargos_activos = cargos_qs.filter(estado="activo").exclude(
+            docente__jubilado=True
+        ).exclude(
+            fecha_vencimiento__lt=timezone.now().date()
+        ).count()
 
-    # Cargos próximos a vencer (60 días)
-    cargos_criticos = cargos_qs.filter(
-        fecha_vencimiento__lte=timezone.now().date() + timedelta(days=60),
-        fecha_vencimiento__gte=timezone.now().date(),
-    ).count()
+        # Cargos en licencia
+        cargos_licencia = cargos_qs.filter(estado="licencia").exclude(
+            docente__jubilado=True
+        ).exclude(
+            fecha_vencimiento__lt=timezone.now().date()
+        ).count()
 
-    # Cargos vencidos
-    cargos_vencidos = cargos_qs.filter(
+        # Cargos en licencia M.J.
+        cargos_licencia_mj = cargos_qs.filter(
+            en_licencia_mayor_jerarquia=True
+        ).exclude(
+            docente__jubilado=True
+        ).exclude(
+            fecha_vencimiento__lt=timezone.now().date()
+        ).count()
+
+        # Cargos próximos a vencer (60 días) - solo activos
+        cargos_criticos = cargos_qs.filter(
+            fecha_vencimiento__lte=timezone.now().date() + timedelta(days=60),
+            fecha_vencimiento__gte=timezone.now().date(),
+            estado='activo'
+        ).exclude(
+            docente__jubilado=True
+        ).count()
+
+        # Cargos vencidos (no se cuentan si no se incluyen inactivos)
+        cargos_vencidos = 0
+
+        # Docentes jubilados (no se cuentan si no se incluyen inactivos)
+        total_docentes_jubilados = 0
+
+    else:
+        # Con inactivos, contar todo
+        total_cargos = cargos_qs.count()
+        cargos_activos = cargos_qs.filter(estado="activo").count()
+        cargos_licencia = cargos_qs.filter(estado="licencia").count()
+        cargos_licencia_mj = cargos_qs.filter(
+            en_licencia_mayor_jerarquia=True).count()
+
+        cargos_criticos = cargos_qs.filter(
+            fecha_vencimiento__lte=timezone.now().date() + timedelta(days=60),
+            fecha_vencimiento__gte=timezone.now().date(),
+        ).count()
+
+        cargos_vencidos = cargos_qs.filter(
+            fecha_vencimiento__lt=timezone.now().date()
+        ).count()
+
+        total_docentes_jubilados = (
+            cargos_qs.filter(docente__jubilado=True).values(
+                "docente").distinct().count()
+        )
+
+    # Cargos regulares/ordinarios sin CA (siempre sobre activos)
+    cargos_sin_ca = cargos_qs.filter(
+        caracter__in=["reg", "ord"],
+        carrera_academica__isnull=True,
+        estado='activo'
+    ).exclude(
+        docente__jubilado=True
+    ).exclude(
         fecha_vencimiento__lt=timezone.now().date()
     ).count()
 
-    # Cargos jubilados
-    total_docentes_jubilados = (
-        cargos_qs.filter(docente__jubilado=True).values("docente").distinct().count()
-    )
-
-    # Cargos regulares/ordinarios sin CA
-    cargos_sin_ca = cargos_qs.filter(
-        caracter__in=["reg", "ord"], carrera_academica__isnull=True
-    ).count()
-
-    # Docentes únicos con alerta de jubilación
+    # Docentes únicos con alerta de jubilación (siempre sobre activos)
     fecha_65_años = timezone.now().date() - timedelta(days=65 * 365)
     docentes_mayores_65 = (
-        cargos_qs.filter(docente__fecha_nacimiento__lte=fecha_65_años)
+        cargos_qs.filter(
+            docente__fecha_nacimiento__lte=fecha_65_años,
+            estado='activo'
+        ).exclude(
+            docente__jubilado=True
+        ).exclude(
+            fecha_vencimiento__lt=timezone.now().date()
+        )
         .values("docente")
         .distinct()
         .count()
@@ -212,6 +292,7 @@ def _calcular_estadisticas_dashboard(cargos_qs):
         "total_cargos": total_cargos,
         "cargos_activos": cargos_activos,
         "cargos_licencia": cargos_licencia,
+        "cargos_licencia_mj": cargos_licencia_mj,
         "cargos_criticos": cargos_criticos,
         "cargos_vencidos": cargos_vencidos,
         "cargos_sin_ca": cargos_sin_ca,
