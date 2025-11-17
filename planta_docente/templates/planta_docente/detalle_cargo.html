@@ -107,15 +107,15 @@
 </div>
 <!-- Mayor Jerarquía -->
 {% with info_mj=cargo.get_info_mayor_jerarquia %}
-<div class="card mb-4 {% if info_mj.es_cargo_mj or info_mj.tiene_cargo_temporal or cargo.en_licencia_mayor_jerarquia %}border-warning{% endif %}">
-    <div class="card-header {% if info_mj.es_cargo_mj or info_mj.tiene_cargo_temporal or cargo.en_licencia_mayor_jerarquia %}bg-warning text-dark{% else %}bg-light{% endif %}">
+<div class="card mb-4 {% if info_mj.es_cargo_mj or info_mj.tiene_cargo_temporal or info_mj.es_cargo_gestion or cargo.en_licencia_mayor_jerarquia %}border-warning{% endif %}">
+    <div class="card-header {% if info_mj.es_cargo_mj or info_mj.tiene_cargo_temporal or info_mj.es_cargo_gestion or cargo.en_licencia_mayor_jerarquia %}bg-warning text-dark{% else %}bg-light{% endif %}">
         <h5 class="mb-0">
             <i class="bi bi-arrow-up-circle"></i> Mayor Jerarquía
         </h5>
     </div>
     <div class="card-body">
         
-        <!-- CASO 1: ESTE cargo es de mayor jerarquía (temporal) -->
+        <!-- CASO 1: ESTE cargo es de mayor jerarquía (temporal DOCENTE) -->
         {% if info_mj.es_cargo_mj and info_mj.cargo_base %}
         <div class="alert alert-info">
             <h6 class="alert-heading">
@@ -146,12 +146,15 @@
             {% endif %}
         </div>
         
-        <!-- CASO 2: ESTE cargo tiene un cargo temporal vinculado y activo -->
+        <!-- CASO 2: ESTE cargo tiene un cargo temporal DOCENTE vinculado y activo -->
         {% elif info_mj.tiene_cargo_temporal and info_mj.cargo_temporal %}
         <div class="alert alert-warning">
             <h6 class="alert-heading">
                 <i class="bi bi-exclamation-triangle"></i> Este cargo está en licencia por mayor jerarquía
             </h6>
+            <p class="mb-1">
+                <strong>Tipo:</strong> <span class="badge bg-primary">Cargo Docente</span>
+            </p>
             <hr>
             <p class="mb-1">
                 <strong>Cargo temporal activo:</strong>
@@ -169,7 +172,43 @@
             </a>
         </div>
         
-        <!-- CASO 3: ESTE cargo está en licencia M.J. pero NO tiene cargo temporal vinculado -->
+        <!-- CASO 3: ESTE cargo está en licencia por CARGO DE GESTIÓN -->
+        {% elif info_mj.es_cargo_gestion and info_mj.cargo_gestion %}
+        <div class="alert alert-info">
+            <h6 class="alert-heading">
+                <i class="bi bi-briefcase"></i> Este cargo está en licencia por cargo de gestión
+            </h6>
+            <p class="mb-1">
+                <strong>Tipo:</strong> <span class="badge bg-info">{{ info_mj.cargo_gestion.tipo }}</span>
+            </p>
+            <hr>
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-1"><strong>Cargo de Gestión:</strong></p>
+                    <p class="mb-2">{{ info_mj.cargo_gestion.descripcion }}</p>
+                </div>
+                {% if info_mj.cargo_gestion.institucion %}
+                <div class="col-md-6">
+                    <p class="mb-1"><strong>Institución:</strong></p>
+                    <p class="mb-2">{{ info_mj.cargo_gestion.institucion }}</p>
+                </div>
+                {% endif %}
+                <div class="col-md-6">
+                    <p class="mb-1"><strong>Desde:</strong></p>
+                    <p class="mb-0">{{ info_mj.cargo_gestion.fecha_inicio|date:"d/m/Y" }}</p>
+                </div>
+            </div>
+            
+            {% if perms.planta_docente.change_cargo %}
+            <hr>
+            <a href="{% url 'planta_docente:gestionar_licencia_cargo' pk=cargo.pk %}" 
+               class="btn btn-primary">
+                <i class="bi bi-arrow-counterclockwise"></i> Dar de Baja Licencia M.J.
+            </a>
+            {% endif %}
+        </div>
+        
+        <!-- CASO 4: ESTE cargo está en licencia M.J. pero NO tiene vinculación -->
         {% elif cargo.en_licencia_mayor_jerarquia %}
         <div class="alert alert-danger">
             <h6 class="alert-heading">
@@ -178,7 +217,7 @@
             <hr>
             <p class="mb-1">
                 Este cargo está marcado como "en licencia por mayor jerarquía" 
-                pero <strong>no tiene un cargo temporal vinculado</strong>.
+                pero <strong>no tiene vinculación registrada</strong>.
             </p>
             <p class="mb-0 text-muted small">
                 Licencia desde: {{ cargo.fecha_inicio_licencia_mj|date:"d/m/Y"|default:"Fecha no especificada" }}
@@ -192,7 +231,7 @@
             <div class="d-grid gap-2">
                 <a href="{% url 'planta_docente:gestionar_mayor_jerarquia_cargo' pk=cargo.pk %}" 
                    class="btn btn-warning">
-                    <i class="bi bi-link"></i> Vincular con Cargo de Mayor Jerarquía
+                    <i class="bi bi-link"></i> Registrar Vinculación
                 </a>
                 <a href="{% url 'planta_docente:gestionar_licencia_cargo' pk=cargo.pk %}" 
                    class="btn btn-outline-secondary">
@@ -202,16 +241,21 @@
             {% endif %}
         </div>
         
-        <!-- CASO 4: Sin licencia ni vinculación -->
+        <!-- CASO 5: Sin licencia ni vinculación -->
         {% elif perms.planta_docente.change_cargo and cargo.estado == 'activo' %}
         <p class="text-muted mb-3">
             <i class="bi bi-info-circle"></i>
             Este cargo no tiene vinculación de mayor jerarquía activa.
         </p>
+        <p class="mb-3">
+            <small class="text-muted">
+                Puede vincular con un cargo docente temporal o registrar un cargo de gestión.
+            </small>
+        </p>
         <div class="d-grid">
             <a href="{% url 'planta_docente:gestionar_mayor_jerarquia_cargo' pk=cargo.pk %}" 
                class="btn btn-primary">
-                <i class="bi bi-link"></i> Vincular con Cargo de Mayor Jerarquía
+                <i class="bi bi-link"></i> Registrar Licencia por Mayor Jerarquía
             </a>
         </div>
         

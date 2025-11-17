@@ -25,83 +25,203 @@
         </div>
 
         {% if not cargo.es_cargo_mayor_jerarquia %}
-        <!-- CASO 1: Este es el cargo base, vincular con temporal -->
+        <!-- CASO 1: Este es el cargo base, vincular con temporal O cargo de gestión -->
         
-        {% if not info_mj.tiene_cargo_temporal %}
+        {% if not info_mj.tiene_cargo_temporal and not info_mj.es_cargo_gestion %}
         <div class="card border-success">
             <div class="card-header bg-success text-white">
                 <h5 class="mb-0">
-                    <i class="bi bi-link"></i> Vincular con Cargo de Mayor Jerarquía
+                    <i class="bi bi-link"></i> Registrar Licencia por Mayor Jerarquía
                 </h5>
             </div>
             <div class="card-body">
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle"></i>
-                    <strong>¿Qué sucede al vincular?</strong>
+                    <strong>Dos modalidades disponibles:</strong>
                     <ul class="mb-0 mt-2">
-                        <li>Este cargo pasa a <strong>licencia por mayor jerarquía</strong></li>
-                        <li>El cargo seleccionado queda <strong>activo</strong> como temporal</li>
-                        <li>Al finalizar el cargo temporal, se vuelve automáticamente a este cargo</li>
-                        <li>Se aplica prórroga por el tiempo en licencia</li>
+                        <li><strong>Cargo Docente:</strong> Vincular con otro cargo docente del sistema (ej: JTP → Adjunto)</li>
+                        <li><strong>Cargo de Gestión:</strong> Describir cargo de gestión o externo (ej: Secretario Académico, Director de Dpto)</li>
                     </ul>
                 </div>
                 
-                <form method="POST">
-                    {% csrf_token %}
-                    <input type="hidden" name="accion" value="vincular">
-                    
-                    <div class="mb-3">
-                        <label for="cargo_mj_id" class="form-label">
-                            Cargo de Mayor Jerarquía <span class="text-danger">*</span>
-                        </label>
-                        <select name="cargo_mj_id" 
-                                id="cargo_mj_id" 
-                                class="form-select" 
-                                required>
-                            <option value="">Seleccionar cargo...</option>
-                            {% for cargo_pos in cargos_posibles_mj %}
-                            <option value="{{ cargo_pos.pk }}">
-                                {{ cargo_pos.get_categoria_display }} 
-                                {{ cargo_pos.get_dedicacion_display }} - 
-                                {{ cargo_pos.asignatura.nombre|title }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                        {% if not cargos_posibles_mj %}
-                        <small class="form-text text-muted">
-                            No hay otros cargos activos del docente disponibles.
-                        </small>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="fecha_inicio" class="form-label">
-                            Fecha de Inicio <span class="text-danger">*</span>
-                        </label>
-                        <input type="date" 
-                               name="fecha_inicio" 
-                               id="fecha_inicio" 
-                               class="form-control" 
-                               required>
-                    </div>
-                    
-                    <div class="d-grid">
-                        <button type="submit" 
-                                class="btn btn-success btn-lg"
-                                {% if not cargos_posibles_mj %}disabled{% endif %}
-                                onclick="return confirm('¿Confirma vincular este cargo con el cargo de mayor jerarquía seleccionado?');">
-                            <i class="bi bi-link"></i> Vincular Cargos
+                <!-- Tabs para elegir tipo -->
+                <ul class="nav nav-tabs mb-3" id="tipoVinculacionTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="docente-tab" data-bs-toggle="tab" 
+                                data-bs-target="#docente-panel" type="button" role="tab">
+                            <i class="bi bi-person-badge"></i> Cargo Docente
                         </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="gestion-tab" data-bs-toggle="tab" 
+                                data-bs-target="#gestion-panel" type="button" role="tab">
+                            <i class="bi bi-briefcase"></i> Cargo de Gestión
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="tipoVinculacionTabContent">
+                    
+                    <!-- TAB 1: CARGO DOCENTE -->
+                    <div class="tab-pane fade show active" id="docente-panel" role="tabpanel">
+                        <div class="alert alert-light border">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>¿Qué sucede?</strong> Este cargo pasa a licencia M.J., 
+                                el cargo seleccionado queda activo como temporal. Al finalizar, 
+                                vuelve automáticamente a este cargo con prórroga aplicada.
+                            </small>
+                        </div>
+                        
+                        <form method="POST" id="form-docente">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="vincular">
+                            <input type="hidden" name="tipo_vinculacion" value="docente">
+                            
+                            <div class="mb-3">
+                                <label for="cargo_mj_id" class="form-label">
+                                    Cargo de Mayor Jerarquía <span class="text-danger">*</span>
+                                </label>
+                                <select name="cargo_mj_id" 
+                                        id="cargo_mj_id" 
+                                        class="form-select" 
+                                        required>
+                                    <option value="">Seleccionar cargo...</option>
+                                    {% for cargo_pos in cargos_posibles_mj %}
+                                    <option value="{{ cargo_pos.pk }}">
+                                        {{ cargo_pos.get_categoria_display }} 
+                                        {{ cargo_pos.get_dedicacion_display }} - 
+                                        {{ cargo_pos.asignatura.nombre|title }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                {% if not cargos_posibles_mj %}
+                                <small class="form-text text-muted">
+                                    No hay otros cargos activos del docente disponibles.
+                                </small>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="fecha_inicio_docente" class="form-label">
+                                    Fecha de Inicio <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" 
+                                       name="fecha_inicio" 
+                                       id="fecha_inicio_docente" 
+                                       class="form-control" 
+                                       required>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" 
+                                        class="btn btn-success btn-lg"
+                                        {% if not cargos_posibles_mj %}disabled{% endif %}
+                                        onclick="return confirm('¿Confirma vincular este cargo con el cargo de mayor jerarquía seleccionado?');">
+                                    <i class="bi bi-link"></i> Vincular con Cargo Docente
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                </form>
+                    
+                    <!-- TAB 2: CARGO DE GESTIÓN -->
+                    <div class="tab-pane fade" id="gestion-panel" role="tabpanel">
+                        <div class="alert alert-light border">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>¿Qué sucede?</strong> Este cargo pasa a licencia M.J. 
+                                por un cargo de gestión o externo. Al finalizar la licencia, 
+                                vuelve a este cargo con prórroga aplicada.
+                            </small>
+                        </div>
+                        
+                        <form method="POST" id="form-gestion">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="vincular">
+                            <input type="hidden" name="tipo_vinculacion" value="gestion">
+                            
+                            <div class="mb-3">
+                                <label for="tipo_cargo_gestion" class="form-label">
+                                    Tipo de Cargo <span class="text-danger">*</span>
+                                </label>
+                                <select name="tipo_cargo_gestion" 
+                                        id="tipo_cargo_gestion" 
+                                        class="form-select" 
+                                        required>
+                                    <option value="">Seleccionar tipo...</option>
+                                    {% for value, label in tipo_cargo_choices %}
+                                    {% if value != 'docente' %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                    {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="descripcion_cargo_gestion" class="form-label">
+                                    Descripción del Cargo <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" 
+                                       name="descripcion_cargo_gestion" 
+                                       id="descripcion_cargo_gestion" 
+                                       class="form-control" 
+                                       placeholder="Ej: Secretario Académico, Director de Departamento Civil, etc."
+                                       maxlength="200"
+                                       required>
+                                <small class="form-text text-muted">
+                                    Describa el cargo de gestión que asumirá el docente
+                                </small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="institucion_cargo_gestion" class="form-label">
+                                    Institución
+                                </label>
+                                <input type="text" 
+                                       name="institucion_cargo_gestion" 
+                                       id="institucion_cargo_gestion" 
+                                       class="form-control" 
+                                       placeholder="Ej: Facultad Regional La Plata, UTN, etc."
+                                       maxlength="200">
+                                <small class="form-text text-muted">
+                                    Opcional: Institución donde ejercerá el cargo
+                                </small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="fecha_inicio_gestion" class="form-label">
+                                    Fecha de Inicio <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" 
+                                       name="fecha_inicio" 
+                                       id="fecha_inicio_gestion" 
+                                       class="form-control" 
+                                       required>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" 
+                                        class="btn btn-success btn-lg"
+                                        onclick="return confirm('¿Confirma registrar la licencia por cargo de gestión?');">
+                                    <i class="bi bi-briefcase"></i> Registrar Cargo de Gestión
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                </div>
             </div>
         </div>
-        {% else %}
-        <!-- Ya tiene cargo temporal vinculado -->
+        
+        {% elif info_mj.tiene_cargo_temporal %}
+        <!-- Ya tiene cargo temporal DOCENTE vinculado -->
         <div class="alert alert-warning">
             <h5 class="alert-heading">
                 <i class="bi bi-exclamation-triangle"></i> Cargo Base en Licencia por Mayor Jerarquía
             </h5>
+            <p class="mb-1">
+                <strong>Tipo:</strong> Cargo Docente
+            </p>
             <hr>
             <p class="mb-1">
                 <strong>Cargo temporal activo:</strong>
@@ -113,6 +233,43 @@
             <a href="{% url 'planta_docente:detalle_cargo' pk=info_mj.cargo_temporal.id %}" 
                class="btn btn-warning">
                 <i class="bi bi-eye"></i> Ver Cargo Temporal
+            </a>
+        </div>
+        
+        {% elif info_mj.es_cargo_gestion %}
+        <!-- Ya tiene cargo de GESTIÓN registrado -->
+        <div class="alert alert-info">
+            <h5 class="alert-heading">
+                <i class="bi bi-briefcase"></i> Cargo Base en Licencia por Cargo de Gestión
+            </h5>
+            <hr>
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-1"><strong>Tipo:</strong></p>
+                    <p>{{ info_mj.cargo_gestion.tipo }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p class="mb-1"><strong>Cargo:</strong></p>
+                    <p>{{ info_mj.cargo_gestion.descripcion }}</p>
+                </div>
+                {% if info_mj.cargo_gestion.institucion %}
+                <div class="col-md-6">
+                    <p class="mb-1"><strong>Institución:</strong></p>
+                    <p>{{ info_mj.cargo_gestion.institucion }}</p>
+                </div>
+                {% endif %}
+                <div class="col-md-6">
+                    <p class="mb-1"><strong>Desde:</strong></p>
+                    <p>{{ info_mj.cargo_gestion.fecha_inicio|date:"d/m/Y" }}</p>
+                </div>
+            </div>
+            <hr>
+            <p class="mb-2">
+                <strong>Para finalizar la licencia:</strong>
+            </p>
+            <a href="{% url 'planta_docente:gestionar_licencia_cargo' pk=cargo.pk %}" 
+               class="btn btn-primary">
+                <i class="bi bi-arrow-counterclockwise"></i> Dar de Baja Licencia M.J.
             </a>
         </div>
         {% endif %}
@@ -199,6 +356,25 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!input.value) {
             input.value = today;
         }
+    });
+    
+    // Limpiar validaciones al cambiar de tab
+    const tabs = document.querySelectorAll('button[data-bs-toggle="tab"]');
+    tabs.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function (event) {
+            // Remover required de los campos del tab inactivo
+            const allForms = document.querySelectorAll('#tipoVinculacionTabContent form');
+            allForms.forEach(form => {
+                const inputs = form.querySelectorAll('input[required], select[required]');
+                inputs.forEach(input => {
+                    if (form.closest('.tab-pane').classList.contains('active')) {
+                        input.setAttribute('required', 'required');
+                    } else {
+                        input.removeAttribute('required');
+                    }
+                });
+            });
+        });
     });
 });
 </script>
