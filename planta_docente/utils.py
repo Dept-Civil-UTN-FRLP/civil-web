@@ -604,3 +604,157 @@ def calcular_proximo_vencimiento(cargos_queryset) -> Tuple[Optional[date], int]:
     ).count()
 
     return primer_vencimiento, cantidad
+
+
+def obtener_cargo_efectivo(cargo) -> Dict[str, any]:
+    """
+    Determina el cargo efectivo actual de un docente, considerando licencias.
+    
+    El "cargo efectivo" es lo que el docente está ejerciendo AHORA:
+    - Si está activo sin licencia → el cargo mismo
+    - Si está en licencia M.J. con cargo docente → el cargo temporal
+    - Si está en licencia M.J. por gestión → descripción del cargo de gestión
+    - Si está en licencia normal → el cargo con indicador de licencia
+    
+    Args:
+        cargo (Cargo): Instancia del modelo Cargo
+        
+    Returns:
+        dict: Diccionario con información del cargo efectivo:
+            - tipo (str): Tipo de situación
+                * 'normal': Cargo activo sin licencia
+                * 'licencia_mj_docente': En licencia M.J. con cargo docente temporal
+                * 'licencia_mj_gestion': En licencia M.J. por cargo de gestión
+                * 'licencia_normal': En licencia normal
+                * 'inactivo': Cargo dado de baja, vencido o docente jubilado
+            - cargo_efectivo_display (str): Categoría del cargo efectivo
+            - asignatura_efectiva_display (str): Asignatura donde trabaja ahora
+            - observacion (str|None): Información adicional (cargo base, tipo licencia, etc.)
+            - badge_class (str): Clase CSS para el badge
+            - es_cargo_temporal (bool): Si es un cargo temporal por M.J.
+            - cargo_base_info (dict|None): Info del cargo base si está en licencia M.J.
+            
+    Example:
+        >>> cargo = Cargo.objects.get(pk=1)
+        >>> info = obtener_cargo_efectivo(cargo)
+        >>> print(info)
+        {
+            'tipo': 'licencia_mj_docente',
+            'cargo_efectivo_display': 'Profesor Adjunto',
+            'asignatura_efectiva_display': 'Álgebra',
+            'observacion': 'Base: JTP - Física',
+            'badge_class': 'bg-warning',
+            'es_cargo_temporal': True,
+            'cargo_base_info': {...}
+        }
+    """
+    from django.utils import timezone
+
+    # CASO 5: Cargo inactivo (baja, vencido, o docente jubilado)
+    if cargo.estado == 'baja' or cargo.docente.jubilado:
+        return {
+            'tipo': 'inactivo',
+            'cargo_efectivo_display': cargo.get_categoria_display(),
+            'asignatura_efectiva_display': cargo.asignatura.nombre if cargo.asignatura else '-',
+            'observacion': 'Dado de baja' if cargo.estado == 'baja' else 'Docente jubilado',
+            'badge_class': 'bg-secondary',
+            'es_cargo_temporal': False,
+            'cargo_base_info': None,
+        }
+
+    # Verificar si está vencido
+    if cargo.fecha_vencimiento and cargo.fecha_vencimiento < timezone.now().date():
+        return {
+            'tipo': 'inactivo',
+            'cargo_efectivo_display': cargo.get_categoria_display(),
+            'asignatura_efectiva_display': cargo.asignatura.nombre if cargo.asignatura else '-',
+            'observacion': 'Vencido',
+            'badge_class': 'bg-danger',
+            'es_cargo_temporal': False,
+            'cargo_base_info': None,
+        }
+
+    # CASO 1: Activo sin licencia M.J.
+    if cargo.estado == 'activo' and not cargo.en_licencia_mayor_jerarquia:
+        return {
+            'tipo': 'normal',
+            'cargo_efectivo_display': cargo.get_categoria_display(),
+            'asignatura_efectiva_display': cargo.asignatura.nombre if cargo.asignatura else '-',
+            'observacion': None,
+            'badge_class': 'bg-success',
+            'es_cargo_temporal': False,
+            'cargo_base_info': None,
+        }
+
+    # CASO 2: Licencia M.J. con cargo docente vinculado
+    if cargo.en_licencia_mayor_jerarquia and cargo.tipo_cargo_mj == 'docente':
+        # Buscar el cargo temporal vinculado
+        cargo_temporal = None
+        if hasattr(cargo, 'cargo_temporal_mj'):
+            cargo_temporal = cargo.cargo_temporal_mj.filter(
+                es_cargo_mayor_jerarquia=True,
+                estado='activo'
+            ).first()
+
+        if cargo_temporal:
+            observacion = f"Base: {cargo.get_categoria_display()} - {cargo.asignatura.nombre if cargo.asignatura else 'Sin asignatura'}"
+
+            return {
+                'tipo': 'licencia_mj_docente',
+                'cargo_efectivo_display': cargo_temporal.get_categoria_display(),
+                'asignatura_efectiva_display': cargo_temporal.asignatura.nombre if cargo_temporal.asignatura else '-',
+                'observacion': observacion,
+                'badge_class': 'bg-warning',
+                'es_cargo_temporal': True,
+                'cargo_base_info': {
+                    'categoria': cargo.get_categoria_display(),
+                    'asignatura': cargo.asignatura.nombre if cargo.asignatura else '-',
+                },
+            }
+
+    # CASO 3: Licencia M.J. por cargo de gestión
+    if cargo.en_licencia_mayor_jerarquia and cargo.tipo_cargo_mj and cargo.tipo_cargo_mj != 'docente':
+        cargo_gestion_display = cargo.descripcion_cargo_mj or cargo.get_tipo_cargo_mj_display()
+        if cargo.institucion_cargo_mj:
+            cargo_gestion_display += f" ({cargo.institucion_cargo_mj})"
+
+        observacion = f"Base: {cargo.get_categoria_display()} - {cargo.asignatura.nombre if cargo.asignatura else 'Sin asignatura'}"
+
+        return {
+            'tipo': 'licencia_mj_gestion',
+            'cargo_efectivo_display': cargo_gestion_display,
+            'asignatura_efectiva_display': '-',
+            'observacion': observacion,
+            'badge_class': 'bg-info',
+            'es_cargo_temporal': False,
+            'cargo_base_info': {
+                'categoria': cargo.get_categoria_display(),
+                'asignatura': cargo.asignatura.nombre if cargo.asignatura else '-',
+            },
+        }
+
+    # CASO 4: Licencia normal (NO M.J.)
+    if cargo.en_licencia_normal:
+        fecha_fin_str = cargo.fecha_fin_licencia_normal.strftime(
+            '%d/%m/%Y') if cargo.fecha_fin_licencia_normal else 'Sin fecha'
+
+        return {
+            'tipo': 'licencia_normal',
+            'cargo_efectivo_display': cargo.get_categoria_display(),
+            'asignatura_efectiva_display': cargo.asignatura.nombre if cargo.asignatura else '-',
+            'observacion': f'En Licencia hasta {fecha_fin_str}',
+            'badge_class': 'bg-primary',
+            'es_cargo_temporal': False,
+            'cargo_base_info': None,
+        }
+
+    # Fallback: Si no matchea ningún caso (no debería pasar)
+    return {
+        'tipo': 'desconocido',
+        'cargo_efectivo_display': cargo.get_categoria_display(),
+        'asignatura_efectiva_display': cargo.asignatura.nombre if cargo.asignatura else '-',
+        'observacion': 'Estado desconocido',
+        'badge_class': 'bg-secondary',
+        'es_cargo_temporal': False,
+        'cargo_base_info': None,
+    }

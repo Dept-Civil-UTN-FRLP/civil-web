@@ -5,7 +5,7 @@
 
 <!-- Encabezado con estadísticas -->
 <div class="row mb-4">
-    <div class="col-md-3">
+    <div class="col-md-2">
         <div class="card text-center">
             <div class="card-body">
                 <h3 class="mb-0">{{ stats.total_cargos }}</h3>
@@ -13,11 +13,19 @@
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2">
         <div class="card text-center">
             <div class="card-body">
                 <h3 class="mb-0 text-success">{{ stats.cargos_activos }}</h3>
                 <p class="text-muted mb-0">Activos</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center border-warning">
+            <div class="card-body">
+                <h3 class="mb-0 text-warning">{{ stats.cargos_licencia_mj }}</h3>
+                <p class="text-muted mb-0">Lic. M.J.</p>
             </div>
         </div>
     </div>
@@ -46,13 +54,15 @@
         </div>
     </div>
 </div>
+
 <!-- Botón Nuevo Cargo -->
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3><i class="bi bi-table"></i> Listado de Cargos</h3>
+    <h3><i class="bi bi-table"></i> Cargos Efectivos Actuales</h3>
     <a href="{% url 'planta_docente:crear_cargo' %}" class="btn btn-success">
         <i class="bi bi-plus-circle"></i> Nuevo Cargo
     </a>
 </div>
+
 <!-- Filtros y búsqueda -->
 <div class="card mb-4">
     <div class="card-header">
@@ -71,7 +81,7 @@
             <!-- Estado -->
             <div class="col-md-2">
                 <label class="form-label">Estado</label>
-                <select name="estado" class="form-select">
+                <select name="estado" class="form-select" {% if solo_licencia_mj %}disabled{% endif %}>
                     <option value="">Todos</option>
                     {% for value, text in estado_choices %}
                     <option value="{{ value }}" {% if value == estado_filter %}selected{% endif %}>
@@ -107,21 +117,6 @@
                 </select>
             </div>
 
-            <!-- Jubilados -->
-            <div class="col-md-12">
-                <div class="form-check">
-                    <input class="form-check-input" 
-                           type="checkbox" 
-                           name="incluir_jubilados" 
-                           value="true" 
-                           id="incluir_jubilados"
-                           {% if incluir_jubilados %}checked{% endif %}>
-                    <label class="form-check-label" for="incluir_jubilados">
-                        <i class="bi bi-hourglass-bottom"></i> Incluir docentes jubilados en los resultados
-                    </label>
-                </div>
-            </div>
-
             <!-- Botones -->
             <div class="col-md-2 d-flex align-items-end">
                 <button type="submit" class="btn btn-primary me-2">
@@ -130,6 +125,56 @@
                 <a href="{% url 'planta_docente:dashboard' %}" class="btn btn-secondary">
                     <i class="bi bi-x"></i>
                 </a>
+            </div>
+
+            <!-- Checkboxes de filtro especial -->
+            <!-- Checkboxes de filtro especial -->
+            <div class="col-md-12">
+                <hr class="my-2">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" 
+                                   type="checkbox" 
+                                   name="incluir_inactivos" 
+                                   value="true" 
+                                   id="incluir_inactivos"
+                                   {% if incluir_inactivos %}checked{% endif %}
+                                   onchange="this.form.submit()">
+                            <label class="form-check-label" for="incluir_inactivos">
+                                <i class="bi bi-archive"></i> Incluir cargos inactivos (baja, vencidos, jubilados)
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" 
+                                   type="checkbox" 
+                                   name="solo_efectivos" 
+                                   value="true" 
+                                   id="solo_efectivos"
+                                   {% if solo_efectivos %}checked{% endif %}
+                                   onchange="this.form.submit()">
+                            <label class="form-check-label" for="solo_efectivos">
+                                <i class="bi bi-check-circle"></i> Solo cargos efectivos (excluir cargos base en Lic. M.J.)
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" 
+                                   type="checkbox" 
+                                   name="solo_licencia_mj" 
+                                   value="true" 
+                                   id="solo_licencia_mj"
+                                   {% if solo_licencia_mj %}checked{% endif %}
+                                   onchange="this.form.submit()">
+                            <label class="form-check-label" for="solo_licencia_mj">
+                                <i class="bi bi-arrow-up-circle"></i> Solo cargos en Licencia por Mayor Jerarquía
+                            </label>
+                        </div>
+                    </div>
+                </div>
             </div>
         </form>
     </div>
@@ -147,7 +192,9 @@
                 <thead class="table-light">
                     <tr>
                         <th>Docente</th>
-                        <th>Cargo / Asignatura</th>
+                        <th>Cargo Efectivo</th>
+                        <th>Asignatura Efectiva</th>
+                        <th>Observación/Estado</th>
                         <th>Antigüedad</th>
                         <th>Vencimiento</th>
                         <th>Edad</th>
@@ -169,16 +216,41 @@
                             <small class="text-muted">Leg. {{ cargo.docente.legajo }}</small>
                         </td>
 
-                        <!-- Cargo / Asignatura -->
+                        <!-- Cargo Efectivo -->
                         <td>
-                            <span class="badge bg-secondary">{{ cargo.get_categoria_display }}</span>
-                            <span class="badge bg-info">{{ cargo.get_caracter_display }}</span>
-                            <br>
-                            <small>{{ cargo.asignatura.nombre|title }}</small>
+                            <span class="badge bg-secondary">{{ cargo.cargo_efectivo.cargo_efectivo_display }}</span>
                             <br>
                             <small class="text-muted">
                                 {{ cargo.get_dedicacion_display }} ({{ cargo.cantidad_horas }}hs)
                             </small>
+                        </td>
+
+                        <!-- Asignatura Efectiva -->
+                        <td>
+                            <small>{{ cargo.cargo_efectivo.asignatura_efectiva_display|title }}</small>
+                        </td>
+
+                        <!-- Observación/Estado -->
+                        <td>
+                            {% if cargo.cargo_efectivo.observacion %}
+                                <span class="badge {{ cargo.cargo_efectivo.badge_class }}">
+                                    {% if cargo.cargo_efectivo.tipo == 'licencia_mj_docente' %}
+                                        <i class="bi bi-arrow-up-circle"></i>
+                                    {% elif cargo.cargo_efectivo.tipo == 'licencia_mj_gestion' %}
+                                        <i class="bi bi-briefcase"></i>
+                                    {% elif cargo.cargo_efectivo.tipo == 'licencia_normal' %}
+                                        <i class="bi bi-calendar-event"></i>
+                                    {% elif cargo.cargo_efectivo.tipo == 'inactivo' %}
+                                        <i class="bi bi-x-circle"></i>
+                                    {% endif %}
+                                </span>
+                                <br>
+                                <small class="text-muted">{{ cargo.cargo_efectivo.observacion }}</small>
+                            {% else %}
+                                <span class="badge {{ cargo.cargo_efectivo.badge_class }}">
+                                    <i class="bi bi-check-circle"></i> Normal
+                                </span>
+                            {% endif %}
                         </td>
 
                         <!-- Antigüedad -->
@@ -207,7 +279,6 @@
                                    title="Ver Carrera Académica">
                                     <i class="bi bi-check-circle"></i> Sí
                                 </a>
-                            {% comment %} {% elif cargo.caracter in 'reg,ord'|split:',' %} {% endcomment %}
                             {% elif cargo.caracter == 'reg' or cargo.caracter == 'ord' %}
                                 <span class="badge bg-warning text-dark"
                                       data-bs-toggle="tooltip"
@@ -244,7 +315,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="text-center text-muted py-4">
+                        <td colspan="10" class="text-center text-muted py-4">
                             No se encontraron cargos que coincidan con los filtros aplicados.
                         </td>
                     </tr>
