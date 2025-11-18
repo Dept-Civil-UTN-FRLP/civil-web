@@ -68,4 +68,6 @@ urlpatterns = [
          name='dashboard_asignaturas'),
     path('estructura-catedra/<int:asignatura_id>/formulario/',
          estructura_catedra.formulario_estructura, name='formulario_estructura'),
+    path('estructura-catedra/<int:asignatura_id>/generar-pdf/',
+         estructura_catedra.generar_pdf_estructura, name='generar_pdf_estructura'),
 ]
