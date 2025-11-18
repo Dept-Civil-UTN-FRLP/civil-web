@@ -67,8 +67,16 @@ def dashboard_planta_view(request):
 
     # Nuevos filtros para cargos efectivos
     incluir_inactivos = request.GET.get("incluir_inactivos", "false") == "true"
-    # Por defecto "solo_efectivos" está activo
-    solo_efectivos = request.GET.get("solo_efectivos", "true") == "true"
+
+    # Solo efectivos: por defecto TRUE, pero solo si no hay parámetros GET explícitos
+    # Si el usuario desmarca, envía el formulario sin el parámetro
+    if "solo_efectivos" in request.GET:
+        # Usuario interactuó con el checkbox
+        solo_efectivos = request.GET.get("solo_efectivos") == "true"
+    else:
+        # Primera carga o filtro sin interacción → default TRUE
+        solo_efectivos = False
+
     solo_licencia_mj = request.GET.get("solo_licencia_mj", "false") == "true"
 
     # Filtro de búsqueda
