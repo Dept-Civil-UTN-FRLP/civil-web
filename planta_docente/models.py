@@ -78,6 +78,19 @@ class Asignatura(models.Model):
     hora_semanal = models.PositiveIntegerField()
     hora_total = models.PositiveIntegerField()
     dictado = models.CharField(choices=DICTADO_CHOICES, max_length=2)
+    # Campos para estructura de cátedra
+    numero_comisiones = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Número de Comisiones",
+        help_text="Cantidad de comisiones en las que se divide la asignatura"
+    )
+    numero_estudiantes = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Número de Estudiantes",
+        help_text="Promedio histórico de estudiantes en la asignatura"
+    )
 
     def __str__(self) -> str:
         return self.nombre.title()
@@ -466,6 +479,11 @@ class Cargo(models.Model):
         blank=True,
         verbose_name="Institución",
         help_text="Institución donde ejerce el cargo de mayor jerarquía"
+    )
+    cantidad_comisiones = models.PositiveIntegerField(
+        default=1,
+        verbose_name="Cantidad de Comisiones",
+        help_text="Número de comisiones que atiende este cargo"
     )
     objects = CargoManager()
 

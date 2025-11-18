@@ -15,10 +15,10 @@ from django.views.decorators.http import require_POST
 # 3. Importaciones Locales
 from carrera_academica.models import CarreraAcademica
 from config.pagination import paginate_queryset
-from .forms import CargoForm
+from planta_docente.forms import CargoForm
 
-from .models import Asignatura, Cargo, Docente, Resolucion
-from .utils import (
+from planta_docente.models import Asignatura, Cargo, Docente, Resolucion
+from planta_docente.utils import (
     calcular_antiguedad,
     calcular_edad,
     formatear_antiguedad,

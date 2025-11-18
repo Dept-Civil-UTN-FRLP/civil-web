@@ -1,7 +1,6 @@
 # planta_docente/urls.py
 from django.urls import path
-
-from . import views
+from planta_docente import views
 
 app_name = "planta_docente"
 
@@ -62,4 +61,10 @@ urlpatterns = [
     path('cargo/<int:pk>/mayor-jerarquia/',
          views.gestionar_mayor_jerarquia_cargo,
          name='gestionar_mayor_jerarquia_cargo'),
+    
+    # Estructura de Cátedra
+    path('estructura-catedra/', views.dashboard_asignaturas, name='dashboard_asignaturas'),
+    path('estructura-catedra/<int:asignatura_id>/formulario/', views.formulario_estructura, name='formulario_estructura'),
+    path('estructura-catedra/<int:asignatura_id>/generar-pdf/',
+         views.generar_pdf_estructura, name='generar_pdf_estructura'),
 ]

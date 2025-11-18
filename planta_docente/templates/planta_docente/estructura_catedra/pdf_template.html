@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estructura de Cátedra - {{ asignatura.nombre|title }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm 1.5cm;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #000;
+        }
+
+        /* Header con membrete */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 15px;
+        }
+
+        .header img {
+            max-height: 80px;
+            margin-bottom: 10px;
+        }
+
+        .header h1 {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .header .frase {
+            font-size: 9pt;
+            font-style: italic;
+            color: #555;
+        }
+
+        /* Título principal */
+        .titulo-principal {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 13pt;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        /* Información de asignatura */
+        .info-asignatura {
+            margin-bottom: 20px;
+            border: 1px solid #000;
+        }
+
+        .info-asignatura table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .info-asignatura td {
+            padding: 6px 10px;
+            border: 1px solid #000;
+        }
+
+        .info-asignatura td:first-child {
+            font-weight: bold;
+            width: 30%;
+            background-color: #f0f0f0;
+        }
+
+        /* Resumen en 3 columnas */
+        .resumen {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+
+        .resumen-item {
+            flex: 1;
+            border: 1px solid #000;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .resumen-item .label {
+            font-size: 9pt;
+            color: #555;
+            margin-bottom: 5px;
+        }
+
+        .resumen-item .value {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #000;
+        }
+
+        /* Tablas de cargos */
+        .seccion-titulo {
+            background-color: #333;
+            color: white;
+            padding: 8px 10px;
+            font-weight: bold;
+            font-size: 11pt;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        table.cargos {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table.cargos th {
+            background-color: #f0f0f0;
+            border: 1px solid #000;
+            padding: 6px 8px;
+            font-size: 9pt;
+            font-weight: bold;
+            text-align: left;
+        }
+
+        table.cargos td {
+            border: 1px solid #000;
+            padding: 6px 8px;
+            font-size: 9pt;
+        }
+
+        table.cargos td.text-center {
+            text-align: center;
+        }
+
+        table.cargos tbody tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+
+        /* Footer con totales */
+        .totales {
+            background-color: #e0e0e0;
+            font-weight: bold;
+        }
+
+        /* Otros aportes */
+        .otros-aportes {
+            margin-top: 20px;
+            border: 1px solid #000;
+            padding: 10px;
+        }
+
+        .otros-aportes h3 {
+            font-size: 11pt;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .otros-aportes p {
+            white-space: pre-wrap;
+            font-size: 9pt;
+            line-height: 1.5;
+        }
+
+        /* Footer del documento */
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ccc;
+        }
+
+        .firmas {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 50px;
+        }
+
+        .firma-box {
+            text-align: center;
+            width: 40%;
+        }
+
+        .firma-linea {
+            border-top: 1px solid #000;
+            margin-bottom: 5px;
+        }
+
+        .firma-texto {
+            font-size: 9pt;
+            font-weight: bold;
+        }
+
+        /* Fecha de generación */
+        .fecha-generacion {
+            text-align: right;
+            font-size: 8pt;
+            color: #777;
+            margin-top: 10px;
+        }
+
+        /* Sin datos */
+        .sin-datos {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header con Membrete -->
+    <div class="header">
+        {% if membrete %}
+        <img src="{{ membrete.logo.path }}" alt="Logo">
+        <div class="frase">{{ membrete.frase }}</div>
+        {% else %}
+        <h1>Universidad Tecnológica Nacional</h1>
+        <div class="frase">Facultad Regional La Plata</div>
+        {% endif %}
+    </div>
+
+    <!-- Título Principal -->
+    <div class="titulo-principal">
+        Estructura de Cátedra
+    </div>
+
+    <!-- Información de la Asignatura -->
+    <div class="info-asignatura">
+        <table>
+            <tr>
+                <td>Asignatura:</td>
+                <td>{{ asignatura.nombre|upper }}</td>
+            </tr>
+            <tr>
+                <td>Nivel:</td>
+                <td>{{ asignatura.get_nivel_display|upper }}</td>
+            </tr>
+            <tr>
+                <td>Departamento:</td>
+                <td>{{ asignatura.get_departamento_display }}</td>
+            </tr>
+            <tr>
+                <td>Especialidad:</td>
+                <td>{{ asignatura.get_especialidad_display }}</td>
+            </tr>
+            <tr>
+                <td>Dictado:</td>
+                <td>{{ asignatura.get_dictado_display }}</td>
+            </tr>
+            {% if areas %}
+            <tr>
+                <td>Áreas:</td>
+                <td>{% for area in areas %}{{ area }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+            </tr>
+            {% endif %}
+            {% if bloques %}
+            <tr>
+                <td>Bloques:</td>
+                <td>{% for bloque in bloques %}{{ bloque }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+
+    <!-- Resumen -->
+    <div class="resumen">
+        <div class="resumen-item">
+            <div class="label">Número de Estudiantes</div>
+            <div class="value">{{ numero_estudiantes }}</div>
+        </div>
+        <div class="resumen-item">
+            <div class="label">Total Profesores</div>
+            <div class="value">{{ profesores|length }}</div>
+        </div>
+        <div class="resumen-item">
+            <div class="label">Total Auxiliares</div>
+            <div class="value">{{ auxiliares|length }}</div>
+        </div>
+    </div>
+
+    <!-- PROFESORES -->
+    <div class="seccion-titulo">PROFESORES</div>
+    {% if profesores %}
+    <table class="cargos">
+        <thead>
+            <tr>
+                <th>Apellido y Nombre</th>
+                <th>Categoría</th>
+                <th>Carácter</th>
+                <th>Dedicación</th>
+                <th class="text-center">Comisiones</th>
+                <th class="text-center">1ª Desig.</th>
+                <th class="text-center">Última Desig.</th>
+                <th>Antigüedad</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for prof in profesores %}
+            <tr>
+                <td>{{ prof.docente.apellido|upper }}, {{ prof.docente.nombre|title }}</td>
+                <td>{{ prof.categoria }}</td>
+                <td>{{ prof.caracter }}</td>
+                <td>{{ prof.dedicacion }}</td>
+                <td class="text-center">{{ prof.comisiones }}</td>
+                <td class="text-center">{{ prof.fecha_primera }}</td>
+                <td class="text-center">{{ prof.fecha_ultima }}</td>
+                <td>{{ prof.antiguedad }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="totales">
+                <td colspan="4">TOTAL COMISIONES PROFESORES</td>
+                <td class="text-center">{{ total_comisiones_profesores }}</td>
+                <td colspan="3"></td>
+            </tr>
+        </tbody>
+    </table>
+    {% else %}
+    <div class="sin-datos">No hay profesores asignados a esta cátedra.</div>
+    {% endif %}
+
+    <!-- AUXILIARES -->
+    <div class="seccion-titulo">AUXILIARES</div>
+    {% if auxiliares %}
+    <table class="cargos">
+        <thead>
+            <tr>
+                <th>Apellido y Nombre</th>
+                <th>Categoría</th>
+                <th>Carácter</th>
+                <th>Dedicación</th>
+                <th class="text-center">Comisiones</th>
+                <th class="text-center">1ª Desig.</th>
+                <th class="text-center">Última Desig.</th>
+                <th>Antigüedad</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for aux in auxiliares %}
+            <tr>
+                <td>{{ aux.docente.apellido|upper }}, {{ aux.docente.nombre|title }}</td>
+                <td>{{ aux.categoria }}</td>
+                <td>{{ aux.caracter }}</td>
+                <td>{{ aux.dedicacion }}</td>
+                <td class="text-center">{{ aux.comisiones }}</td>
+                <td class="text-center">{{ aux.fecha_primera }}</td>
+                <td class="text-center">{{ aux.fecha_ultima }}</td>
+                <td>{{ aux.antiguedad }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="totales">
+                <td colspan="4">TOTAL COMISIONES AUXILIARES</td>
+                <td class="text-center">{{ total_comisiones_auxiliares }}</td>
+                <td colspan="3"></td>
+            </tr>
+        </tbody>
+    </table>
+    {% else %}
+    <div class="sin-datos">No hay auxiliares asignados a esta cátedra.</div>
+    {% endif %}
+
+    <!-- OTROS APORTES -->
+    {% if otros_aportes %}
+    <div class="otros-aportes">
+        <h3>OTROS APORTES A LA CÁTEDRA</h3>
+        <p>{{ otros_aportes }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="firmas">
+            <div class="firma-box">
+                <div class="firma-linea"></div>
+                <div class="firma-texto">Firma del Responsable de Cátedra</div>
+            </div>
+            <div class="firma-box">
+                <div class="firma-linea"></div>
+                <div class="firma-texto">Firma del Director de Departamento</div>
+            </div>
+        </div>
+        <div class="fecha-generacion">
+            Generado el {{ fecha_generacion|date:"d/m/Y H:i" }}
+        </div>
+    </div>
+</body>
+</html>
