@@ -1,8 +1,7 @@
 # planta_docente/urls.py
 from django.urls import path
-
 from . import views
-from planta_docente.views import estructura_catedra
+from .views import estructura_catedra
 
 app_name = "planta_docente"
 
