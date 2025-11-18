@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Estructura de Cátedra - Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-3">
+                <i class="bi bi-diagram-3"></i> Estructura de Cátedra
+            </h1>
+            <p class="text-muted">Generá reportes de estructura docente por asignatura</p>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="nombre" class="form-label">Nombre</label>
+                    <input type="text" class="form-control" id="nombre" name="nombre" 
+                           value="{{ filtros.nombre }}" placeholder="Buscar por nombre...">
+                </div>
+                <div class="col-md-2">
+                    <label for="nivel" class="form-label">Nivel</label>
+                    <select class="form-select" id="nivel" name="nivel">
+                        <option value="">Todos</option>
+                        {% for value, label in nivel_choices %}
+                        <option value="{{ value }}" {% if filtros.nivel == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="departamento" class="form-label">Departamento</label>
+                    <select class="form-select" id="departamento" name="departamento">
+                        <option value="">Todos</option>
+                        {% for value, label in depto_choices %}
+                        <option value="{{ value }}" {% if filtros.departamento == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="especialidad" class="form-label">Especialidad</label>
+                    <select class="form-select" id="especialidad" name="especialidad">
+                        <option value="">Todas</option>
+                        {% for value, label in especialidad_choices %}
+                        <option value="{{ value }}" {% if filtros.especialidad == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resultados -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Asignaturas ({{ page_obj.paginator.count }})</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nombre</th>
+                            <th class="text-center">Nivel</th>
+                            <th>Departamento</th>
+                            <th>Especialidad</th>
+                            <th class="text-center">Dictado</th>
+                            <th class="text-center">Obligatoria</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for asignatura in page_obj %}
+                        <tr>
+                            <td>
+                                <strong>{{ asignatura.nombre|title }}</strong>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-secondary">{{ asignatura.get_nivel_display }}</span>
+                            </td>
+                            <td>{{ asignatura.get_departamento_display }}</td>
+                            <td>{{ asignatura.get_especialidad_display }}</td>
+                            <td class="text-center">{{ asignatura.get_dictado_display }}</td>
+                            <td class="text-center">
+                                {% if asignatura.obligatoria %}
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                                {% else %}
+                                <i class="bi bi-dash-circle text-muted"></i>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'planta_docente:formulario_estructura' asignatura.pk %}" 
+                                   class="btn btn-sm btn-primary">
+                                    <i class="bi bi-file-earmark-pdf"></i> Ver Estructura
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                No se encontraron asignaturas con los filtros aplicados.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Paginación -->
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer">
+            <nav aria-label="Paginación">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% for key, value in filtros.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            Primera
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in filtros.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            Anterior
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in filtros.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            Siguiente
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in filtros.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            Última
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Configurar Estructura - {{ asignatura.nombre|title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'planta_docente:dashboard_asignaturas' %}">Estructura de Cátedra</a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">
+                        {{ asignatura.nombre|title }}
+                    </li>
+                </ol>
+            </nav>
+            <h1 class="h3 mb-3">
+                <i class="bi bi-file-earmark-pdf"></i> Configurar Estructura de Cátedra
+            </h1>
+            <p class="text-muted">{{ asignatura.nombre|title }} - Nivel {{ asignatura.get_nivel_display }}</p>
+        </div>
+    </div>
+
+    <form method="post" action="{% url 'planta_docente:generar_pdf_estructura' asignatura.pk %}" target="_blank">
+        {% csrf_token %}
+        
+        <!-- Información de la Asignatura -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Información de la Asignatura</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="numero_estudiantes" class="form-label">
+                            Número de Estudiantes <span class="text-danger">*</span>
+                        </label>
+                        <input type="number" class="form-control" id="numero_estudiantes" 
+                               name="numero_estudiantes" 
+                               value="{{ asignatura.numero_estudiantes|default:'' }}"
+                               min="1" required>
+                        <div class="form-text">Promedio de estudiantes inscriptos</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Comisiones Configuradas</label>
+                        <input type="text" class="form-control" 
+                               value="{{ asignatura.numero_comisiones|default:'No configurado' }}" 
+                               disabled>
+                        <div class="form-text">Se calcula automáticamente desde los cargos</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vista previa de Cargos -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-people"></i> Cargos Activos ({{ cargos.count }})</h5>
+            </div>
+            <div class="card-body">
+                {% if cargos %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Docente</th>
+                                <th>Categoría</th>
+                                <th>Carácter</th>
+                                <th>Dedicación</th>
+                                <th class="text-center">Comisiones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cargo in cargos %}
+                            <tr>
+                                <td>{{ cargo.docente }}</td>
+                                <td>{{ cargo.get_categoria_display }}</td>
+                                <td>{{ cargo.get_caracter_display }}</td>
+                                <td>{{ cargo.get_dedicacion_display }}</td>
+                                <td class="text-center">{{ cargo.cantidad_comisiones }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning mb-0">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    No hay cargos activos configurados para esta asignatura.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Secciones Opcionales -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-gear"></i> Secciones del Reporte</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="incluir_areas" 
+                           name="incluir_areas" checked>
+                    <label class="form-check-label" for="incluir_areas">
+                        <strong>Incluir Áreas</strong>
+                        <span class="text-muted d-block">Mostrar áreas de la asignatura</span>
+                    </label>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="incluir_bloques" 
+                           name="incluir_bloques" checked>
+                    <label class="form-check-label" for="incluir_bloques">
+                        <strong>Incluir Bloques</strong>
+                        <span class="text-muted d-block">Mostrar bloques de la asignatura</span>
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="incluir_otros_aportes" 
+                           name="incluir_otros_aportes" checked>
+                    <label class="form-check-label" for="incluir_otros_aportes">
+                        <strong>Incluir Otros Aportes</strong>
+                        <span class="text-muted d-block">Mostrar sección de otros aportes</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Otros Aportes -->
+        <div class="card mb-4" id="otros-aportes-section">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-pencil"></i> Otros Aportes (Opcional)</h5>
+            </div>
+            <div class="card-body">
+                <textarea class="form-control" id="otros_aportes" name="otros_aportes" 
+                          rows="4" placeholder="Becarios, pasantes, colaboradores, etc."></textarea>
+                <div class="form-text">Información adicional sobre la cátedra</div>
+            </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="bi bi-file-earmark-pdf"></i> Generar PDF
+            </button>
+            <a href="{% url 'planta_docente:dashboard_asignaturas' %}" class="btn btn-outline-secondary btn-lg">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+// Mostrar/ocultar sección otros aportes según checkbox
+document.getElementById('incluir_otros_aportes').addEventListener('change', function() {
+    const section = document.getElementById('otros-aportes-section');
+    if (this.checked) {
+        section.style.display = 'block';
+    } else {
+        section.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}
