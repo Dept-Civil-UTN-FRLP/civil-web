@@ -346,6 +346,60 @@
         {% endif %}
     </div>
 </div>
+
+    <!-- Funciones Sustantivas -->
+{% with requiere, razon=cargo.requiere_funciones_sustantivas %}
+{% if requiere %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-list-check"></i> Funciones Sustantivas
+            {% with completo, mensaje=cargo.tiene_funciones_sustantivas_completas %}
+            {% if not completo %}
+                <span class="badge bg-warning text-dark">Incompleto</span>
+            {% else %}
+                <span class="badge bg-success">Completo</span>
+            {% endif %}
+            {% endwith %}
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info mb-3">
+            <i class="bi bi-info-circle"></i> {{ razon }}
+        </div>
+        
+        {% with funciones=cargo.get_funciones_sustantivas_activas %}
+        {% if funciones %}
+            <p class="mb-2"><strong>Funciones Registradas ({{ funciones.count }}):</strong></p>
+            <ul class="mb-3">
+                {% for funcion in funciones %}
+                <li>
+                    {{ funcion.get_tipo_actividad_display }}
+                    {% if funcion.asignatura_vinculada %}
+                        - {{ funcion.asignatura_vinculada.nombre|title }}
+                    {% endif %}
+                    {% if funcion.horas_semanales %}
+                        ({{ funcion.horas_semanales }}hs)
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="alert alert-warning mb-3">
+                <i class="bi bi-exclamation-triangle"></i>
+                No hay funciones sustantivas registradas.
+            </div>
+        {% endif %}
+        {% endwith %}
+        
+        <a href="{% url 'planta_docente:gestionar_funciones_sustantivas' cargo.pk %}" 
+           class="btn btn-primary">
+            <i class="bi bi-gear"></i> Gestionar Funciones Sustantivas
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endwith %}
         <!-- Resoluciones -->
         <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
@@ -463,6 +517,13 @@
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
+                    <a href="{% url 'planta_docente:gestionar_funciones_sustantivas' cargo.pk %}" 
+                       class="btn btn-outline-primary">
+                        <i class="bi bi-list-check"></i> Funciones Sustantivas
+                        {% if cargo.requiere_funciones_sustantivas.0 %}
+                            <span class="badge bg-warning text-dark">!</span>
+                        {% endif %}
+                    </a>
                     <a href="{% url 'planta_docente:detalle_docente' pk=cargo.docente.pk %}" 
                        class="btn btn-outline-primary">
                         <i class="bi bi-person"></i> Ver Docente
