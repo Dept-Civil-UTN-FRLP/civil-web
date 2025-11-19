@@ -1077,6 +1077,80 @@ class Cargo(models.Model):
 
         return info
     
+    def requiere_funciones_sustantivas(self):
+        """
+        Verifica si el cargo requiere declarar funciones sustantivas.
+        Según normativa: asignaturas de 2-3hs cátedra requieren funciones sustantivas.
+        """
+        if not self.asignatura:
+            return False, "No tiene asignatura asignada"
+
+        horas = self.asignatura.hora_semanal or 0
+
+        if horas in [2, 3]:
+            return True, f"Asignatura con {horas}hs cátedra requiere declarar funciones sustantivas (Normativa de Concursos)"
+
+        return False, None
+
+    def get_funciones_sustantivas_activas(self):
+        """Retorna las funciones sustantivas actualmente vigentes"""
+        return self.actividades_sustantivas.filter(activa=True)
+
+    def resumen_funciones_sustantivas(self):
+        """Genera un resumen de funciones sustantivas por categoría"""
+        funciones = self.get_funciones_sustantivas_activas()
+
+        resumen = {
+            'docencia_grado': [],
+            'docencia_posgrado': [],
+            'investigacion': [],
+            'extension': [],
+        }
+
+        for funcion in funciones:
+            resumen[funcion.categoria].append(funcion)
+
+        return resumen
+
+    def tiene_funciones_sustantivas_completas(self):
+        """
+        Verifica si el cargo tiene funciones sustantivas declaradas
+        cuando son requeridas.
+        """
+        requiere, razon = self.requiere_funciones_sustantivas()
+
+        if not requiere:
+            return True, "No requiere funciones sustantivas"
+
+        funciones_activas = self.get_funciones_sustantivas_activas().count()
+
+        if funciones_activas == 0:
+            return False, "Requiere funciones sustantivas pero no tiene ninguna declarada"
+
+        return True, f"Tiene {funciones_activas} función(es) sustantiva(s) declarada(s)"
+
+    def get_horas_funciones_sustantivas(self):
+        """
+        Calcula el total de horas dedicadas a funciones sustantivas.
+        Retorna diccionario con totales por categoría.
+        """
+        funciones = self.get_funciones_sustantivas_activas()
+
+        totales = {
+            'docencia_grado': 0,
+            'docencia_posgrado': 0,
+            'investigacion': 0,
+            'extension': 0,
+            'total': 0,
+        }
+
+        for funcion in funciones:
+            if funcion.horas_semanales:
+                totales[funcion.categoria] += funcion.horas_semanales
+                totales['total'] += funcion.horas_semanales
+
+        return totales
+    
     def clean(self):
         """Validaciones a nivel de modelo."""
         super().clean()
