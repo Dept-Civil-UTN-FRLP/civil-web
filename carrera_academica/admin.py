@@ -5,6 +5,7 @@ from datetime import date  # Importamos date para el cálculo de la edad
 from django.contrib import admin
 
 from .models import *
+from planta_docente.models import *
 
 # ==============================================================================
 # REGISTROS SIMPLES
@@ -23,6 +24,22 @@ admin.site.register(MembreteAnual)
 # CONFIGURACIONES DE ADMIN DETALLADAS
 # ==============================================================================
 
+
+class ActividadSustantivaInline(admin.TabularInline):
+    model = ActividadSustantiva
+    extra = 0
+    fields = [
+        'tipo_actividad',
+        'asignatura_vinculada',
+        'horas_semanales',
+        'resolucion_cd',
+        'activa',
+    ]
+    autocomplete_fields = ['asignatura_vinculada', 'resolucion_cd']
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related('asignatura_vinculada', 'resolucion_cd')
 
 class AsignaturaAdmin(admin.ModelAdmin):
     list_display = (
@@ -137,7 +154,8 @@ class CargoAdmin(admin.ModelAdmin):
     search_fields = ("docente__apellido", "docente__nombre", "asignatura__nombre")
     list_filter = ("caracter", "categoria", "dedicacion", "estado")
     # <<< ADAPTACIÓN: Muestra las resoluciones dentro del cargo
-    inlines = [ResolucionInline]
+    inlines = [ActividadSustantivaInline, ResolucionInline]
+
 
 
 class ResolucionAdmin(admin.ModelAdmin):
