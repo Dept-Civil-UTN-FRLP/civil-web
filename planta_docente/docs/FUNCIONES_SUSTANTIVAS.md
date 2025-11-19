@@ -4,15 +4,62 @@ Sistema para gestionar funciones sustantivas vinculadas a cargos docentes según
 
 ## Normativa
 
-Según el reglamento de concursos UTN-FRLP:
+Según el reglamento de dedicaciones UTN-FRLP:
 
-> Los concursos se llamarán por área de conocimientos, indicando la asignatura prioritaria sobre la que el profesor desarrollará la clase pública. **Cuando la asignatura indicada sea de 2 o 3 hs cátedra**, la FR deberá presentar las **funciones sustantivas** que desarrollará el docente concursado mientras dure su designación.
+### Horas Mínimas de Dictado por Dedicación
 
-**Requisitos:**
+| Dedicación | Total Horas | Mínimo Dictado | Resto (implícito) |
+|------------|-------------|----------------|-------------------|
+| **Exclusiva (DE)** | 40hs | 10hs | 30hs (preparación, investigación, gestión, etc.) |
+| **Semi-Exclusiva (SE)** | 20hs | 10hs | 10hs (preparación, investigación, gestión, etc.) |
+| **Simple (DS)** | 10hs | 4hs | 6hs (preparación de clases) |
+| **Media Simple (MS)** | 5hs | 1 curso | - |
 
-- Todas las funciones sustantivas deben incluirse en la **Resolución de llamado a concurso del Consejo Directivo**
-- Son **obligatorias** durante la designación del docente
-- Deben estar formalmente documentadas
+### Cálculo de Horas Efectivas
+
+```
+Horas Efectivas = horas_asignatura × cantidad_comisiones
+```
+
+**Ejemplo:**
+
+- Asignatura: 3hs semanales
+- Cargo atiende: 2 comisiones
+- **Horas efectivas = 3 × 2 = 6hs**
+
+Si el cargo es Dedicación Simple (mínimo 4hs), con 6hs cumple sin necesidad de funciones sustantivas.
+
+### Cuándo se Requieren Funciones Sustantivas
+
+Las funciones sustantivas son **obligatorias** cuando:
+
+```
+horas_efectivas < mínimo_dictado
+```
+
+**Ejemplos:**
+
+| Caso | Asignatura | Comisiones | Horas Efectivas | Dedicación | Mínimo | ¿Requiere? |
+|------|------------|------------|-----------------|------------|---------|------------|
+| 1 | 3hs | 1 | 3hs | Simple (4hs) | 4hs | ✓ Sí (falta 1h) |
+| 2 | 3hs | 2 | 6hs | Simple (4hs) | 4hs | ✗ No (cumple) |
+| 3 | 6hs | 1 | 6hs | Semi-Ex (10hs) | 10hs | ✓ Sí (faltan 4hs) |
+| 4 | 4hs | 1 | 4hs | Simple (4hs) | 4hs | ✗ No (cumple justo) |
+
+### Tipos de Funciones que Completan el Mínimo
+
+**Solo actividades de DOCENCIA** cuentan para completar el mínimo de dictado:
+
+- Docencia en segundo curso de grado
+- Docencia en asignaturas electivas
+- Docencia en posgrado
+
+**Otras actividades NO completan el mínimo de dictado** (pero se registran como parte de la dedicación total):
+
+- Investigación (PID)
+- Extensión
+- Tutorías
+- Dirección de proyectos finales
 
 ## Tipos de Funciones Sustantivas
 

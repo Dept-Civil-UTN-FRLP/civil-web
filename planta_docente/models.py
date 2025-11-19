@@ -1079,18 +1079,59 @@ class Cargo(models.Model):
     
     def requiere_funciones_sustantivas(self):
         """
-        Verifica si el cargo requiere declarar funciones sustantivas.
-        Según normativa: asignaturas de 2-3hs cátedra requieren funciones sustantivas.
+        Verifica si el cargo requiere funciones sustantivas según normativa.
+        Considera: dedicación, horas de asignatura y cantidad de comisiones.
+
+        NORMATIVA:
+        - Exclusiva (40hs): Mínimo 10hs dictado
+        - Semi-Exclusiva (20hs): Mínimo 10hs dictado
+        - Simple (10hs): Mínimo 4hs dictado
+        - Media Simple (5hs): Mínimo 1 curso
+
+        Horas efectivas = horas_asignatura × cantidad_comisiones
         """
         if not self.asignatura:
             return False, "No tiene asignatura asignada"
 
-        horas = self.asignatura.hora_semanal or 0
+        # Horas efectivas = horas asignatura × comisiones que atiende
+        horas_asignatura = self.asignatura.hora_semanal or 0
+        horas_efectivas = horas_asignatura * self.cantidad_comisiones
 
-        if horas in [2, 3]:
-            return True, f"Asignatura con {horas}hs cátedra requiere declarar funciones sustantivas (Normativa de Concursos)"
+        # Horas mínimas de dictado según dedicación
+        minimos_dictado = {
+            'ms': {'horas': 0, 'descripcion': '1 curso (sin mínimo de horas)'},
+            'ds': {'horas': 4, 'descripcion': '4hs de dictado'},
+            'se': {'horas': 10, 'descripcion': '10hs de dictado'},
+            'de': {'horas': 10, 'descripcion': '10hs de dictado'},
+        }
 
-        return False, None
+        config = minimos_dictado.get(self.dedicacion, {'horas': 4, 'descripcion': '4hs'})
+        minimo = config['horas']
+
+        # Caso especial: Media Simple (solo requiere 1 curso, sin importar horas)
+        if self.dedicacion == 'ms':
+            return False, f"Media Simple cumple con 1 curso ({horas_efectivas}hs efectivas)"
+
+        # Verificar si cumple mínimo de dictado
+        if horas_efectivas >= minimo:
+            mensaje = (
+                f"Cumple mínimo de {config['descripcion']}. "
+                f"Horas efectivas: {horas_efectivas}hs "
+                f"({horas_asignatura}hs/semana × {self.cantidad_comisiones} comisión/es)"
+            )
+            return False, mensaje
+
+        # Necesita funciones sustantivas para completar
+        horas_faltantes = minimo - horas_efectivas
+
+        mensaje = (
+            f"Dedicación {self.get_dedicacion_display()} requiere mínimo {minimo}hs de dictado. "
+            f"Horas efectivas actuales: {horas_efectivas}hs "
+            f"({horas_asignatura}hs/semana × {self.cantidad_comisiones} comisión/es). "
+            f"Requiere {horas_faltantes}hs adicionales mediante funciones sustantivas."
+        )
+
+        return True, mensaje
 
     def get_funciones_sustantivas_activas(self):
         """Retorna las funciones sustantivas actualmente vigentes"""
@@ -1114,20 +1155,55 @@ class Cargo(models.Model):
 
     def tiene_funciones_sustantivas_completas(self):
         """
-        Verifica si el cargo tiene funciones sustantivas declaradas
-        cuando son requeridas.
+        Verifica si las funciones sustantivas completan el mínimo de dictado requerido.
         """
         requiere, razon = self.requiere_funciones_sustantivas()
-
+        
+        # Si no requiere, está completo
         if not requiere:
-            return True, "No requiere funciones sustantivas"
-
-        funciones_activas = self.get_funciones_sustantivas_activas().count()
-
-        if funciones_activas == 0:
-            return False, "Requiere funciones sustantivas pero no tiene ninguna declarada"
-
-        return True, f"Tiene {funciones_activas} función(es) sustantiva(s) declarada(s)"
+            return True, razon
+        
+        # Calcular horas efectivas actuales
+        horas_asignatura = self.asignatura.hora_semanal or 0
+        horas_efectivas = horas_asignatura * self.cantidad_comisiones
+        
+        # Obtener horas de funciones sustantivas (solo docencia cuenta para dictado)
+        horas_funciones = self.get_horas_funciones_sustantivas()
+        # Solo considerar docencia para completar mínimo de dictado
+        horas_docencia_funciones = horas_funciones['docencia_grado'] + horas_funciones['docencia_posgrado']
+        
+        # Mínimo requerido de dictado
+        minimos = {
+            'ds': 4,
+            'se': 10,
+            'de': 10,
+        }
+        minimo = minimos.get(self.dedicacion, 4)
+        
+        # Total de horas de dictado
+        total_dictado = horas_efectivas + horas_docencia_funciones
+        
+        if total_dictado >= minimo:
+            mensaje = (
+                f"Cumple mínimo de {minimo}hs de dictado: "
+                f"{horas_efectivas}hs (asignatura principal) + "
+                f"{horas_docencia_funciones}hs (funciones sustantivas) = {total_dictado}hs"
+            )
+            
+            # Mencionar otras funciones si existen
+            otras = horas_funciones['investigacion'] + horas_funciones['extension']
+            if otras > 0:
+                mensaje += f". Además: {otras}hs en investigación/extensión"
+            
+            return True, mensaje
+        
+        faltante = minimo - total_dictado
+        mensaje = (
+            f"Incompleto: {total_dictado}hs de {minimo}hs requeridas de dictado. "
+            f"Faltan {faltante}hs de docencia por completar con funciones sustantivas."
+        )
+        
+        return False, mensaje
 
     def get_horas_funciones_sustantivas(self):
         """
