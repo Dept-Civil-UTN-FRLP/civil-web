@@ -9,7 +9,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from weasyprint import HTML
 
-from planta_docente.models import Asignatura, Cargo
+from planta_docente.models import Asignatura, Cargo, ActividadSustantiva
 
 
 @login_required
@@ -145,27 +145,41 @@ def generar_pdf_estructura(request, asignatura_id):
 
         # Última designación: resolución más reciente de alta o designación
         resoluciones = cargo.resoluciones.filter(
-            objeto__in=["alta", "designacion"]
-        ).order_by("-año", "-numero")
+            objeto__in=['alta', 'designacion']
+        ).order_by('-año', '-numero')
 
-        fecha_ultima = (
-            resoluciones.first().año
-            if resoluciones.exists()
-            else cargo.fecha_inicio.year
-        )
+        fecha_ultima = resoluciones.first(
+        ).año if resoluciones.exists() else cargo.fecha_inicio.year
 
         # Antigüedad
         antiguedad = calcular_antiguedad(fecha_primera)
 
+        # Verificar si es función sustantiva desde otro cargo
+        es_funcion_sustantiva = False
+        cargo_origen = None
+
+        # Buscar si este docente tiene una función sustantiva en esta asignatura
+        funcion_sustantiva = ActividadSustantiva.objects.filter(
+            cargo__docente=cargo.docente,
+            asignatura_vinculada=asignatura,
+            activa=True
+        ).select_related('cargo').first()
+
+        if funcion_sustantiva:
+            es_funcion_sustantiva = True
+            cargo_origen = funcion_sustantiva.cargo
+
         cargo_data = {
-            "docente": cargo.docente,
-            "categoria": cargo.get_categoria_display(),
-            "caracter": cargo.get_caracter_display(),
-            "dedicacion": cargo.get_dedicacion_display(),
-            "comisiones": cargo.cantidad_comisiones,
-            "fecha_primera": fecha_primera.strftime("%d/%m/%Y"),
-            "fecha_ultima": fecha_ultima,
-            "antiguedad": antiguedad,
+            'docente': cargo.docente,
+            'categoria': cargo.get_categoria_display(),
+            'caracter': cargo.get_caracter_display(),
+            'dedicacion': cargo.get_dedicacion_display(),
+            'comisiones': cargo.cantidad_comisiones,
+            'fecha_primera': fecha_primera.strftime('%d/%m/%Y'),
+            'fecha_ultima': fecha_ultima,
+            'antiguedad': antiguedad,
+            'es_funcion_sustantiva': es_funcion_sustantiva,
+            'cargo_origen': cargo_origen,
         }
 
         if cargo.categoria in categorias_profesores:
