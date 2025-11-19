@@ -1,12 +1,8 @@
 # Importar todas las vistas del módulo principal
 from .main import *
+from .estructura_catedra import *
+from .funciones_sustantivas import *
 
-# Importar vistas de estructura de cátedra
-from .estructura_catedra import (
-    dashboard_asignaturas,
-    formulario_estructura,
-    generar_pdf_estructura
-)
 
 __all__ = [
     # Vistas principales (del views.py original)
@@ -34,4 +30,10 @@ __all__ = [
     'dashboard_asignaturas',
     'formulario_estructura',
     'generar_pdf_estructura',
+    # Vistas de funciones sustantivas
+    'gestionar_funciones_sustantivas',
+    'crear_funcion_sustantiva',
+    'editar_funcion_sustantiva',
+    'eliminar_funcion_sustantiva',
+    'toggle_activa_funcion_sustantiva',
 ]
