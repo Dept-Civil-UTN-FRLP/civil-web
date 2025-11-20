@@ -115,90 +115,88 @@
     </div>
 
     <!-- Listado de Funciones por Categoría -->
-    {% for categoria, nombre_cat in resumen.items %}
-        {% with funciones_cat=resumen|lookup:categoria %}
-        {% if funciones_cat %}
-        <div class="card mb-3">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    {% if categoria == 'docencia_grado' %}
-                        <i class="bi bi-book"></i> Docencia - Grado
-                    {% elif categoria == 'docencia_posgrado' %}
-                        <i class="bi bi-mortarboard"></i> Docencia - Posgrado
-                    {% elif categoria == 'investigacion' %}
-                        <i class="bi bi-search"></i> Investigación
-                    {% else %}
-                        <i class="bi bi-people"></i> Extensión
-                    {% endif %}
-                    <span class="badge bg-secondary">{{ funciones_cat|length }}</span>
-                </h5>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Tipo</th>
-                                <th>Descripción</th>
-                                <th>Asignatura</th>
-                                <th class="text-center">Horas</th>
-                                <th class="text-center">Estado</th>
-                                <th class="text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for funcion in funciones_cat %}
-                            <tr>
-                                <td>{{ funcion.get_tipo_actividad_display }}</td>
-                                <td>
-                                    {{ funcion.descripcion|truncatewords:10 }}
-                                    {% if funcion.nombre_proyecto %}
-                                    <br><small class="text-muted">{{ funcion.nombre_proyecto }}</small>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if funcion.asignatura_vinculada %}
-                                        {{ funcion.asignatura_vinculada.nombre|title }}
-                                    {% else %}
-                                        <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    {% if funcion.horas_semanales %}
-                                        {{ funcion.horas_semanales }}hs
-                                    {% else %}
-                                        <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    {% if funcion.vigente %}
-                                        <span class="badge bg-success">Vigente</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">No vigente</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="{% url 'planta_docente:editar_funcion_sustantiva' funcion.pk %}" 
-                                           class="btn btn-outline-primary" title="Editar">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        <a href="{% url 'planta_docente:eliminar_funcion_sustantiva' funcion.pk %}" 
-                                           class="btn btn-outline-danger" title="Eliminar">
-                                            <i class="bi bi-trash"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    {% for categoria, funciones_cat in resumen.items %}
+{% if funciones_cat %}
+<div class="card mb-3">
+    <div class="card-header">
+        <h5 class="mb-0">
+            {% if categoria == 'docencia_grado' %}
+                <i class="bi bi-book"></i> Docencia - Grado
+            {% elif categoria == 'docencia_posgrado' %}
+                <i class="bi bi-mortarboard"></i> Docencia - Posgrado
+            {% elif categoria == 'investigacion' %}
+                <i class="bi bi-search"></i> Investigación
+            {% else %}
+                <i class="bi bi-people"></i> Extensión
+            {% endif %}
+            <span class="badge bg-secondary">{{ funciones_cat|length }}</span>
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Descripción</th>
+                        <th>Asignatura</th>
+                        <th class="text-center">Horas</th>
+                        <th class="text-center">Estado</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for funcion in funciones_cat %}
+                    <tr>
+                        <td>{{ funcion.get_tipo_actividad_display }}</td>
+                        <td>
+                            {{ funcion.descripcion|truncatewords:10 }}
+                            {% if funcion.nombre_proyecto %}
+                            <br><small class="text-muted">{{ funcion.nombre_proyecto }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if funcion.asignatura_vinculada %}
+                                {{ funcion.asignatura_vinculada.nombre|title }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if funcion.horas_semanales %}
+                                {{ funcion.horas_semanales }}hs
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if funcion.vigente %}
+                                <span class="badge bg-success">Vigente</span>
+                            {% else %}
+                                <span class="badge bg-secondary">No vigente</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'planta_docente:editar_funcion_sustantiva' funcion.pk %}" 
+                                   class="btn btn-outline-primary" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'planta_docente:eliminar_funcion_sustantiva' funcion.pk %}" 
+                                   class="btn btn-outline-danger" title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-        {% endif %}
-        {% endwith %}
-    {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endfor %}
 
     <!-- Si no hay funciones -->
     {% if not funciones %}
@@ -220,5 +218,4 @@
 </div>
 
 <!-- Template tag personalizado para lookup en diccionario -->
-{% load custom_filters %}
 {% endblock %}
