@@ -17,6 +17,7 @@ class CargoForm(forms.ModelForm):
             'dedicacion',
             'cantidad_horas',
             'asignatura',
+            'cantidad_comisiones',
             'fecha_inicio',
             'fecha_vencimiento',
             'estado',
@@ -45,6 +46,11 @@ class CargoForm(forms.ModelForm):
             }),
             'asignatura': forms.Select(attrs={
                 'class': 'form-select'
+            }),
+            'cantidad_comisiones': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 1,
+                'value': 1,
             }),
             'fecha_inicio': forms.DateInput(attrs={
                 'class': 'form-control',
