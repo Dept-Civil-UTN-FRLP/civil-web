@@ -83,4 +83,7 @@ urlpatterns = [
     path('funciones-sustantivas/<int:pk>/toggle/',
          views.toggle_activa_funcion_sustantiva,
          name='toggle_activa_funcion_sustantiva'),
+    path('api/asignatura/<int:asignatura_id>/info/',
+         views.asignatura_info_api,
+         name='asignatura_info_api'),
 ]

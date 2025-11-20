@@ -1248,12 +1248,22 @@ class Cargo(models.Model):
                     code="invalid_vencimiento",
                 )
 
-        # Validación 3: Solo cargos regulares u ordinarios pueden tener fecha de vencimiento
-        # if self.fecha_vencimiento and self.caracter not in ['reg', 'ord']:
-        #    errors['fecha_vencimiento'] = ValidationError(
-        #        'Solo los cargos Regulares u Ordinarios tienen fecha de vencimiento.',
-        #        code='invalid_vencimiento_for_caracter'
-        #    )
+        # Validación: Cantidad de comisiones no puede exceder las de la asignatura
+        if self.asignatura and self.cantidad_comisiones:
+            comisiones_asignatura = self.asignatura.numero_comisiones or 1
+
+            if self.cantidad_comisiones > comisiones_asignatura:
+                errors['cantidad_comisiones'] = ValidationError(
+                    f"La asignatura '{self.asignatura.nombre}' tiene {comisiones_asignatura} comisión/es. "
+                    f"No se pueden asignar {self.cantidad_comisiones} comisiones a este cargo.",
+                    code='excede_comisiones_asignatura'
+                )
+
+            if self.cantidad_comisiones < 1:
+                errors['cantidad_comisiones'] = ValidationError(
+                    'Debe asignar al menos 1 comisión al cargo.',
+                    code='minimo_comisiones'
+                )
 
         # Validación 4: Cargos Ad-Honorem no pueden tener dedicación exclusiva o semi
         if self.caracter == "adh" and self.dedicacion in ["de", "se"]:
