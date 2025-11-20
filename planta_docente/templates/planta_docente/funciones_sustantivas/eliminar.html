@@ -95,8 +95,12 @@
                 <strong>Resolución CD:</strong>
             </div>
             <p class="text-muted">
-                Res. {{ funcion.resolucion_cd.get_origen_display }} 
-                {{ funcion.resolucion_cd.numero }}/{{ funcion.resolucion_cd.año }}
+                {% if funcion.resolucion_cd %}
+                    Res. {{ funcion.resolucion_cd.get_origen_display }} 
+                    {{ funcion.resolucion_cd.numero }}/{{ funcion.resolucion_cd.año }}
+                {% else %}
+                    <span class="badge bg-warning text-dark">Pendiente de aprobación</span>
+                {% endif %}
             </p>
         </div>
     </div>

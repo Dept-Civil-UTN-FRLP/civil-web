@@ -79,7 +79,7 @@ def crear_funcion_sustantiva(request, cargo_pk):
                     horas_semanales) if horas_semanales else None,
                 codigo_proyecto=codigo_proyecto,
                 nombre_proyecto=nombre_proyecto,
-                resolucion_cd_id=resolucion_cd_id,
+                resolucion_cd_id=resolucion_cd_id if resolucion_cd_id else None,
                 fecha_inicio=fecha_inicio,
                 fecha_fin=fecha_fin,
                 observaciones=observaciones,
@@ -142,7 +142,7 @@ def editar_funcion_sustantiva(request, pk):
             asignatura_id = request.POST.get('asignatura_vinculada')
             funcion.asignatura_vinculada_id = asignatura_id if asignatura_id else None
 
-            funcion.resolucion_cd_id = request.POST.get('resolucion_cd')
+            funcion.resolucion_cd_id = request.POST.get('resolucion_cd') or None
             funcion.fecha_inicio = request.POST.get('fecha_inicio')
 
             fecha_fin = request.POST.get('fecha_fin')

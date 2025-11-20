@@ -46,6 +46,12 @@ horas_efectivas < mínimo_dictado
 | 3 | 6hs | 1 | 6hs | Semi-Ex (10hs) | 10hs | ✓ Sí (faltan 4hs) |
 | 4 | 4hs | 1 | 4hs | Simple (4hs) | 4hs | ✗ No (cumple justo) |
 
+**Requisitos:**
+
+- Las funciones sustantivas **deberían** estar en la Resolución de Consejo Directivo
+- Se permite registrar funciones pendientes de aprobación formal
+- Una vez aprobadas, vincular con la resolución correspondiente
+
 ### Tipos de Funciones que Completan el Mínimo
 
 **Solo actividades de DOCENCIA** cuentan para completar el mínimo de dictado:
@@ -60,6 +66,7 @@ horas_efectivas < mínimo_dictado
 - Extensión
 - Tutorías
 - Dirección de proyectos finales
+
 
 ## Tipos de Funciones Sustantivas
 
@@ -96,12 +103,12 @@ horas_efectivas < mínimo_dictado
 **Campos principales:**
 
 - `cargo`: FK al cargo base (donde está designado formalmente)
-- `categoria`: Categoría calculada automáticamente (docencia_grado, docencia_posgrado, investigacion, extension)
+- `categoria`: Categoría calculada automáticamente
 - `tipo_actividad`: Tipo específico de actividad
-- `asignatura_vinculada`: Asignatura donde desarrolla la actividad (opcional, solo para docencia)
+- `asignatura_vinculada`: Asignatura donde desarrolla la actividad (opcional)
 - `descripcion`: Descripción detallada de la función
 - `horas_semanales`: Carga horaria estimada
-- `resolucion_cd`: Resolución CD que establece la función (**obligatorio**)
+- `resolucion_cd`: Resolución CD que establece la función (**opcional**, puede estar pendiente)
 - `fecha_inicio/fecha_fin`: Vigencia de la función
 - `activa`: Estado actual
 

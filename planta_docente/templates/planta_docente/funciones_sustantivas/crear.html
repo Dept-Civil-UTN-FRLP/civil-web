@@ -183,10 +183,10 @@
             <div class="card-body">
                 <div class="mb-3">
                     <label for="resolucion_cd" class="form-label">
-                        Resolución de Consejo Directivo <span class="text-danger">*</span>
+                        Resolución de Consejo Directivo <span class="text-muted">(opcional)</span>
                     </label>
-                    <select class="form-select" id="resolucion_cd" name="resolucion_cd" required>
-                        <option value="">Seleccione...</option>
+                    <select class="form-select" id="resolucion_cd" name="resolucion_cd">  <!-- ← quitar required -->
+                        <option value="">Ninguna (pendiente de aprobación)</option>
                         {% for resolucion in resoluciones %}
                         <option value="{{ resolucion.pk }}">
                             Res. {{ resolucion.get_origen_display }} {{ resolucion.numero }}/{{ resolucion.año }}
@@ -194,7 +194,7 @@
                         {% endfor %}
                     </select>
                     <div class="form-text">
-                        Resolución de llamado a concurso que establece esta función
+                        Resolución de llamado a concurso. Dejar vacío si está pendiente de aprobación.
                     </div>
                     <div class="invalid-feedback">
                         Debe seleccionar la resolución CD.

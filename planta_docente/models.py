@@ -1436,6 +1436,8 @@ class ActividadSustantiva(models.Model):
     resolucion_cd = models.ForeignKey(
         'Resolucion',
         on_delete=models.PROTECT,
+        null=True,
+        blank=True,
         related_name='actividades_sustantivas_establecidas',
         verbose_name="Resolución de Consejo Directivo",
         help_text="Resolución CD de llamado a concurso que incluye esta función"
