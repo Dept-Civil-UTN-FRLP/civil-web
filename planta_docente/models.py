@@ -1087,11 +1087,16 @@ class Cargo(models.Model):
         - Semi-Exclusiva (20hs): Mínimo 10hs dictado
         - Simple (10hs): Mínimo 4hs dictado
         - Media Simple (5hs): Mínimo 1 curso
+        - Ad-Honorem: NO requiere (sin remuneración)
 
         Horas efectivas = horas_asignatura × cantidad_comisiones
         """
         if not self.asignatura:
             return False, "No tiene asignatura asignada"
+        
+        # Cargos Ad-Honorem NO requieren funciones sustantivas
+        if self.caracter == 'adh':
+            return False, "Los cargos Ad-Honorem no requieren funciones sustantivas"
 
         # Horas efectivas = horas asignatura × comisiones que atiende
         horas_asignatura = self.asignatura.hora_semanal or 0

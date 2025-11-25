@@ -8,12 +8,13 @@ Según el reglamento de dedicaciones UTN-FRLP:
 
 ### Horas Mínimas de Dictado por Dedicación
 
-| Dedicación | Total Horas | Mínimo Dictado | Resto (implícito) |
-|------------|-------------|----------------|-------------------|
-| **Exclusiva (DE)** | 40hs | 10hs | 30hs (preparación, investigación, gestión, etc.) |
-| **Semi-Exclusiva (SE)** | 20hs | 10hs | 10hs (preparación, investigación, gestión, etc.) |
-| **Simple (DS)** | 10hs | 4hs | 6hs (preparación de clases) |
-| **Media Simple (MS)** | 5hs | 1 curso | - |
+| Dedicación | Total Horas | Mínimo Dictado | Resto (implícito) | Requiere F.S. |
+|------------|-------------|----------------|-------------------|---------------|
+| **Exclusiva (DE)** | 40hs | 10hs | 30hs (preparación, investigación, gestión) | Sí (si < 10hs) |
+| **Semi-Exclusiva (SE)** | 20hs | 10hs | 10hs (preparación, investigación, gestión) | Sí (si < 10hs) |
+| **Simple (DS)** | 10hs | 4hs | 6hs (preparación de clases) | Sí (si < 4hs) |
+| **Media Simple (MS)** | 5hs | 1 curso | - | No |
+| **Ad-Honorem (ADH)** | Variable | Sin mínimo | - | **No** |
 
 ### Cálculo de Horas Efectivas
 
