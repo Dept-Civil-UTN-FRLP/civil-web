@@ -346,7 +346,9 @@ def detalle_cargo_view(request, pk):
     # Verificar si tiene CA
     tiene_ca = hasattr(cargo, "carrera_academica")
     puede_iniciar_ca = (
-        cargo.caracter in ["reg", "ord"] and not tiene_ca and cargo.estado == "activo"
+        cargo.caracter in ["reg", "ord"] 
+        and not tiene_ca 
+        and (cargo.estado == "activo" or (cargo.estado == "licencia" and cargo.en_licencia_mayor_jerarquia))
     )
 
     # Obtener correo principal del docente
@@ -586,11 +588,19 @@ def iniciar_ca_desde_cargo_view(request, pk):
         messages.warning(request, "Este cargo ya tiene una Carrera Académica iniciada.")
         return redirect("detalle_ca", pk=cargo.carrera_academica.pk)
 
-    # Verificar que el cargo esté activo
-    if cargo.estado != "activo":
+    # Verificar que el cargo esté activo o en licencia M.J.
+    if cargo.estado == 'baja':
         messages.error(
             request,
-            f"No se puede iniciar Carrera Académica para un cargo {cargo.get_estado_display()}.",
+            "No se puede iniciar Carrera Académica para un cargo dado de baja.",
+        )
+        return redirect("planta_docente:detalle_cargo", pk=pk)
+
+    # Permitir si está en licencia por Mayor Jerarquía
+    if cargo.estado == 'licencia' and not cargo.en_licencia_mayor_jerarquia:
+        messages.error(
+            request,
+            "No se puede iniciar Carrera Académica para un cargo en licencia (excepto licencia por Mayor Jerarquía).",
         )
         return redirect("planta_docente:detalle_cargo", pk=pk)
 
