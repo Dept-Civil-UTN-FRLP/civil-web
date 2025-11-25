@@ -348,7 +348,8 @@ def detalle_cargo_view(request, pk):
     puede_iniciar_ca = (
         cargo.caracter in ["reg", "ord"] 
         and not tiene_ca 
-        and (cargo.estado == "activo" or (cargo.estado == "licencia" and cargo.en_licencia_mayor_jerarquia))
+        and cargo.estado != 'baja'
+        and not cargo.docente.jubilado
     )
 
     # Obtener correo principal del docente
@@ -585,10 +586,11 @@ def iniciar_ca_desde_cargo_view(request, pk):
 
     # Verificar que no tenga CA ya
     if hasattr(cargo, "carrera_academica"):
-        messages.warning(request, "Este cargo ya tiene una Carrera Académica iniciada.")
+        messages.warning(
+            request, "Este cargo ya tiene una Carrera Académica iniciada.")
         return redirect("detalle_ca", pk=cargo.carrera_academica.pk)
 
-    # Verificar que el cargo esté activo o en licencia M.J.
+    # Solo verificar que NO esté de baja y que el docente NO esté jubilado
     if cargo.estado == 'baja':
         messages.error(
             request,
@@ -596,11 +598,10 @@ def iniciar_ca_desde_cargo_view(request, pk):
         )
         return redirect("planta_docente:detalle_cargo", pk=pk)
 
-    # Permitir si está en licencia por Mayor Jerarquía
-    if cargo.estado == 'licencia' and not cargo.en_licencia_mayor_jerarquia:
+    if cargo.docente.jubilado:
         messages.error(
             request,
-            "No se puede iniciar Carrera Académica para un cargo en licencia (excepto licencia por Mayor Jerarquía).",
+            f"No se puede iniciar Carrera Académica para un docente jubilado ({cargo.docente}).",
         )
         return redirect("planta_docente:detalle_cargo", pk=pk)
 
