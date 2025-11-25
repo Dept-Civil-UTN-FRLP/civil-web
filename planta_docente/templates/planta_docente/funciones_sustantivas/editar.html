@@ -1,0 +1,252 @@
+{% extends "equivalencias/base.html" %}
+{% load static %}
+
+{% block title %}Editar Función Sustantiva{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'planta_docente:dashboard' %}">Planta Docente</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'planta_docente:gestionar_funciones_sustantivas' cargo.pk %}">
+                            Funciones Sustantivas
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">Editar</li>
+                </ol>
+            </nav>
+            
+            <h1 class="h3 mb-3">
+                <i class="bi bi-pencil"></i> Editar Función Sustantiva
+            </h1>
+            <p class="text-muted">
+                Cargo: <strong>{{ cargo }}</strong>
+            </p>
+        </div>
+    </div>
+
+    <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+        
+        <!-- Similar al formulario de crear, pero con valores pre-llenados -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-card-checklist"></i> Tipo de Actividad</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="tipo_actividad" class="form-label">
+                        Tipo de Actividad <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" id="tipo_actividad" name="tipo_actividad" required>
+                        <option value="">Seleccione...</option>
+                        <optgroup label="Docencia - Grado">
+                            {% for value, label in tipos_actividad %}
+                                {% if value|slice:":9" == "doc_grado" %}
+                                <option value="{{ value }}" {% if funcion.tipo_actividad == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endif %}
+                            {% endfor %}
+                        </optgroup>
+                        <optgroup label="Docencia - Posgrado">
+                            {% for value, label in tipos_actividad %}
+                                {% if value|slice:":7" == "doc_pos" %}
+                                <option value="{{ value }}" {% if funcion.tipo_actividad == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endif %}
+                            {% endfor %}
+                        </optgroup>
+                        <optgroup label="Investigación">
+                            {% for value, label in tipos_actividad %}
+                                {% if value|slice:":3" == "inv" %}
+                                <option value="{{ value }}" {% if funcion.tipo_actividad == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endif %}
+                            {% endfor %}
+                        </optgroup>
+                        <optgroup label="Extensión">
+                            {% for value, label in tipos_actividad %}
+                                {% if value|slice:":3" == "ext" %}
+                                <option value="{{ value }}" {% if funcion.tipo_actividad == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endif %}
+                            {% endfor %}
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="descripcion" class="form-label">
+                        Descripción Detallada <span class="text-danger">*</span>
+                    </label>
+                    <textarea class="form-control" id="descripcion" name="descripcion" 
+                              rows="3" required>{{ funcion.descripcion }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4" id="asignatura-section" 
+             style="{% if funcion.asignatura_vinculada %}display: block;{% else %}display: none;{% endif %}">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-book"></i> Asignatura Vinculada</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="asignatura_vinculada" class="form-label">Asignatura</label>
+                    <select class="form-select" id="asignatura_vinculada" name="asignatura_vinculada">
+                        <option value="">Ninguna</option>
+                        {% for asignatura in asignaturas %}
+                        <option value="{{ asignatura.pk }}" 
+                                {% if funcion.asignatura_vinculada.pk == asignatura.pk %}selected{% endif %}>
+                            {{ asignatura.nombre|title }} - Nivel {{ asignatura.get_nivel_display }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-folder"></i> Proyecto/Curso</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="codigo_proyecto" class="form-label">Código</label>
+                        <input type="text" class="form-control" id="codigo_proyecto" 
+                               name="codigo_proyecto" value="{{ funcion.codigo_proyecto }}">
+                    </div>
+                    <div class="col-md-8 mb-3">
+                        <label for="nombre_proyecto" class="form-label">Nombre</label>
+                        <input type="text" class="form-control" id="nombre_proyecto" 
+                               name="nombre_proyecto" value="{{ funcion.nombre_proyecto }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Carga Horaria y Vigencia</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="horas_semanales" class="form-label">Horas Semanales</label>
+                        <input type="number" class="form-control" id="horas_semanales" 
+                               name="horas_semanales" min="1" max="40" 
+                               value="{{ funcion.horas_semanales|default:'' }}">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="fecha_inicio" class="form-label">
+                            Fecha de Inicio <span class="text-danger">*</span>
+                        </label>
+                        <input type="date" class="form-control" id="fecha_inicio" 
+                               name="fecha_inicio" value="{{ funcion.fecha_inicio|date:'Y-m-d' }}" required>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="fecha_fin" class="form-label">Fecha de Fin</label>
+                        <input type="date" class="form-control" id="fecha_fin" 
+                               name="fecha_fin" value="{% if funcion.fecha_fin %}{{ funcion.fecha_fin|date:'Y-m-d' }}{% endif %}">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="activa" class="form-label">Estado</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" id="activa" 
+                                   name="activa" {% if funcion.activa %}checked{% endif %}>
+                            <label class="form-check-label" for="activa">
+                                Activa
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Resolución CD</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="resolucion_cd" class="form-label">
+                        Resolución de Consejo Directivo <span class="text-muted">(opcional)</span>
+                    </label>
+                    <select class="form-select" id="resolucion_cd" name="resolucion_cd">  <!-- ← quitar required -->
+                        <option value="">Ninguna (pendiente de aprobación)</option>
+                        {% for resolucion in resoluciones %}
+                        <option value="{{ resolucion.pk }}" 
+                                {% if funcion.resolucion_cd.pk == resolucion.pk %}selected{% endif %}>
+                            Res. {{ resolucion.get_origen_display }} {{ resolucion.numero }}/{{ resolucion.año }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-chat-left-text"></i> Observaciones</h5>
+            </div>
+            <div class="card-body">
+                <textarea class="form-control" id="observaciones" name="observaciones" 
+                          rows="3">{{ funcion.observaciones }}</textarea>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save"></i> Guardar Cambios
+            </button>
+            <a href="{% url 'planta_docente:gestionar_funciones_sustantivas' cargo.pk %}" 
+               class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle"></i> Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+// Mismo JavaScript que en crear.html
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+
+document.getElementById('tipo_actividad').addEventListener('change', function() {
+    const tipo = this.value;
+    const asignaturaSection = document.getElementById('asignatura-section');
+    const asignaturaSelect = document.getElementById('asignatura_vinculada');
+    const tiposConAsignatura = ['doc_grado_segundo', 'doc_grado_electiva'];
+    
+    if (tiposConAsignatura.includes(tipo)) {
+        asignaturaSection.style.display = 'block';
+        asignaturaSelect.required = true;
+    } else {
+        asignaturaSection.style.display = 'none';
+        asignaturaSelect.required = false;
+        asignaturaSelect.value = '';
+    }
+});
+</script>
+{% endblock %}

@@ -306,7 +306,12 @@
         <tbody>
             {% for prof in profesores %}
             <tr>
-                <td>{{ prof.docente.apellido|upper }}, {{ prof.docente.nombre|title }}</td>
+                <td>
+                    {{ prof.docente.apellido|upper }}, {{ prof.docente.nombre|title }}
+                    {% if prof.es_funcion_sustantiva %}
+                    <span style="color: #0066cc; font-size: 8pt;">*</span>
+                    {% endif %}
+                </td>
                 <td>{{ prof.categoria }}</td>
                 <td>{{ prof.caracter }}</td>
                 <td>{{ prof.dedicacion }}</td>
@@ -346,7 +351,12 @@
         <tbody>
             {% for aux in auxiliares %}
             <tr>
-                <td>{{ aux.docente.apellido|upper }}, {{ aux.docente.nombre|title }}</td>
+                <td>
+                    {{ aux.docente.apellido|upper }}, {{ aux.docente.nombre|title }}
+                    {% if aux.es_funcion_sustantiva %}
+                    <span style="color: #0066cc; font-size: 8pt;">*</span>
+                    {% endif %}
+                </td>
                 <td>{{ aux.categoria }}</td>
                 <td>{{ aux.caracter }}</td>
                 <td>{{ aux.dedicacion }}</td>
@@ -367,6 +377,29 @@
     <div class="sin-datos">No hay auxiliares asignados a esta cátedra.</div>
     {% endif %}
 
+    <!-- Leyenda Funciones Sustantivas -->
+    {% if profesores or auxiliares %}
+        {% for prof in profesores %}
+            {% if prof.es_funcion_sustantiva %}
+                {% with mostrar_leyenda=True %}{% endwith %}
+            {% endif %}
+        {% endfor %}
+        {% for aux in auxiliares %}
+            {% if aux.es_funcion_sustantiva %}
+                {% with mostrar_leyenda=True %}{% endwith %}
+            {% endif %}
+        {% endfor %}
+        
+        {% if profesores.0.es_funcion_sustantiva or auxiliares.0.es_funcion_sustantiva %}
+        <div style="margin-top: 15px; padding: 10px; border: 1px solid #0066cc; background-color: #f0f8ff;">
+            <p style="margin: 0; font-size: 9pt;">
+                <span style="color: #0066cc; font-weight: bold;">* Función Sustantiva:</span>
+                Docente con cargo en otra asignatura que desarrolla actividades sustantivas en esta cátedra según normativa de concursos.
+            </p>
+        </div>
+        {% endif %}
+    {% endif %}
+    
     <!-- OTROS APORTES -->
     {% if otros_aportes %}
     <div class="otros-aportes">

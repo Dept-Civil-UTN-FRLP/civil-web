@@ -10,7 +10,7 @@ from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
 
 # 3. Importaciones Locales
 from carrera_academica.models import CarreraAcademica
@@ -1392,3 +1392,26 @@ def gestionar_mayor_jerarquia_cargo(request, pk):
     }
 
     return render(request, 'planta_docente/gestionar_mayor_jerarquia.html', contexto)
+
+
+@require_GET
+@login_required
+def asignatura_info_api(request, asignatura_id):
+    """
+    Endpoint API simple para obtener información de una asignatura.
+    Usado para validación dinámica de comisiones en formularios.
+    """
+    try:
+        asignatura = Asignatura.objects.get(pk=asignatura_id)
+        return JsonResponse({
+            'id': asignatura.pk,
+            'nombre': asignatura.nombre,
+            'numero_comisiones': asignatura.numero_comisiones or 1,
+            'hora_semanal': asignatura.hora_semanal,
+            'nivel': asignatura.get_nivel_display(),
+            'departamento': asignatura.get_departamento_display(),
+        })
+    except Asignatura.DoesNotExist:
+        return JsonResponse({
+            'error': 'Asignatura no encontrada'
+        }, status=404)

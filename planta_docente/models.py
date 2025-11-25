@@ -1077,6 +1077,161 @@ class Cargo(models.Model):
 
         return info
     
+    def requiere_funciones_sustantivas(self):
+        """
+        Verifica si el cargo requiere funciones sustantivas según normativa.
+        Considera: dedicación, horas de asignatura y cantidad de comisiones.
+
+        NORMATIVA:
+        - Exclusiva (40hs): Mínimo 10hs dictado
+        - Semi-Exclusiva (20hs): Mínimo 10hs dictado
+        - Simple (10hs): Mínimo 4hs dictado
+        - Media Simple (5hs): Mínimo 1 curso
+        - Ad-Honorem: NO requiere (sin remuneración)
+
+        Horas efectivas = horas_asignatura × cantidad_comisiones
+        """
+        if not self.asignatura:
+            return False, "No tiene asignatura asignada"
+        
+        # Cargos Ad-Honorem NO requieren funciones sustantivas
+        if self.caracter == 'adh':
+            return False, "Los cargos Ad-Honorem no requieren funciones sustantivas"
+
+        # Horas efectivas = horas asignatura × comisiones que atiende
+        horas_asignatura = self.asignatura.hora_semanal or 0
+        horas_efectivas = horas_asignatura * self.cantidad_comisiones
+
+        # Horas mínimas de dictado según dedicación
+        minimos_dictado = {
+            'ms': {'horas': 0, 'descripcion': '1 curso (sin mínimo de horas)'},
+            'ds': {'horas': 4, 'descripcion': '4hs de dictado'},
+            'se': {'horas': 10, 'descripcion': '10hs de dictado'},
+            'de': {'horas': 10, 'descripcion': '10hs de dictado'},
+        }
+
+        config = minimos_dictado.get(self.dedicacion, {'horas': 4, 'descripcion': '4hs'})
+        minimo = config['horas']
+
+        # Caso especial: Media Simple (solo requiere 1 curso, sin importar horas)
+        if self.dedicacion == 'ms':
+            return False, f"Media Simple cumple con 1 curso ({horas_efectivas}hs efectivas)"
+
+        # Verificar si cumple mínimo de dictado
+        if horas_efectivas >= minimo:
+            mensaje = (
+                f"Cumple mínimo de {config['descripcion']}. "
+                f"Horas efectivas: {horas_efectivas}hs "
+                f"({horas_asignatura}hs/semana × {self.cantidad_comisiones} comisión/es)"
+            )
+            return False, mensaje
+
+        # Necesita funciones sustantivas para completar
+        horas_faltantes = minimo - horas_efectivas
+
+        mensaje = (
+            f"Dedicación {self.get_dedicacion_display()} requiere mínimo {minimo}hs de dictado. "
+            f"Horas efectivas actuales: {horas_efectivas}hs "
+            f"({horas_asignatura}hs/semana × {self.cantidad_comisiones} comisión/es). "
+            f"Requiere {horas_faltantes}hs adicionales mediante funciones sustantivas."
+        )
+
+        return True, mensaje
+
+    def get_funciones_sustantivas_activas(self):
+        """Retorna las funciones sustantivas actualmente vigentes"""
+        return self.actividades_sustantivas.filter(activa=True)
+
+    def resumen_funciones_sustantivas(self):
+        """Genera un resumen de funciones sustantivas por categoría"""
+        funciones = self.get_funciones_sustantivas_activas()
+
+        resumen = {
+            'docencia_grado': [],
+            'docencia_posgrado': [],
+            'investigacion': [],
+            'extension': [],
+        }
+
+        for funcion in funciones:
+            resumen[funcion.categoria].append(funcion)
+
+        return resumen
+
+    def tiene_funciones_sustantivas_completas(self):
+        """
+        Verifica si las funciones sustantivas completan el mínimo de dictado requerido.
+        """
+        requiere, razon = self.requiere_funciones_sustantivas()
+        
+        # Si no requiere, está completo
+        if not requiere:
+            return True, razon
+        
+        # Calcular horas efectivas actuales
+        horas_asignatura = self.asignatura.hora_semanal or 0
+        horas_efectivas = horas_asignatura * self.cantidad_comisiones
+        
+        # Obtener horas de funciones sustantivas (solo docencia cuenta para dictado)
+        horas_funciones = self.get_horas_funciones_sustantivas()
+        # Solo considerar docencia para completar mínimo de dictado
+        horas_docencia_funciones = horas_funciones['docencia_grado'] + horas_funciones['docencia_posgrado']
+        
+        # Mínimo requerido de dictado
+        minimos = {
+            'ds': 4,
+            'se': 10,
+            'de': 10,
+        }
+        minimo = minimos.get(self.dedicacion, 4)
+        
+        # Total de horas de dictado
+        total_dictado = horas_efectivas + horas_docencia_funciones
+        
+        if total_dictado >= minimo:
+            mensaje = (
+                f"Cumple mínimo de {minimo}hs de dictado: "
+                f"{horas_efectivas}hs (asignatura principal) + "
+                f"{horas_docencia_funciones}hs (funciones sustantivas) = {total_dictado}hs"
+            )
+            
+            # Mencionar otras funciones si existen
+            otras = horas_funciones['investigacion'] + horas_funciones['extension']
+            if otras > 0:
+                mensaje += f". Además: {otras}hs en investigación/extensión"
+            
+            return True, mensaje
+        
+        faltante = minimo - total_dictado
+        mensaje = (
+            f"Incompleto: {total_dictado}hs de {minimo}hs requeridas de dictado. "
+            f"Faltan {faltante}hs de docencia por completar con funciones sustantivas."
+        )
+        
+        return False, mensaje
+
+    def get_horas_funciones_sustantivas(self):
+        """
+        Calcula el total de horas dedicadas a funciones sustantivas.
+        Retorna diccionario con totales por categoría.
+        """
+        funciones = self.get_funciones_sustantivas_activas()
+
+        totales = {
+            'docencia_grado': 0,
+            'docencia_posgrado': 0,
+            'investigacion': 0,
+            'extension': 0,
+            'total': 0,
+        }
+
+        for funcion in funciones:
+            if funcion.horas_semanales:
+                totales[funcion.categoria] += funcion.horas_semanales
+                totales['total'] += funcion.horas_semanales
+
+        return totales
+    
     def clean(self):
         """Validaciones a nivel de modelo."""
         super().clean()
@@ -1098,12 +1253,22 @@ class Cargo(models.Model):
                     code="invalid_vencimiento",
                 )
 
-        # Validación 3: Solo cargos regulares u ordinarios pueden tener fecha de vencimiento
-        # if self.fecha_vencimiento and self.caracter not in ['reg', 'ord']:
-        #    errors['fecha_vencimiento'] = ValidationError(
-        #        'Solo los cargos Regulares u Ordinarios tienen fecha de vencimiento.',
-        #        code='invalid_vencimiento_for_caracter'
-        #    )
+        # Validación: Cantidad de comisiones no puede exceder las de la asignatura
+        if self.asignatura and self.cantidad_comisiones:
+            comisiones_asignatura = self.asignatura.numero_comisiones or 1
+
+            if self.cantidad_comisiones > comisiones_asignatura:
+                errors['cantidad_comisiones'] = ValidationError(
+                    f"La asignatura '{self.asignatura.nombre}' tiene {comisiones_asignatura} comisión/es. "
+                    f"No se pueden asignar {self.cantidad_comisiones} comisiones a este cargo.",
+                    code='excede_comisiones_asignatura'
+                )
+
+            if self.cantidad_comisiones < 1:
+                errors['cantidad_comisiones'] = ValidationError(
+                    'Debe asignar al menos 1 comisión al cargo.',
+                    code='minimo_comisiones'
+                )
 
         # Validación 4: Cargos Ad-Honorem no pueden tener dedicación exclusiva o semi
         if self.caracter == "adh" and self.dedicacion in ["de", "se"]:
@@ -1173,6 +1338,226 @@ class Cargo(models.Model):
 
     def __str__(self) -> str:
         return f"{self.docente.apellido.upper()} ({self.get_caracter_display()} en {self.asignatura.nombre.title()})"
+
+
+class ActividadSustantiva(models.Model):
+    """
+    Funciones sustantivas vinculadas al cargo según normativa de concursos.
+    Obligatorias cuando la asignatura prioritaria tiene 2-3hs cátedra.
+    Deben estar incluidas en Resolución de Consejo Directivo.
+    """
+
+    TIPO_ACTIVIDAD_CHOICES = [
+        # Docencia - Grado
+        ('doc_grado_segundo', 'Docencia - Segundo curso de grado'),
+        ('doc_grado_electiva', 'Docencia - Asignatura electiva'),
+        ('doc_grado_pf_dir', 'Docencia - Dirección de proyecto final'),
+        ('doc_grado_pf_codir', 'Docencia - Codirección de proyecto final'),
+        ('doc_grado_tutoria', 'Docencia - Tutorías de estudiantes'),
+        ('doc_grado_ps_dir', 'Docencia - Dirección de prácticas supervisadas'),
+        ('doc_grado_ps_sup', 'Docencia - Supervisión de prácticas supervisadas'),
+        ('doc_grado_tc_dir', 'Docencia - Dirección de trabajos de campo'),
+        ('doc_grado_tc_sup', 'Docencia - Supervisión de trabajos de campo'),
+
+        # Docencia - Posgrado
+        ('doc_pos_curso', 'Docencia - Curso o seminario de posgrado'),
+        ('doc_pos_tesis_dir', 'Docencia - Dirección de tesis de posgrado'),
+        ('doc_pos_tesis_codir', 'Docencia - Codirección de tesis de posgrado'),
+        ('doc_pos_pi_dir', 'Docencia - Dirección de proyecto integrador'),
+        ('doc_pos_pi_codir', 'Docencia - Codirección de proyecto integrador'),
+
+        # Investigación
+        ('inv_pid', 'Investigación - Participación en PID UTN'),
+
+        # Extensión
+        ('ext_curso', 'Extensión - Curso o seminario'),
+        ('ext_capacitacion', 'Extensión - Capacitación'),
+        ('ext_voluntariado', 'Extensión - Voluntariado universitario'),
+        ('ext_servicio', 'Extensión - Servicio al medio'),
+        ('ext_transferencia', 'Extensión - Transferencia al medio'),
+    ]
+
+    CATEGORIA_CHOICES = [
+        ('docencia_grado', 'Docencia - Grado'),
+        ('docencia_posgrado', 'Docencia - Posgrado'),
+        ('investigacion', 'Investigación'),
+        ('extension', 'Extensión'),
+    ]
+
+    cargo = models.ForeignKey(
+        'Cargo',
+        on_delete=models.CASCADE,
+        related_name='actividades_sustantivas',
+        verbose_name="Cargo"
+    )
+
+    categoria = models.CharField(
+        max_length=20,
+        choices=CATEGORIA_CHOICES,
+        verbose_name="Categoría"
+    )
+
+    tipo_actividad = models.CharField(
+        max_length=30,
+        choices=TIPO_ACTIVIDAD_CHOICES,
+        verbose_name="Tipo de Actividad"
+    )
+
+    asignatura_vinculada = models.ForeignKey(
+        'Asignatura',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='actividades_docentes_vinculadas',
+        verbose_name="Asignatura Vinculada",
+        help_text="Si es docencia en otra asignatura, especificarla aquí"
+    )
+
+    descripcion = models.TextField(
+        verbose_name="Descripción Detallada",
+        help_text="Detalle específico de la función sustantiva"
+    )
+
+    horas_semanales = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Horas Semanales Estimadas",
+        help_text="Cantidad aproximada de horas dedicadas"
+    )
+
+    codigo_proyecto = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name="Código de Proyecto/Curso",
+        help_text="Ej: PID UTN, código de asignatura electiva, etc."
+    )
+
+    nombre_proyecto = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="Nombre del Proyecto/Curso"
+    )
+
+    resolucion_cd = models.ForeignKey(
+        'Resolucion',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='actividades_sustantivas_establecidas',
+        verbose_name="Resolución de Consejo Directivo",
+        help_text="Resolución CD de llamado a concurso que incluye esta función"
+    )
+
+    fecha_inicio = models.DateField(
+        verbose_name="Fecha de Inicio",
+        help_text="Inicio de la función sustantiva"
+    )
+
+    fecha_fin = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Finalización",
+        help_text="Fin de la función (dejar vacío si es indefinida)"
+    )
+
+    activa = models.BooleanField(
+        default=True,
+        verbose_name="Activa",
+        help_text="Si la función sustantiva está actualmente vigente"
+    )
+
+    observaciones = models.TextField(
+        blank=True,
+        verbose_name="Observaciones"
+    )
+
+    fecha_carga = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de Carga"
+    )
+
+    ultima_modificacion = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Modificación"
+    )
+
+    class Meta:
+        verbose_name = "Actividad Sustantiva"
+        verbose_name_plural = "Actividades Sustantivas"
+        ordering = ['-activa', 'categoria', 'fecha_inicio']
+        indexes = [
+            models.Index(fields=['cargo', 'activa'],
+                         name='actsust_cargo_act_idx'),
+            models.Index(fields=['categoria', 'tipo_actividad'],
+                         name='actsust_cat_tipo_idx'),
+            models.Index(fields=['asignatura_vinculada'],
+                         name='actsust_asig_idx'),
+            models.Index(fields=['resolucion_cd'], name='actsust_resol_idx'),
+        ]
+
+    def clean(self):
+        """Validaciones personalizadas"""
+        super().clean()
+        errors = {}
+
+        tipos_con_asignatura = ['doc_grado_segundo', 'doc_grado_electiva']
+        if self.tipo_actividad in tipos_con_asignatura and not self.asignatura_vinculada:
+            errors['asignatura_vinculada'] = ValidationError(
+                'Este tipo de actividad requiere especificar la asignatura vinculada.',
+                code='missing_asignatura'
+            )
+
+        if self.tipo_actividad == 'inv_pid' and not self.codigo_proyecto:
+            errors['codigo_proyecto'] = ValidationError(
+                'Para PID se recomienda incluir el código del proyecto.',
+                code='missing_codigo'
+            )
+
+        if self.fecha_fin and self.fecha_fin < self.fecha_inicio:
+            errors['fecha_fin'] = ValidationError(
+                'La fecha de fin no puede ser anterior a la fecha de inicio.',
+                code='invalid_dates'
+            )
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        if self.tipo_actividad.startswith('doc_grado'):
+            self.categoria = 'docencia_grado'
+        elif self.tipo_actividad.startswith('doc_pos'):
+            self.categoria = 'docencia_posgrado'
+        elif self.tipo_actividad.startswith('inv'):
+            self.categoria = 'investigacion'
+        elif self.tipo_actividad.startswith('ext'):
+            self.categoria = 'extension'
+
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        base = f"{self.get_tipo_actividad_display()}"
+        if self.asignatura_vinculada:
+            base += f" - {self.asignatura_vinculada.nombre}"
+        elif self.nombre_proyecto:
+            base += f" - {self.nombre_proyecto}"
+        return base
+
+    @property
+    def vigente(self):
+        """Verifica si la actividad está vigente en la fecha actual"""
+        if not self.activa:
+            return False
+
+        hoy = timezone.now().date()
+        if hoy < self.fecha_inicio:
+            return False
+
+        if self.fecha_fin and hoy > self.fecha_fin:
+            return False
+
+        return True
+
 
 
 class Resolucion(models.Model):
