@@ -1405,6 +1405,76 @@ def gestionar_mayor_jerarquia_cargo(request, pk):
     return render(request, 'planta_docente/gestionar_mayor_jerarquia.html', contexto)
 
 
+@login_required
+@staff_member_required
+def editar_licencia_mayor_jerarquia_view(request, pk):
+    """
+    Editar datos de una licencia por mayor jerarquía.
+    Permite actualizar: cargo temporal, resolución CSU, fechas.
+    """
+    cargo_base = get_object_or_404(Cargo, pk=pk)
+
+    # Verificar que tiene licencia M.J.
+    if not cargo_base.en_licencia_mayor_jerarquia:
+        messages.error(
+            request, "Este cargo no tiene una licencia por mayor jerarquía registrada.")
+        return redirect("planta_docente:detalle_cargo", pk=pk)
+
+    if request.method == "POST":
+        try:
+            from datetime import datetime
+            from django.core.exceptions import ValidationError
+
+            # Obtener datos del formulario
+            resolucion_csu_id = request.POST.get("resolucion_csu")
+            fecha_inicio = request.POST.get("fecha_inicio")
+            fecha_fin = request.POST.get("fecha_fin")
+
+            # Actualizar resolución CSU (puede ser None/vacío)
+            if resolucion_csu_id:
+                cargo_base.resolucion_csu = Resolucion.objects.get(
+                    pk=resolucion_csu_id)
+            else:
+                cargo_base.resolucion_csu = None
+
+            # Actualizar fechas de licencia
+            if fecha_inicio:
+                cargo_base.fecha_inicio_licencia_mj = datetime.strptime(
+                    fecha_inicio, '%Y-%m-%d').date()
+
+            if fecha_fin:
+                cargo_base.fecha_fin_licencia_mj = datetime.strptime(
+                    fecha_fin, '%Y-%m-%d').date()
+            elif fecha_fin == '':  # Si viene vacío, limpiar la fecha
+                cargo_base.fecha_fin_licencia_mj = None
+
+            cargo_base.save()
+
+            messages.success(
+                request, "✓ Licencia por mayor jerarquía actualizada exitosamente.")
+            return redirect("planta_docente:detalle_cargo", pk=pk)
+
+        except Resolucion.DoesNotExist:
+            messages.error(request, "La resolución seleccionada no existe.")
+        except ValidationError as e:
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(
+                request, f"Error al actualizar la licencia: {str(e)}")
+
+    # GET request - Obtener resoluciones CSU disponibles
+    resoluciones_csu = Resolucion.objects.filter(
+        origen='csu'
+    ).order_by('-año', '-numero')
+
+    context = {
+        "cargo": cargo_base,
+        "resoluciones_csu": resoluciones_csu,
+    }
+
+    return render(request, "planta_docente/editar_licencia_mj.html", context)
+
+
 @require_GET
 @login_required
 def asignatura_info_api(request, asignatura_id):

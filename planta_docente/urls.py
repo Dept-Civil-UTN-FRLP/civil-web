@@ -47,6 +47,11 @@ urlpatterns = [
     path('cargo/<int:cargo_pk>/resoluciones/<int:resolucion_pk>/eliminar/',
          views.eliminar_resolucion_cargo,
          name='eliminar_resolucion_cargo'),
+    path(
+        "cargo/<int:pk>/editar-licencia-mj/",
+        views.editar_licencia_mayor_jerarquia_view,
+        name="editar_licencia_mj",
+    ),
     
     path('cargo/<int:pk>/licencia/',
          views.gestionar_licencia_cargo,

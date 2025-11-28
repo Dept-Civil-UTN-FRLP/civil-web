@@ -1,0 +1,163 @@
+{% extends "equivalencias/base.html" %}
+{% load static %}
+
+{% block title %}Editar Licencia M.J. - {{ cargo.docente }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'planta_docente:dashboard' %}">Planta Docente</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'planta_docente:detalle_cargo' cargo.pk %}">{{ cargo.docente }}</a></li>
+            <li class="breadcrumb-item active">Editar Licencia M.J.</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>
+                <i class="bi bi-arrow-up-right-circle"></i>
+                Editar Licencia por Mayor Jerarquía
+            </h2>
+            <p class="text-muted">
+                Actualizar resolución CSU y fechas de la licencia
+            </p>
+        </div>
+    </div>
+
+    <!-- Información del Cargo Base -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-briefcase"></i>
+                        Cargo Base (en licencia)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Docente:</strong> {{ cargo.docente }}<br>
+                            <strong>Categoría:</strong> {{ cargo.get_categoria_display }}<br>
+                            <strong>Carácter:</strong> {{ cargo.get_caracter_display }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Asignatura:</strong> 
+                            {% if cargo.asignatura %}
+                                {{ cargo.asignatura.nombre|title }}
+                            {% else %}
+                                <span class="text-muted">Sin asignatura</span>
+                            {% endif %}
+                            <br>
+                            <strong>Dedicación:</strong> {{ cargo.get_dedicacion_display }}<br>
+                            <strong>Estado:</strong> 
+                            <span class="badge bg-warning text-dark">
+                                En Licencia M.J.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario -->
+    <form method="post" novalidate>
+        {% csrf_token %}
+        
+        <div class="row">
+            <!-- Resolución CSU -->
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-file-earmark-text"></i>
+                            Resolución CSU
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="resolucion_csu" class="form-label">
+                                Resolución del Consejo Superior <span class="text-muted">(opcional)</span>
+                            </label>
+                            <select class="form-select" id="resolucion_csu" name="resolucion_csu">
+                                <option value="">Ninguna (pendiente de aprobación)</option>
+                                {% for resolucion in resoluciones_csu %}
+                                <option value="{{ resolucion.pk }}"
+                                        {% if cargo.resolucion_csu and cargo.resolucion_csu.pk == resolucion.pk %}selected{% endif %}>
+                                    Res. CSU {{ resolucion.numero }}/{{ resolucion.año }}
+                                    {% if resolucion.objeto %}
+                                        - {{ resolucion.get_objeto_display }}
+                                    {% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                Resolución del Consejo Superior que autoriza la licencia por mayor jerarquía
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fechas de Licencia -->
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-calendar-range"></i>
+                            Período de Licencia
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="fecha_inicio" class="form-label">
+                                Fecha de Inicio
+                            </label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="fecha_inicio" 
+                                   name="fecha_inicio"
+                                   value="{% if cargo.fecha_inicio_licencia_mj %}{{ cargo.fecha_inicio_licencia_mj|date:'Y-m-d' }}{% endif %}">
+                            <div class="form-text">
+                                Inicio de la licencia por mayor jerarquía
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="fecha_fin" class="form-label">
+                                Fecha de Fin <span class="text-muted">(opcional)</span>
+                            </label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="fecha_fin" 
+                                   name="fecha_fin"
+                                   value="{% if cargo.fecha_fin_licencia_mj %}{{ cargo.fecha_fin_licencia_mj|date:'Y-m-d' }}{% endif %}">
+                            <div class="form-text">
+                                Fin previsto de la licencia (dejar vacío si es indefinida)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'planta_docente:detalle_cargo' cargo.pk %}" 
+                       class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Guardar Cambios
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
