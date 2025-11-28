@@ -1641,19 +1641,19 @@ class Resolucion(models.Model):
                 pass  # Si el cargo aún no está asignado, se validará después
 
         # Validación 5: Validaciones específicas para licencias
-        if self.objeto == "licencia_alta":
-            if not self.fecha_inicio_licencia:
-                errors["fecha_inicio_licencia"] = ValidationError(
-                    "Debe especificar la fecha de inicio de la licencia.",
-                    code="missing_license_start",
-                )
-
-        if self.objeto == "licencia_baja":
-            if not self.fecha_fin_licencia:
-                errors["fecha_fin_licencia"] = ValidationError(
-                    "Debe especificar la fecha de fin de la licencia.",
-                    code="missing_license_end",
-                )
+        #if self.objeto == "licencia_alta":
+        #    if not self.fecha_inicio_licencia:
+        #        errors["fecha_inicio_licencia"] = ValidationError(
+        #            "Debe especificar la fecha de inicio de la licencia.",
+        #            code="missing_license_start",
+        #        )
+#
+        #if self.objeto == "licencia_baja":
+        #    if not self.fecha_fin_licencia:
+        #        errors["fecha_fin_licencia"] = ValidationError(
+        #            "Debe especificar la fecha de fin de la licencia.",
+        #            code="missing_license_end",
+        #        )
 
         # Validación 6: Fechas de licencia coherentes
         if self.fecha_inicio_licencia and self.fecha_fin_licencia:

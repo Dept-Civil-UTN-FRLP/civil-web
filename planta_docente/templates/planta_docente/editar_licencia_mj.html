@@ -1,0 +1,332 @@
+{% extends "equivalencias/base.html" %}
+{% load static %}
+
+{% block title %}Editar Licencia M.J. - {{ cargo.docente }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'planta_docente:dashboard' %}">Planta Docente</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'planta_docente:detalle_cargo' cargo.pk %}">{{ cargo.docente }}</a></li>
+            <li class="breadcrumb-item active">Editar Licencia M.J.</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>
+                <i class="bi bi-arrow-up-right-circle"></i>
+                Editar Licencia por Mayor Jerarquía
+            </h2>
+            <p class="text-muted">
+                Actualizar resolución CSU y fechas de la licencia
+            </p>
+        </div>
+    </div>
+
+    <!-- Información del Cargo Base -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-briefcase"></i>
+                        Cargo Base (en licencia)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Docente:</strong> {{ cargo.docente }}<br>
+                            <strong>Categoría:</strong> {{ cargo.get_categoria_display }}<br>
+                            <strong>Carácter:</strong> {{ cargo.get_caracter_display }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Asignatura:</strong> 
+                            {% if cargo.asignatura %}
+                                {{ cargo.asignatura.nombre|title }}
+                            {% else %}
+                                <span class="text-muted">Sin asignatura</span>
+                            {% endif %}
+                            <br>
+                            <strong>Dedicación:</strong> {{ cargo.get_dedicacion_display }}<br>
+                            <strong>Estado:</strong> 
+                            <span class="badge bg-warning text-dark">
+                                En Licencia M.J.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario -->
+    <form method="post" novalidate>
+        {% csrf_token %}
+        
+        <div class="row">
+            <!-- Resolución CSU -->
+            <div class="col-md-12 mb-3">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-file-earmark-text"></i>
+                            Resolución CSU
+                        </h5>
+                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                data-bs-toggle="modal" data-bs-target="#modalCrearResolucion">
+                            <i class="bi bi-plus-circle"></i> Crear Nueva Resolución
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="resolucion_csu" class="form-label">
+                                Resolución del Consejo Superior <span class="text-muted">(opcional)</span>
+                            </label>
+                            <select class="form-select" id="resolucion_csu" name="resolucion_csu">
+                                <option value="">Ninguna (pendiente de aprobación)</option>
+                                {% for resolucion in resoluciones_csu %}
+                                <option value="{{ resolucion.pk }}"
+                                        {% if cargo.resolucion_csu and cargo.resolucion_csu.pk == resolucion.pk %}selected{% endif %}>
+                                    Res. CSU {{ resolucion.numero }}/{{ resolucion.año }}
+                                    {% if resolucion.objeto %}
+                                        - {{ resolucion.get_objeto_display }}
+                                    {% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                Seleccione una resolución existente o cree una nueva usando el botón superior
+                            </div>
+                        </div>
+                        
+                        <!-- Mostrar resolución actual si existe -->
+                        {% if cargo.resolucion_csu %}
+                        <div class="alert alert-info">
+                            <strong>Resolución actual:</strong> 
+                            Res. CSU {{ cargo.resolucion_csu.numero }}/{{ cargo.resolucion_csu.año }}
+                            {% if cargo.resolucion_csu.objeto %}
+                                - {{ cargo.resolucion_csu.get_objeto_display }}
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fechas de Licencia -->
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-calendar-range"></i>
+                            Período de Licencia
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="fecha_inicio" class="form-label">
+                                Fecha de Inicio
+                            </label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="fecha_inicio" 
+                                   name="fecha_inicio"
+                                   value="{% if cargo.fecha_inicio_licencia_mj %}{{ cargo.fecha_inicio_licencia_mj|date:'Y-m-d' }}{% endif %}">
+                            <div class="form-text">
+                                Inicio de la licencia por mayor jerarquía
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="fecha_fin" class="form-label">
+                                Fecha de Fin <span class="text-muted">(opcional)</span>
+                            </label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="fecha_fin" 
+                                   name="fecha_fin"
+                                   value="{% if cargo.fecha_fin_licencia_mj %}{{ cargo.fecha_fin_licencia_mj|date:'Y-m-d' }}{% endif %}">
+                            <div class="form-text">
+                                Fin previsto de la licencia (dejar vacío si es indefinida)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'planta_docente:detalle_cargo' cargo.pk %}" 
+                       class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Guardar Cambios
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+
+<!-- Modal para Crear Nueva Resolución CSU -->
+<div class="modal fade" id="modalCrearResolucion" tabindex="-1" aria-labelledby="modalCrearResolucionLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalCrearResolucionLabel">
+                    <i class="bi bi-file-earmark-plus"></i>
+                    Crear Nueva Resolución CSU
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formCrearResolucion" method="post" action="{% url 'planta_docente:crear_resolucion_csu_ajax' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="cargo_id" value="{{ cargo.pk }}">
+                
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="numero_res" class="form-label">
+                                Número <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="numero_res" 
+                                   name="numero" 
+                                   required
+                                   min="1">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="año_res" class="form-label">
+                                Año <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="año_res" 
+                                   name="año" 
+                                   required
+                                   min="2000"
+                                   max="2100"
+                                   value="{{ current_year }}">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="objeto_res" class="form-label">
+                                Objeto <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="objeto_res" name="objeto" required>
+                                <option value="">Seleccione...</option>
+                                <option value="designacion">Designación</option>
+                                <option value="licencia_alta">Licencia - Alta</option>
+                                <option value="licencia_baja">Licencia - Baja</option>
+                                <option value="prorroga">Prórroga</option>
+                                <option value="cese">Cese</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    
+                    <div class="mb-3">
+                        <label for="file_res" class="form-label">
+                            Archivo PDF <span class="text-muted">(opcional)</span>
+                        </label>
+                        <input type="file" 
+                               class="form-control" 
+                               id="file_res" 
+                               name="file"
+                               accept="application/pdf">
+                        <div class="form-text">
+                            Subir PDF de la resolución si está disponible
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Crear Resolución
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript para manejar creación AJAX -->
+<script>
+document.getElementById('formCrearResolucion').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    // Deshabilitar botón
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Creando...';
+    
+    fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Agregar nueva opción al select
+            const select = document.getElementById('resolucion_csu');
+            const newOption = document.createElement('option');
+            newOption.value = data.resolucion_id;
+            newOption.textContent = `Res. CSU ${data.numero}/${data.año}${data.objeto ? ' - ' + data.objeto : ''}`;
+            newOption.selected = true;
+            select.appendChild(newOption);
+            
+            // Cerrar modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalCrearResolucion'));
+            modal.hide();
+            
+            // Limpiar formulario
+            this.reset();
+            
+            // Mostrar mensaje de éxito
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show';
+            alertDiv.innerHTML = `
+                <i class="bi bi-check-circle"></i>
+                ${data.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.row'));
+            
+            // Auto-cerrar después de 5 segundos
+            setTimeout(() => alertDiv.remove(), 5000);
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al crear la resolución');
+    })
+    .finally(() => {
+        // Rehabilitar botón
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    });
+});
+</script>
+
+{% endblock %}

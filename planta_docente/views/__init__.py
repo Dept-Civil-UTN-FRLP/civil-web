@@ -26,6 +26,8 @@ __all__ = [
     'gestionar_continuidad_cargo',
     'ver_historial_continuidad_docente',
     'gestionar_mayor_jerarquia_cargo',
+    'editar_licencia_mayor_jerarquia_view',
+    'crear_resolucion_csu_ajax',
     # Vistas de estructura de cátedra
     'dashboard_asignaturas',
     'formulario_estructura',

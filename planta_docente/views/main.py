@@ -346,7 +346,10 @@ def detalle_cargo_view(request, pk):
     # Verificar si tiene CA
     tiene_ca = hasattr(cargo, "carrera_academica")
     puede_iniciar_ca = (
-        cargo.caracter in ["reg", "ord"] and not tiene_ca and cargo.estado == "activo"
+        cargo.caracter in ["reg", "ord"] 
+        and not tiene_ca 
+        and cargo.estado != 'baja'
+        and not cargo.docente.jubilado
     )
 
     # Obtener correo principal del docente
@@ -583,14 +586,22 @@ def iniciar_ca_desde_cargo_view(request, pk):
 
     # Verificar que no tenga CA ya
     if hasattr(cargo, "carrera_academica"):
-        messages.warning(request, "Este cargo ya tiene una Carrera Académica iniciada.")
+        messages.warning(
+            request, "Este cargo ya tiene una Carrera Académica iniciada.")
         return redirect("detalle_ca", pk=cargo.carrera_academica.pk)
 
-    # Verificar que el cargo esté activo
-    if cargo.estado != "activo":
+    # Solo verificar que NO esté de baja y que el docente NO esté jubilado
+    if cargo.estado == 'baja':
         messages.error(
             request,
-            f"No se puede iniciar Carrera Académica para un cargo {cargo.get_estado_display()}.",
+            "No se puede iniciar Carrera Académica para un cargo dado de baja.",
+        )
+        return redirect("planta_docente:detalle_cargo", pk=pk)
+
+    if cargo.docente.jubilado:
+        messages.error(
+            request,
+            f"No se puede iniciar Carrera Académica para un docente jubilado ({cargo.docente}).",
         )
         return redirect("planta_docente:detalle_cargo", pk=pk)
 
@@ -1392,6 +1403,142 @@ def gestionar_mayor_jerarquia_cargo(request, pk):
     }
 
     return render(request, 'planta_docente/gestionar_mayor_jerarquia.html', contexto)
+
+
+@login_required
+@staff_member_required
+def editar_licencia_mayor_jerarquia_view(request, pk):
+    """
+    Editar datos de una licencia por mayor jerarquía.
+    Permite actualizar: cargo temporal, resolución CSU, fechas.
+    """
+    cargo_base = get_object_or_404(Cargo, pk=pk)
+
+    # Verificar que tiene licencia M.J.
+    if not cargo_base.en_licencia_mayor_jerarquia:
+        messages.error(
+            request, "Este cargo no tiene una licencia por mayor jerarquía registrada.")
+        return redirect("planta_docente:detalle_cargo", pk=pk)
+
+    if request.method == "POST":
+        try:
+            from datetime import datetime
+            from django.core.exceptions import ValidationError
+
+            # Obtener datos del formulario
+            resolucion_csu_id = request.POST.get("resolucion_csu")
+            fecha_inicio = request.POST.get("fecha_inicio")
+            fecha_fin = request.POST.get("fecha_fin")
+
+            # Actualizar resolución CSU (puede ser None/vacío)
+            if resolucion_csu_id:
+                cargo_base.resolucion_csu = Resolucion.objects.get(
+                    pk=resolucion_csu_id)
+            else:
+                cargo_base.resolucion_csu = None
+
+            # Actualizar fechas de licencia
+            if fecha_inicio:
+                cargo_base.fecha_inicio_licencia_mj = datetime.strptime(
+                    fecha_inicio, '%Y-%m-%d').date()
+
+            if fecha_fin:
+                cargo_base.fecha_fin_licencia_mj = datetime.strptime(
+                    fecha_fin, '%Y-%m-%d').date()
+            elif fecha_fin == '':  # Si viene vacío, limpiar la fecha
+                cargo_base.fecha_fin_licencia_mj = None
+
+            cargo_base.save()
+
+            messages.success(
+                request, "✓ Licencia por mayor jerarquía actualizada exitosamente.")
+            return redirect("planta_docente:detalle_cargo", pk=pk)
+
+        except Resolucion.DoesNotExist:
+            messages.error(request, "La resolución seleccionada no existe.")
+        except ValidationError as e:
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(
+                request, f"Error al actualizar la licencia: {str(e)}")
+
+    # GET request - Obtener resoluciones CSU disponibles
+    resoluciones_csu = Resolucion.objects.filter(
+        origen='csu'
+    ).order_by('-año', '-numero')
+
+    from datetime import datetime
+
+    context = {
+        "cargo": cargo_base,
+        "resoluciones_csu": resoluciones_csu,
+        "current_year": datetime.now().year,  # ← NUEVO
+    }
+
+    return render(request, "planta_docente/editar_licencia_mj.html", context)
+
+
+@login_required
+@staff_member_required
+@require_POST
+def crear_resolucion_csu_ajax(request):
+    """
+    Vista AJAX para crear una nueva resolución CSU.
+    Retorna JSON con la información de la resolución creada.
+    """
+    try:
+        # Obtener datos del formulario
+        numero = int(request.POST.get('numero'))
+        año = int(request.POST.get('año'))
+        objeto = request.POST.get('objeto')
+        file = request.FILES.get('file')
+        cargo_id = request.POST.get('cargo_id')
+
+        # Validar que cargo_id esté presente
+        if not cargo_id:
+            return JsonResponse({
+                'success': False,
+                'message': 'Error: El cargo es obligatorio para crear una resolución'
+            }, status=400)
+
+        # Obtener el cargo
+        try:
+            cargo = Cargo.objects.get(pk=cargo_id)
+        except Cargo.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': f'Error: Cargo con ID {cargo_id} no encontrado'
+            }, status=404)
+
+        # Crear resolución vinculada al cargo
+        resolucion = Resolucion.objects.create(
+            cargo=cargo,
+            numero=numero,
+            año=año,
+            objeto=objeto,
+            origen='csu',
+            file=file if file else None
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Resolución CSU {numero}/{año} creada exitosamente para {cargo.docente.apellido}',
+            'resolucion_id': resolucion.pk,
+            'numero': resolucion.numero,
+            'año': resolucion.año,
+            'objeto': resolucion.get_objeto_display() if objeto else '',
+        })
+
+    except ValueError as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error en los datos: {str(e)}'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error al crear resolución: {str(e)}'
+        }, status=500)
 
 
 @require_GET
