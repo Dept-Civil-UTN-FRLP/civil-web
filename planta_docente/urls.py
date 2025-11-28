@@ -30,6 +30,11 @@ urlpatterns = [
         name="renovar_cargo_ajax",
     ),
     path(
+        "ajax/crear-resolucion-csu/",
+        views.crear_resolucion_csu_ajax,
+        name="crear_resolucion_csu_ajax",
+    ),
+    path(
         "renovaciones/exportar/",
         views.exportar_renovaciones_excel,
         name="exportar_renovaciones_excel",

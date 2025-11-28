@@ -1467,12 +1467,57 @@ def editar_licencia_mayor_jerarquia_view(request, pk):
         origen='csu'
     ).order_by('-año', '-numero')
 
+    from datetime import datetime
+
     context = {
         "cargo": cargo_base,
         "resoluciones_csu": resoluciones_csu,
+        "current_year": datetime.now().year,  # ← NUEVO
     }
 
     return render(request, "planta_docente/editar_licencia_mj.html", context)
+
+
+@login_required
+@staff_member_required
+@require_POST
+def crear_resolucion_csu_ajax(request):
+    """
+    Vista AJAX para crear una nueva resolución CSU.
+    Retorna JSON con la información de la resolución creada.
+    """
+    try:
+        # Obtener datos del formulario
+        numero = int(request.POST.get('numero'))
+        año = int(request.POST.get('año'))
+        objeto = request.POST.get('objeto')
+        extracto = request.POST.get('extracto', '')
+        file = request.FILES.get('file')
+
+        # Crear resolución
+        resolucion = Resolucion.objects.create(
+            numero=numero,
+            año=año,
+            objeto=objeto,
+            origen='csu',  # Siempre CSU
+            extracto=extracto,
+            file=file if file else None
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Resolución CSU {numero}/{año} creada exitosamente',
+            'resolucion_id': resolucion.pk,
+            'numero': resolucion.numero,
+            'año': resolucion.año,
+            'objeto': resolucion.get_objeto_display() if objeto else '',
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': str(e)
+        }, status=400)
 
 
 @require_GET
