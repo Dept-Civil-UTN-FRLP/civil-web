@@ -1491,7 +1491,6 @@ def crear_resolucion_csu_ajax(request):
         numero = int(request.POST.get('numero'))
         año = int(request.POST.get('año'))
         objeto = request.POST.get('objeto')
-        extracto = request.POST.get('extracto', '')
         file = request.FILES.get('file')
 
         # Crear resolución
@@ -1500,7 +1499,6 @@ def crear_resolucion_csu_ajax(request):
             año=año,
             objeto=objeto,
             origen='csu',  # Siempre CSU
-            extracto=extracto,
             file=file if file else None
         )
 
