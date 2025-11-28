@@ -1492,30 +1492,53 @@ def crear_resolucion_csu_ajax(request):
         año = int(request.POST.get('año'))
         objeto = request.POST.get('objeto')
         file = request.FILES.get('file')
+        cargo_id = request.POST.get('cargo_id')
 
-        # Crear resolución
+        # Validar que cargo_id esté presente
+        if not cargo_id:
+            return JsonResponse({
+                'success': False,
+                'message': 'Error: El cargo es obligatorio para crear una resolución'
+            }, status=400)
+
+        # Obtener el cargo
+        try:
+            cargo = Cargo.objects.get(pk=cargo_id)
+        except Cargo.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': f'Error: Cargo con ID {cargo_id} no encontrado'
+            }, status=404)
+
+        # Crear resolución vinculada al cargo
         resolucion = Resolucion.objects.create(
+            cargo=cargo,
             numero=numero,
             año=año,
             objeto=objeto,
-            origen='csu',  # Siempre CSU
+            origen='csu',
             file=file if file else None
         )
 
         return JsonResponse({
             'success': True,
-            'message': f'Resolución CSU {numero}/{año} creada exitosamente',
+            'message': f'Resolución CSU {numero}/{año} creada exitosamente para {cargo.docente.apellido}',
             'resolucion_id': resolucion.pk,
             'numero': resolucion.numero,
             'año': resolucion.año,
             'objeto': resolucion.get_objeto_display() if objeto else '',
         })
 
+    except ValueError as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error en los datos: {str(e)}'
+        }, status=400)
     except Exception as e:
         return JsonResponse({
             'success': False,
-            'message': str(e)
-        }, status=400)
+            'message': f'Error al crear resolución: {str(e)}'
+        }, status=500)
 
 
 @require_GET
