@@ -301,6 +301,71 @@ class CarreraAcademica(models.Model):
             resumen.append(estado)
 
         return resumen
+    
+    def agregar_formularios_para_anio(self, anio):
+        """
+        Crea formularios para un año específico según la dedicación del cargo.
+        Retorna cantidad de formularios creados.
+        """
+        # Validar que el año esté en el rango de la CA
+        start_year = self.fecha_inicio.year
+        end_year = self.fecha_vencimiento_actual.year
+
+        if not (start_year <= anio <= end_year):
+            return 0, f"El año {anio} está fuera del rango de la CA ({start_year}-{end_year})"
+
+        # Tipos de formularios anuales base
+        tipos_anuales = ['F04', 'F05', 'F06', 'F07', 'ENC']
+
+        # Agregar F13 si es DE o SE
+        if self.cargo.dedicacion in ['de', 'se']:
+            tipos_anuales.append('F13')
+
+        # Crear formularios que no existan
+        creados = 0
+        for tipo in tipos_anuales:
+            # Verificar si ya existe
+            existe = Formulario.objects.filter(
+                carrera_academica=self,
+                tipo_formulario=tipo,
+                anio_correspondiente=anio
+            ).exists()
+
+            if not existe:
+                Formulario.objects.create(
+                    carrera_academica=self,
+                    tipo_formulario=tipo,
+                    anio_correspondiente=anio
+                )
+                creados += 1
+
+        return creados, f"Se crearon {creados} formularios para el año {anio}"
+
+    def agregar_anios_por_prorroga(self, nueva_fecha_vencimiento):
+        """
+        Agrega formularios para años nuevos cuando se prorroga la CA.
+        Retorna (años_agregados, formularios_creados, mensaje).
+        """
+        anio_actual_vencimiento = self.fecha_vencimiento_actual.year
+        anio_nuevo_vencimiento = nueva_fecha_vencimiento.year
+
+        if anio_nuevo_vencimiento <= anio_actual_vencimiento:
+            return [], 0, "La nueva fecha no extiende el período de la CA"
+
+        # Calcular años nuevos
+        anios_nuevos = list(
+            range(anio_actual_vencimiento + 1, anio_nuevo_vencimiento + 1))
+
+        total_formularios = 0
+        for anio in anios_nuevos:
+            creados, _ = self.agregar_formularios_para_anio(anio)
+            total_formularios += creados
+
+        return (
+            anios_nuevos,
+            total_formularios,
+            f"Se agregaron {len(anios_nuevos)} año(s) con {total_formularios} formularios"
+        )
 
     class Meta:
         verbose_name = "Carrera Académica"
