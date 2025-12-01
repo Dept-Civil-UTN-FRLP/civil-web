@@ -5,8 +5,8 @@
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'dashboard_ca' %}">Carrera Académica</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'detalle_ca' ca.pk %}">Expediente</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'carrera_academica:dashboard_ca' %}">Carrera Académica</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'carrera_academica:detalle_ca' ca.pk %}">Expediente</a></li>
             <li class="breadcrumb-item active">Gestionar Años</li>
         </ol>
     </nav>
@@ -175,7 +175,7 @@
             {% endif %}
         </div>
         <div class="card-footer">
-            <a href="{% url 'detalle_ca' ca.pk %}" class="btn btn-secondary">
+            <a href="{% url 'carrera_academica:detalle_ca' ca.pk %}" class="btn btn-secondary">
                 <i class="bi bi-arrow-left"></i> Volver al Expediente
             </a>
         </div>

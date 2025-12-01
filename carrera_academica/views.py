@@ -417,7 +417,7 @@ def crear_ca_view(request):
                         request,
                         f"Carrera Académica iniciada para el cargo de {cargo_seleccionado}.",
                     )
-                    return redirect("dashboard_ca")
+                    return redirect("carrera_academica:dashboard_ca")
 
                 except ValidationError as e:
                     # Manejar errores de validación
@@ -458,7 +458,7 @@ def crear_ca_view(request):
                         request,
                         f"Nuevo cargo y Carrera Académica creados para {nuevo_cargo.docente}.",
                     )
-                    return redirect("dashboard_ca")
+                    return redirect("carrera_academica:dashboard_ca")
 
                 except ValidationError as e:
                     logger.warning(f"Error de validación al crear cargo y CA: {e}")
