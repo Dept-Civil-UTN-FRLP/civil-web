@@ -3,14 +3,14 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <a href="{% url 'dashboard_ca' %}" class="btn btn-secondary btn-sm">&larr; Volver al Dashboard</a>
+    <a href="{% url 'carrera_academica:dashboard_ca' %}" class="btn btn-secondary btn-sm">&larr; Volver al Dashboard</a>
     
     <div>
         <a href="{% url 'carrera_academica:gestionar_anios_ca' ca.pk %}" class="btn btn-info me-2">
             <i class="bi bi-calendar-range"></i> Gestionar Años
         </a>
         
-        <a href="{% url 'consolidar_pdf' pk=ca.pk %}" class="btn btn-success">
+        <a href="{% url 'carrera_academica:consolidar_pdf' pk=ca.pk %}" class="btn btn-success">
             <i class="fas fa-file-pdf"></i> Consolidar Expediente en PDF
         </a>
     </div>
@@ -28,7 +28,7 @@
     {% if ca.numero_expediente %}
         {{ ca.numero_expediente }}
     {% else %}
-        <form action="{% url 'asignar_expediente' pk=ca.pk %}" method="POST" class="d-inline-flex">
+        <form action="{% url 'carrera_academica:asignar_expediente' pk=ca.pk %}" method="POST" class="d-inline-flex">
             {% csrf_token %}
             {{ expediente_form.numero_expediente }}
             <button type="submit" class="btn btn-sm btn-outline-success ms-2">Asignar</button>
@@ -49,7 +49,7 @@
     </p>
     {% if ca.estado == 'ACT' %}
     <hr>
-    <form action="{% url 'finalizar_ca' pk=ca.pk %}" method="POST" onsubmit="return confirm('¿Estás seguro de que querés finalizar este expediente? Esta acción no se puede deshacer fácilmente.');">
+    <form action="{% url 'carrera_academica:finalizar_ca' pk=ca.pk %}" method="POST" onsubmit="return confirm('¿Estás seguro de que querés finalizar este expediente? Esta acción no se puede deshacer fácilmente.');">
         {% csrf_token %}
         <button type="submit" class="btn btn-warning w-100">
             Finalizar Expediente
@@ -108,7 +108,7 @@
 <div class="d-flex justify-content-between align-items-center mt-4">
     <h5>Evaluaciones</h5>
             {% if ca.estado != 'FIN' and anios_pendientes_evaluacion %}
-                <a href="{% url 'iniciar_evaluacion' pk=ca.pk %}" class="btn btn-info btn-sm">+ Iniciar Nueva Evaluación</a>
+                <a href="{% url 'carrera_academica:iniciar_evaluacion' pk=ca.pk %}" class="btn btn-info btn-sm">+ Iniciar Nueva Evaluación</a>
             {% endif %}
         </div>
 
@@ -130,12 +130,12 @@
                         <span class="fw-normal small text-muted">(Años: {{ evaluacion.anios_evaluados|join:", " }})</span>
                     </div>
                     <div>
-                        <a href="{% url 'notificar_junta' pk=evaluacion.pk %}" class="btn btn-primary btn-sm">Notificar a Junta</a>
-                        <a href="{% url 'editar_junta' pk=evaluacion.pk %}" class="btn btn-outline-secondary btn-sm">Editar Junta</a>
+                        <a href="{% url 'carrera_academica:notificar_junta' pk=evaluacion.pk %}" class="btn btn-primary btn-sm">Notificar a Junta</a>
+                        <a href="{% url 'carrera_academica:editar_junta' pk=evaluacion.pk %}" class="btn btn-outline-secondary btn-sm">Editar Junta</a>
                     </div>
                 </div>
                 <div class="card-body">
-                    <form action="{% url 'agendar_evaluacion' pk=evaluacion.pk %}" method="POST" class="d-flex mb-3">
+                    <form action="{% url 'carrera_academica:agendar_evaluacion' pk=evaluacion.pk %}" method="POST" class="d-flex mb-3">
                         {% csrf_token %}
                         <label class="form-label me-2">Fecha:</label>
                         <input type="datetime-local" name="fecha_evaluacion" class="form-control form-control-sm" 
@@ -159,10 +159,10 @@
     <div class="card-header d-flex justify-content-between align-items-center">
         <span>Junta Evaluadora</span>
         <div>
-            <a href="{% url 'generar_propuesta_jurado' pk=ca.pk %}" class="btn btn-info btn-sm">
+            <a href="{% url 'carrera_academica:generar_propuesta_jurado' pk=ca.pk %}" class="btn btn-info btn-sm">
                 Generar Planilla
             </a>
-            <a href="{% url 'editar_junta' pk=ca.pk %}" class="btn btn-outline-secondary btn-sm">
+            <a href="{% url 'carrera_academica:editar_junta' pk=ca.pk %}" class="btn btn-outline-secondary btn-sm">
                 Editar
             </a>
         </div>
@@ -196,7 +196,7 @@
             <div class="card-header">Acciones del Expediente</div>
             <div class="card-body">
                 {% if hay_formularios_pendientes %}
-                    <a href="{% url 'notificar_pendientes' pk=ca.pk %}" class="btn btn-primary w-100">
+                    <a href="{% url 'carrera_academica:notificar_pendientes' pk=ca.pk %}" class="btn btn-primary w-100">
                         Notificar Formularios Pendientes
                     </a>
                     <small class="form-text text-muted d-block mt-1">
@@ -217,7 +217,7 @@
             </div>
             <div class="collapse" id="collapseResolucionForm">
                 <div class="card-body">
-                    <form action="{% url 'registrar_resolucion' pk=ca.pk %}" method="POST" enctype="multipart/form-data">
+                    <form action="{% url 'carrera_academica:registrar_resolucion' pk=ca.pk %}" method="POST" enctype="multipart/form-data">
                         {% csrf_token %}
                         {{ form_resolucion.as_p }}
                         <button type="submit" class="btn btn-success w-100 mt-2">Registrar</button>

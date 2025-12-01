@@ -34,7 +34,7 @@
                         </form>
                         
                         {% if form.tipo_formulario in "F04 F05 F06 F07 F13 ENC" and form.estado == 'PEN' %}
-                        <a href="{% url 'descargar_plantilla' pk=form.pk %}" class="btn btn-outline-secondary btn-sm ms-2" title="Descargar Plantilla">
+                        <a href="{% url 'carrera_academica:descargar_plantilla' pk=form.pk %}" class="btn btn-outline-secondary btn-sm ms-2" title="Descargar Plantilla">
                             ↓
                         </a>
                         {% endif %}

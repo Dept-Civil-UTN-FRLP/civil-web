@@ -5,8 +5,8 @@
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'dashboard_ca' %}">Carrera Académica</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'detalle_ca' ca.pk %}">Expediente {{ ca.cargo.docente }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'carrera_academica:dashboard_ca' %}">Carrera Académica</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'carrera_academica:detalle_ca' ca.pk %}">Expediente {{ ca.cargo.docente }}</a></li>
             <li class="breadcrumb-item"><a href="{% url 'carrera_academica:gestionar_anios_ca' ca.pk %}">Gestionar Años</a></li>
             <li class="breadcrumb-item active">Año {{ anio }}</li>
         </ol>
@@ -81,7 +81,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <a href="{% url 'detalle_ca' ca.pk %}" class="btn btn-sm btn-outline-secondary">
+                                    <a href="{% url 'carrera_academica:detalle_ca' ca.pk %}" class="btn btn-sm btn-outline-secondary">
                                         <i class="bi bi-pencil"></i> Gestionar
                                     </a>
                                 </td>
@@ -197,7 +197,7 @@
         <a href="{% url 'carrera_academica:gestionar_anios_ca' ca.pk %}" class="btn btn-secondary">
             <i class="bi bi-arrow-left"></i> Volver a Gestionar Años
         </a>
-        <a href="{% url 'detalle_ca' ca.pk %}" class="btn btn-outline-secondary">
+        <a href="{% url 'carrera_academica:detalle_ca' ca.pk %}" class="btn btn-outline-secondary">
             <i class="bi bi-house"></i> Ir al Expediente
         </a>
     </div>

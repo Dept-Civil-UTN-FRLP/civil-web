@@ -273,7 +273,7 @@
                         <!-- CA -->
                         <td class="text-center">
                             {% if cargo.tiene_ca %}
-                                <a href="{% url 'detalle_ca' pk=cargo.carrera_academica.pk %}" 
+                                <a href="{% url 'carrera_academica:detalle_ca' pk=cargo.carrera_academica.pk %}" 
                                    class="badge bg-success text-decoration-none"
                                    data-bs-toggle="tooltip"
                                    title="Ver Carrera Académica">

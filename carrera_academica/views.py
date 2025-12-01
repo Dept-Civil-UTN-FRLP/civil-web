@@ -227,7 +227,7 @@ def iniciar_evaluacion_view(request, pk):
     puede, razon = ca.puede_iniciar_evaluacion()
     if not puede:
         messages.error(request, f"No se puede iniciar evaluación: {razon}")
-        return redirect("detalle_ca", pk=ca.pk)
+        return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
     # --- Lógica para determinar años pendientes ---
     start_year = ca.fecha_inicio.year
@@ -351,11 +351,11 @@ def registrar_resolucion_view(request, pk):
                 request,
                 f"Resolución de '{nueva_resolucion.get_objeto_display()}' registrada exitosamente.",
             )
-            return redirect("detalle_ca", pk=ca.pk)
+            return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
     # Si el formulario no es válido o no es POST, redirigimos
     # (podríamos pasar el form con errores, pero por ahora es más simple así)
-    return redirect("detalle_ca", pk=ca.pk)
+    return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
 
 @login_required
@@ -470,7 +470,7 @@ def editar_junta_view(request, pk):
             messages.success(
                 request, "La Junta Evaluadora ha sido actualizada exitosamente."
             )
-            return redirect("detalle_ca", pk=ca.pk)
+            return redirect("carrera_academica:detalle_ca", pk=ca.pk)
     else:
         form = JuntaEvaluadoraForm(instance=junta)
 
@@ -493,7 +493,7 @@ def asignar_expediente_view(request, pk):
             form.save()
             messages.success(request, "Número de expediente actualizado correctamente.")
     # Siempre redirigimos de vuelta al detalle
-    return redirect("detalle_ca", pk=ca.pk)
+    return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
 
 def docentes_filtrados_api_view(request):
@@ -557,7 +557,7 @@ def finalizar_ca_view(request, pk):
         )
 
     # Redirigimos siempre al detalle del expediente
-    return redirect("detalle_ca", pk=pk)
+    return redirect("carrera_academica:detalle_ca", pk=pk)
 
 
 @login_required
@@ -569,7 +569,7 @@ def consolidar_pdf_view(request, pk):
 
     if not output_buffer:
         messages.error(request, "No se pudo generar el PDF consolidado")
-        return redirect("detalle_ca", pk=ca.pk)
+        return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
     for error in errores:
         messages.warning(request, error)
@@ -591,7 +591,7 @@ def generar_propuesta_jurado_view(request, pk):
 
     if not pdf_file:
         messages.error(request, "No se pudo generar la propuesta de jurado")
-        return redirect("detalle_ca", pk=ca.pk)
+        return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
     response = HttpResponse(pdf_file, content_type="application/pdf")
     response["Content-Disposition"] = (
@@ -612,7 +612,7 @@ def notificar_pendientes_view(request, pk):
     else:
         messages.error(request, mensaje)
 
-    return redirect("detalle_ca", pk=ca.pk)
+    return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
 
 @login_required
@@ -631,7 +631,7 @@ def descargar_plantilla_view(request, pk):
                 request,
                 "No se pudo generar el documento. Verifique plantillas y membretes.",
             )
-            return redirect("detalle_ca", pk=formulario.carrera_academica.pk)
+            return redirect("carrera_academica:detalle_ca", pk=formulario.carrera_academica.pk)
     else:
         # Lógica para plantillas estáticas
         plantilla = PlantillaDocumento.objects.filter(
@@ -648,7 +648,7 @@ def descargar_plantilla_view(request, pk):
             messages.error(
                 request, f"No se encontró plantilla para {formulario.tipo_formulario}."
             )
-            return redirect("detalle_ca", pk=formulario.carrera_academica.pk)
+            return redirect("carrera_academica:detalle_ca", pk=formulario.carrera_academica.pk)
 
 
 @login_required
@@ -668,7 +668,7 @@ def notificar_junta_view(request, pk):
     for error in errores:
         messages.warning(request, error)
 
-    return redirect("detalle_ca", pk=ca.pk)
+    return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
 
 @login_required
@@ -699,7 +699,7 @@ def agendar_evaluacion_view(request, pk):
             )
 
     # Sin importar qué pase, siempre redirigimos de vuelta a la página del expediente
-    return redirect("detalle_ca", pk=evaluacion.carrera_academica.pk)
+    return redirect("carrera_academica:detalle_ca", pk=evaluacion.carrera_academica.pk)
 
 
 @login_required
@@ -757,7 +757,7 @@ def gestionar_formularios_anio_view(request, pk, anio):
 
     if not (start_year <= anio <= current_year):
         messages.error(request, f"El año {anio} está fuera del rango de la CA")
-        return redirect('detalle_ca', pk=pk)
+        return redirect('carrera_academica:detalle_ca', pk=pk)
 
     if request.method == 'POST':
         # Crear formularios faltantes para este año
