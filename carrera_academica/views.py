@@ -194,7 +194,9 @@ def detalle_ca_view(request, pk):
         for anio in ev.anios_evaluados:
             anios_ya_evaluados.add(anio)
 
-    anios_pendientes = sorted(list(todos_los_anios - anios_ya_evaluados))
+    anios_pausados = {item['anio'] for item in ca.anios_pausados}
+    
+    anios_pendientes = sorted(list(todos_los_anios - anios_ya_evaluados - anios_pausados))
 
     # Lógica para el botón de notificación
     tipos_a_notificar = ["F02", "F04", "F05"]
@@ -236,8 +238,11 @@ def iniciar_evaluacion_view(request, pk):
     for ev in ca.evaluaciones.all():
         for anio in ev.anios_evaluados:
             anios_ya_evaluados.add(anio)
+    
+    anios_pausados = {item['anio'] for item in ca.anios_pausados}
 
-    anios_pendientes = sorted(list(todos_los_anios - anios_ya_evaluados))
+    anios_pendientes = sorted(
+        list(todos_los_anios - anios_ya_evaluados - anios_pausados))
 
     if request.method == "POST":
         form = EvaluacionForm(request.POST)
@@ -695,3 +700,104 @@ def agendar_evaluacion_view(request, pk):
 
     # Sin importar qué pase, siempre redirigimos de vuelta a la página del expediente
     return redirect("detalle_ca", pk=evaluacion.carrera_academica.pk)
+
+
+@login_required
+def gestionar_anios_ca_view(request, pk):
+    """
+    Vista para gestionar años de la CA: pausar, reactivar, ver estado.
+    """
+    ca = get_object_or_404(CarreraAcademica, pk=pk)
+
+    if request.method == 'POST':
+        accion = request.POST.get('accion')
+        anio = int(request.POST.get('anio'))
+
+        if accion == 'pausar':
+            motivo = request.POST.get('motivo')
+            exito, mensaje = ca.pausar_anio(anio, motivo, request.user)
+
+            if exito:
+                messages.success(request, mensaje)
+            else:
+                messages.error(request, mensaje)
+
+        elif accion == 'reactivar':
+            exito, mensaje = ca.reactivar_anio(anio)
+
+            if exito:
+                messages.success(request, mensaje)
+            else:
+                messages.error(request, mensaje)
+
+        return redirect('carrera_academica:gestionar_anios_ca', pk=pk)
+
+    # GET
+    resumen = ca.get_resumen_anios()
+
+    context = {
+        'ca': ca,
+        'resumen': resumen,
+    }
+
+    return render(request, 'carrera_academica/gestionar_anios.html', context)
+
+
+@login_required
+def gestionar_formularios_anio_view(request, pk, anio):
+    """
+    Vista para gestionar formularios de un año específico.
+    Permite agregar formularios a años nuevos.
+    """
+    ca = get_object_or_404(CarreraAcademica, pk=pk)
+
+    # Verificar que el año esté en rango
+    start_year = ca.fecha_inicio.year
+    current_year = timezone.now().year
+
+    if not (start_year <= anio <= current_year):
+        messages.error(request, f"El año {anio} está fuera del rango de la CA")
+        return redirect('detalle_ca', pk=pk)
+
+    if request.method == 'POST':
+        # Crear formularios faltantes para este año
+        tipos_seleccionados = request.POST.getlist('tipos_formularios')
+
+        for tipo in tipos_seleccionados:
+            # Verificar que no exista ya
+            existe = Formulario.objects.filter(
+                carrera_academica=ca,
+                tipo_formulario=tipo,
+                anio_correspondiente=anio
+            ).exists()
+
+            if not existe:
+                Formulario.objects.create(
+                    carrera_academica=ca,
+                    tipo_formulario=tipo,
+                    anio_correspondiente=anio
+                )
+
+        messages.success(request, f"Formularios agregados para el año {anio}")
+        return redirect('carrera_academica:gestionar_formularios_anio', pk=pk, anio=anio)
+
+    # GET - Obtener formularios existentes para este año
+    formularios_anio = ca.formularios.filter(
+        anio_correspondiente=anio
+    ).order_by('tipo_formulario')
+
+    # Tipos de formularios anuales
+    tipos_anuales = ['F04', 'F05', 'F06', 'F07', 'F13', 'ENC']
+
+    # Verificar cuáles faltan
+    tipos_existentes = set(f.tipo_formulario for f in formularios_anio)
+    tipos_faltantes = [t for t in tipos_anuales if t not in tipos_existentes]
+
+    context = {
+        'ca': ca,
+        'anio': anio,
+        'formularios': formularios_anio,
+        'tipos_faltantes': tipos_faltantes,
+    }
+
+    return render(request, 'carrera_academica/gestionar_formularios_anio.html', context)

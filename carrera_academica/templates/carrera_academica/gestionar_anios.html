@@ -1,0 +1,187 @@
+{% extends 'equivalencias/base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard_ca' %}">Carrera Académica</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'detalle_ca' ca.pk %}">Expediente {{ ca.cargo.docente }}</a></li>
+            <li class="breadcrumb-item active">Gestionar Años</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>
+                <i class="bi bi-calendar-range"></i>
+                Gestionar Años de Carrera Académica
+            </h2>
+            <p class="text-muted">
+                {{ ca.cargo.docente }} - Expediente {{ ca.numero_expediente|default:"Sin número" }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Tabla de años -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-calendar3"></i>
+                Estado de Años ({{ ca.fecha_inicio.year }} - {{ ca.fecha_vencimiento_actual.year }})
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Año</th>
+                            <th>Estado</th>
+                            <th>Información</th>
+                            <th class="text-center">Formularios</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in resumen %}
+                        <tr>
+                            <td>
+                                <strong>{{ item.anio }}</strong>
+                            </td>
+                            <td>
+                                {% if item.estado == 'evaluado' %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Evaluado
+                                    </span>
+                                {% elif item.estado == 'pausado' %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-pause-circle"></i> Pausado
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-hourglass"></i> Pendiente
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.estado == 'evaluado' %}
+                                    Evaluación N°{{ item.info.evaluacion }}
+                                    {% if item.info.fecha %}
+                                        ({{ item.info.fecha|date:"d/m/Y" }})
+                                    {% endif %}
+                                {% elif item.estado == 'pausado' %}
+                                    <small class="text-muted">
+                                        {{ item.info.motivo }}<br>
+                                        Pausado: {{ item.info.fecha }}
+                                    </small>
+                                {% else %}
+                                    <span class="text-muted">Sin evaluar</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'carrera_academica:gestionar_formularios_anio' ca.pk item.anio %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-file-earmark-text"></i> Gestionar
+                                </a>
+                            </td>
+                            <td class="text-center">
+                                {% if item.estado == 'pendiente' %}
+                                    <button type="button" 
+                                            class="btn btn-sm btn-warning"
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#modalPausar"
+                                            data-anio="{{ item.anio }}">
+                                        <i class="bi bi-pause-circle"></i> Pausar
+                                    </button>
+                                {% elif item.estado == 'pausado' %}
+                                    <form method="post" style="display:inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="accion" value="reactivar">
+                                        <input type="hidden" name="anio" value="{{ item.anio }}">
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            <i class="bi bi-play-circle"></i> Reactivar
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botón volver -->
+    <div class="mt-4">
+        <a href="{% url 'detalle_ca' ca.pk %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Volver al Expediente
+        </a>
+    </div>
+</div>
+
+<!-- Modal para Pausar Año -->
+<div class="modal fade" id="modalPausar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">
+                    <i class="bi bi-pause-circle"></i>
+                    Pausar Año
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="pausar">
+                <input type="hidden" name="anio" id="anio_pausar">
+                
+                <div class="modal-body">
+                    <p>
+                        ¿Está seguro que desea pausar el año <strong id="display_anio"></strong>?
+                    </p>
+                    <p class="text-muted">
+                        El año pausado no se evaluará y no se contará en las evaluaciones futuras.
+                    </p>
+                    
+                    <div class="mb-3">
+                        <label for="motivo" class="form-label">
+                            Motivo de la Pausa <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" 
+                                  id="motivo" 
+                                  name="motivo" 
+                                  rows="3" 
+                                  required
+                                  placeholder="Ej: Licencia médica extendida, año sabático, etc."></textarea>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-pause-circle"></i> Pausar Año
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Pasar año al modal
+document.getElementById('modalPausar').addEventListener('show.bs.modal', function (event) {
+    const button = event.relatedTarget;
+    const anio = button.getAttribute('data-anio');
+    
+    document.getElementById('anio_pausar').value = anio;
+    document.getElementById('display_anio').textContent = anio;
+});
+</script>
+{% endblock %}

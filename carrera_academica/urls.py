@@ -65,4 +65,14 @@ urlpatterns = [
         views.agendar_evaluacion_view,
         name="agendar_evaluacion",
     ),
+    path(
+        "expediente/<int:pk>/gestionar-anios/",
+        views.gestionar_anios_ca_view,
+        name="gestionar_anios_ca",
+    ),
+    path(
+        "expediente/<int:pk>/anio/<int:anio>/formularios/",
+        views.gestionar_formularios_anio_view,
+        name="gestionar_formularios_anio",
+    ),
 ]

@@ -1,0 +1,205 @@
+{% extends 'equivalencias/base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard_ca' %}">Carrera Académica</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'detalle_ca' ca.pk %}">Expediente {{ ca.cargo.docente }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'carrera_academica:gestionar_anios_ca' ca.pk %}">Gestionar Años</a></li>
+            <li class="breadcrumb-item active">Año {{ anio }}</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>
+                <i class="bi bi-file-earmark-text"></i>
+                Formularios del Año {{ anio }}
+            </h2>
+            <p class="text-muted">
+                {{ ca.cargo.docente }} - Expediente {{ ca.numero_expediente|default:"Sin número" }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Card: Formularios Existentes -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-list-check"></i>
+                Formularios Actuales
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if formularios %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Formulario</th>
+                                <th>Estado</th>
+                                <th>Fecha Entrega</th>
+                                <th>Archivo</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for form in formularios %}
+                            <tr>
+                                <td>
+                                    <strong>{{ form.get_tipo_formulario_display }}</strong>
+                                    {% if form.evaluacion %}
+                                        <br><small class="text-muted">Evaluación N°{{ form.evaluacion.numero_evaluacion }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if form.estado == 'ENT' %}
+                                        <span class="badge bg-success">Entregado</span>
+                                    {% elif form.estado == 'OBS' %}
+                                        <span class="badge bg-danger">Observado</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Pendiente</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if form.fecha_entrega %}
+                                        {{ form.fecha_entrega|date:"d/m/Y" }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if form.archivo %}
+                                        <a href="{{ form.archivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-file-pdf"></i> Ver
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">Sin archivo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'detalle_ca' ca.pk %}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-pencil"></i> Gestionar
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle"></i>
+                    No hay formularios registrados para este año.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Card: Agregar Formularios Faltantes -->
+    {% if tipos_faltantes %}
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-plus-circle"></i>
+                Agregar Formularios Faltantes
+            </h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">
+                Los siguientes formularios no están registrados para el año {{ anio }}. 
+                Selecciona los que deseas agregar:
+            </p>
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="row">
+                    {% for tipo in tipos_faltantes %}
+                    <div class="col-md-4 mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" 
+                                   type="checkbox" 
+                                   name="tipos_formularios" 
+                                   value="{{ tipo }}" 
+                                   id="form_{{ tipo }}">
+                            <label class="form-check-label" for="form_{{ tipo }}">
+                                <strong>{{ tipo }}</strong>
+                                {% if tipo == 'F04' %}
+                                    - Actividades de Docencia
+                                {% elif tipo == 'F05' %}
+                                    - Actividades de Investigación
+                                {% elif tipo == 'F06' %}
+                                    - Actividades de Extensión
+                                {% elif tipo == 'F07' %}
+                                    - Actividades de Gestión
+                                {% elif tipo == 'F13' %}
+                                    - Informe Anual (DE/SE)
+                                {% elif tipo == 'ENC' %}
+                                    - Encuesta Estudiantil
+                                {% endif %}
+                            </label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-plus-circle"></i> Agregar Formularios Seleccionados
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-success">
+        <i class="bi bi-check-circle"></i>
+        Todos los formularios anuales están registrados para este año.
+    </div>
+    {% endif %}
+
+    <!-- Información Adicional -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-info-circle"></i>
+                Información sobre Formularios Anuales
+            </h5>
+        </div>
+        <div class="card-body">
+            <h6>Formularios Estándar por Año:</h6>
+            <ul>
+                <li><strong>F04</strong> - Actividades de Docencia (Obligatorio)</li>
+                <li><strong>F05</strong> - Actividades de Investigación y Desarrollo</li>
+                <li><strong>F06</strong> - Actividades de Extensión</li>
+                <li><strong>F07</strong> - Actividades de Gestión</li>
+                <li><strong>ENC</strong> - Encuesta Estudiantil</li>
+            </ul>
+            
+            <h6 class="mt-3">Formularios Adicionales:</h6>
+            <ul>
+                <li><strong>F13</strong> - Informe Anual (Solo para Dedicación Exclusiva o Semi-Exclusiva)</li>
+            </ul>
+            
+            <div class="alert alert-warning mt-3 mb-0">
+                <strong>Nota:</strong> Los formularios agregados manualmente aparecerán en el expediente principal 
+                y podrán ser gestionados desde la vista de detalle de la CA.
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones de Navegación -->
+    <div class="mt-4">
+        <a href="{% url 'carrera_academica:gestionar_anios_ca' ca.pk %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Volver a Gestionar Años
+        </a>
+        <a href="{% url 'detalle_ca' ca.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-house"></i> Ir al Expediente
+        </a>
+    </div>
+</div>
+{% endblock %}

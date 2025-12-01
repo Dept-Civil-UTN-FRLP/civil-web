@@ -94,6 +94,12 @@ class CarreraAcademica(models.Model):
         help_text="Resolución de puesta en función (Decano)",
     )
     fecha_finalizacion = models.DateTimeField(null=True, blank=True)
+    anios_pausados = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="Años Pausados",
+        help_text="Lista de años que no se evaluarán. Formato: [{'anio': 2022, 'motivo': '...', 'fecha': '2022-03-15', 'usuario': 'admin'}]"
+    )
     objects = CarreraAcademicaManager()
 
     def clean(self):
@@ -186,6 +192,115 @@ class CarreraAcademica(models.Model):
             return False, "No hay años pendientes de evaluación"
 
         return True, ""
+    
+    def get_anios_activos(self):
+        """
+        Retorna lista de años que SÍ deben evaluarse.
+        Excluye años pausados.
+        """
+        start_year = self.fecha_inicio.year
+        end_year = timezone.now().year
+        todos_los_anios = set(range(start_year, end_year + 1))
+
+        # Obtener años pausados
+        pausados = {item['anio'] for item in self.anios_pausados}
+
+        # Obtener años ya evaluados
+        evaluados = set()
+        for ev in self.evaluaciones.all():
+            evaluados.update(ev.anios_evaluados)
+
+        # Activos = todos - pausados - evaluados
+        activos = todos_los_anios - pausados - evaluados
+
+        return sorted(activos)
+
+    def get_anios_pausados(self):
+        """Retorna lista de años pausados con info"""
+        return sorted(self.anios_pausados, key=lambda x: x['anio'], reverse=True)
+
+    def pausar_anio(self, anio, motivo, usuario=None):
+        """Pausa un año específico"""
+        # Validar que el año esté en el rango
+        start_year = self.fecha_inicio.year
+        current_year = timezone.now().year
+
+        if not (start_year <= anio <= current_year):
+            return False, f"El año {anio} está fuera del rango de la CA ({start_year}-{current_year})"
+
+        # Verificar que no esté ya pausado
+        if any(item['anio'] == anio for item in self.anios_pausados):
+            return False, f"El año {anio} ya está pausado"
+
+        # Verificar que no esté evaluado
+        for ev in self.evaluaciones.all():
+            if anio in ev.anios_evaluados:
+                return False, f"El año {anio} ya fue evaluado en la Evaluación N°{ev.numero_evaluacion}"
+
+        # Agregar a la lista
+        self.anios_pausados.append({
+            'anio': anio,
+            'motivo': motivo,
+            'fecha': timezone.now().date().isoformat(),
+            'usuario': str(usuario) if usuario else None
+        })
+        self.save()
+
+        return True, f"Año {anio} pausado exitosamente"
+
+    def reactivar_anio(self, anio):
+        """Reactiva un año pausado"""
+        # Buscar y eliminar
+        original_len = len(self.anios_pausados)
+        self.anios_pausados = [
+            item for item in self.anios_pausados
+            if item['anio'] != anio
+        ]
+
+        if len(self.anios_pausados) == original_len:
+            return False, f"El año {anio} no está pausado"
+
+        self.save()
+        return True, f"Año {anio} reactivado exitosamente"
+
+    def get_resumen_anios(self):
+        """
+        Retorna resumen completo del estado de todos los años.
+        """
+        start_year = self.fecha_inicio.year
+        current_year = timezone.now().year
+
+        resumen = []
+
+        for anio in range(start_year, current_year + 1):
+            estado = {
+                'anio': anio,
+                'estado': 'pendiente',  # por defecto
+                'info': None
+            }
+
+            # Verificar si está pausado
+            pausado = next(
+                (item for item in self.anios_pausados if item['anio'] == anio), None)
+            if pausado:
+                estado['estado'] = 'pausado'
+                estado['info'] = pausado
+                resumen.append(estado)
+                continue
+
+            # Verificar si está evaluado
+            for ev in self.evaluaciones.all():
+                if anio in ev.anios_evaluados:
+                    estado['estado'] = 'evaluado'
+                    estado['info'] = {
+                        'evaluacion': ev.numero_evaluacion,
+                        'fecha': ev.fecha_evaluacion
+                    }
+                    break
+
+            resumen.append(estado)
+
+        return resumen
 
     class Meta:
         verbose_name = "Carrera Académica"
