@@ -98,12 +98,61 @@
         {% include 'carrera_academica/includes/form_list.html' with formularios=form_unicos ca=ca %}
 
         <h5 class="mt-4">Formularios Anuales</h5>
-        {% regroup form_anuales by anio_correspondiente as formularios_por_anio %}
-        {% for grupo in formularios_por_anio %}
-            <h6 class="mt-3 text-muted">Año {{ grupo.grouper }}</h6>
-            {% include 'carrera_academica/includes/form_list.html' with formularios=grupo.list ca=ca %}
 
-        {% endfor %}
+{% comment %}
+Mostramos todos los años desde el inicio hasta el actual,
+indicando si están pausados, evaluados, o mostrando sus formularios
+{% endcomment %}
+
+{% for item in resumen_anios %}
+    <div class="mt-3">
+        <h6 class="text-muted d-flex justify-content-between align-items-center">
+            <span>Año {{ item.anio }}</span>
+            
+            {% if item.estado == 'pausado' %}
+                <span class="badge bg-warning text-dark">
+                    <i class="bi bi-pause-circle"></i> Pausado
+                </span>
+            {% elif item.estado == 'evaluado' %}
+                <span class="badge bg-success">
+                    <i class="bi bi-check-circle"></i> Evaluado
+                </span>
+            {% endif %}
+        </h6>
+        
+        {% if item.estado == 'pausado' %}
+            <div class="alert alert-warning d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Año pausado:</strong> {{ item.info.motivo }}
+                    <br>
+                    <small class="text-muted">Pausado el {{ item.info.fecha }}</small>
+                </div>
+                <a href="{% url 'carrera_academica:gestionar_anios_ca' ca.pk %}" 
+                   class="btn btn-sm btn-outline-warning">
+                    Gestionar
+                </a>
+            </div>
+        {% elif item.estado == 'evaluado' %}
+            <div class="alert alert-info">
+                <i class="bi bi-check-circle"></i>
+                Año evaluado en Evaluación N°{{ item.info.evaluacion }}
+                {% if item.info.fecha %}
+                    el {{ item.info.fecha|date:"d/m/Y" }}
+                {% endif %}
+            </div>
+        {% else %}
+            {% comment %}Estado pendiente: mostrar formularios{% endcomment %}
+            {% with formularios_del_anio=item.formularios %}
+                {% if formularios_del_anio %}
+                    {% include "carrera_academica/includes/form_list.html" with formularios=formularios_del_anio ca=ca %}
+                {% else %}
+                    <p class="text-muted">No hay formularios para este año.</p>
+                {% endif %}
+            {% endwith %}
+        {% endif %}
+    </div>
+{% endfor %}
         
 <div class="d-flex justify-content-between align-items-center mt-4">
     <h5>Evaluaciones</h5>

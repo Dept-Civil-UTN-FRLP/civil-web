@@ -152,7 +152,6 @@ def detalle_ca_view(request, pk):
     current_year = timezone.now().year
     formularios_visibles = []
 
-    # ✅ OPTIMIZACIÓN: Ya están precargados, no hay queries adicionales
     todos_los_formularios = ca.formularios.all().order_by(
         "anio_correspondiente", "evaluacion__numero_evaluacion", "tipo_formulario"
     )
@@ -189,7 +188,7 @@ def detalle_ca_view(request, pk):
     todos_los_anios = set(range(start_year, end_year + 1))
 
     anios_ya_evaluados = set()
-    # ✅ OPTIMIZACIÓN: Las evaluaciones ya están precargadas
+    # OPTIMIZACIÓN: Las evaluaciones ya están precargadas
     for ev in ca.evaluaciones.all():
         for anio in ev.anios_evaluados:
             anios_ya_evaluados.add(anio)
@@ -198,9 +197,27 @@ def detalle_ca_view(request, pk):
     
     anios_pendientes = sorted(list(todos_los_anios - anios_ya_evaluados - anios_pausados))
 
+    # Obtener resumen de años con formularios
+    resumen_completo = ca.get_resumen_anios()
+
+    # Agregar formularios a cada año del resumen
+    for item in resumen_completo:
+        if item['estado'] == 'pendiente':
+            # Solo agregamos formularios si está pendiente
+            anio = item['anio']
+
+            # Filtrar formularios visibles de este año
+            forms_del_anio = []
+            for form in formularios_visibles:
+                if form.anio_correspondiente == anio:
+                    forms_del_anio.append(form)
+
+            item['formularios'] = forms_del_anio
+        else:
+            item['formularios'] = []
+
     # Lógica para el botón de notificación
     tipos_a_notificar = ["F02", "F04", "F05"]
-    # ✅ OPTIMIZACIÓN: Usar los formularios ya cargados en memoria
     hay_formularios_pendientes = any(
         f.estado == "PEN" and f.tipo_formulario in tipos_a_notificar
         for f in ca.formularios.all()
@@ -215,6 +232,7 @@ def detalle_ca_view(request, pk):
         "expediente_form": expediente_form,
         "anios_pendientes_evaluacion": anios_pendientes,
         "hay_formularios_pendientes": hay_formularios_pendientes,
+        "resumen_anios": resumen_completo,
     }
     return render(request, "carrera_academica/detalle_ca.html", contexto)
 
