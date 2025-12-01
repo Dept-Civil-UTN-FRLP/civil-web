@@ -76,9 +76,4 @@ urlpatterns = [
         views.gestionar_formularios_anio_view,
         name="gestionar_formularios_anio",
     ),
-    path(
-        "expediente/<int:pk>/agregar-anios/",
-        views.agregar_anios_manual_view,
-        name="agregar_anios_manual",
-    ),
 ]

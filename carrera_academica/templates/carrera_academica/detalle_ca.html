@@ -244,9 +244,6 @@ indicando si están pausados, evaluados, o mostrando sus formularios
 <div class="card mb-4">
             <div class="card-header">Acciones del Expediente</div>
             <div class="card-body">
-                <a href="{% url 'carrera_academica:agregar_anios_manual' ca.pk %}" class="btn btn-primary w-100 mb-3">
-                    <i class="bi bi-calendar-plus"></i> Agregar Años al Expediente
-                </a>
                 {% if hay_formularios_pendientes %}
                     <a href="{% url 'carrera_academica:notificar_pendientes' pk=ca.pk %}" class="btn btn-primary w-100">
                         Notificar Formularios Pendientes

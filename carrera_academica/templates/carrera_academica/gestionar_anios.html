@@ -5,102 +5,156 @@
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'carrera_academica:dashboard_ca' %}">Carrera Académica</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'carrera_academica:detalle_ca' ca.pk %}">Expediente {{ ca.cargo.docente }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'dashboard_ca' %}">Carrera Académica</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'detalle_ca' ca.pk %}">Expediente</a></li>
             <li class="breadcrumb-item active">Gestionar Años</li>
         </ol>
     </nav>
 
-    <!-- Header -->
+    <!-- Header con info del expediente -->
     <div class="row mb-4">
         <div class="col-12">
             <h2>
                 <i class="bi bi-calendar-range"></i>
-                Gestionar Años de Carrera Académica
+                Gestión de Años del Expediente
             </h2>
             <p class="text-muted">
-                {{ ca.cargo.docente }} - Expediente {{ ca.numero_expediente|default:"Sin número" }}
+                {{ ca.cargo.docente }} - {{ ca.cargo.get_dedicacion_display }} - 
+                Expediente {{ ca.numero_expediente|default:"Sin número" }}
             </p>
         </div>
     </div>
 
-    <!-- Tabla de años -->
-    <div class="card">
+    <!-- Card: Agregar Años Nuevos -->
+    {% if tiene_anios_disponibles %}
+    <div class="card mb-4 border-primary">
         <div class="card-header bg-primary text-white">
             <h5 class="mb-0">
-                <i class="bi bi-calendar3"></i>
-                Estado de Años ({{ ca.fecha_inicio.year }} - {{ ca.fecha_vencimiento_actual.year }})
+                <i class="bi bi-calendar-plus"></i>
+                Agregar Años al Expediente
             </h5>
         </div>
-        <div class="card-body p-0">
+        <div class="card-body">
+            <form method="post" id="formAgregarAnios">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="agregar_anios">
+                
+                <p class="text-muted mb-3">
+                    <i class="bi bi-info-circle"></i>
+                    Se crearán automáticamente los formularios F04, F05, F06, F07, ENC
+                    {% if ca.cargo.dedicacion in 'de,se' %}y F13{% endif %} para cada año seleccionado.
+                </p>
+                
+                <div class="row mb-3">
+                    {% for item in anios_disponibles %}
+                    <div class="col-md-2 col-sm-4 col-6 mb-2">
+                        <div class="form-check">
+                            <input class="form-check-input" 
+                                   type="checkbox" 
+                                   name="anios" 
+                                   value="{{ item.anio }}" 
+                                   id="anio_nuevo_{{ item.anio }}"
+                                   {% if item.es_actual %}checked{% endif %}>
+                            <label class="form-check-label" for="anio_nuevo_{{ item.anio }}">
+                                <strong>{{ item.anio }}</strong>
+                                {% if item.es_actual %}
+                                    <span class="badge bg-primary">Actual</span>
+                                {% elif item.es_pasado %}
+                                    <span class="badge bg-secondary">Pasado</span>
+                                {% else %}
+                                    <span class="badge bg-info">Futuro</span>
+                                {% endif %}
+                            </label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Agregar Años Seleccionados
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="uncheckAll()">
+                    <i class="bi bi-x-circle"></i> Deseleccionar Todos
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Card: Estado de Años Existentes -->
+    <div class="card">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-calendar-check"></i>
+                Estado de Años Existentes
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if resumen %}
             <div class="table-responsive">
-                <table class="table table-hover mb-0">
+                <table class="table table-hover table-bordered align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th>Año</th>
-                            <th>Estado</th>
-                            <th>Información</th>
-                            <th class="text-center">Formularios</th>
-                            <th class="text-center">Acciones</th>
+                            <th width="10%">Año</th>
+                            <th width="15%">Estado</th>
+                            <th width="35%">Información</th>
+                            <th width="20%">Formularios</th>
+                            <th width="20%">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for item in resumen %}
                         <tr>
-                            <td>
+                            <td class="text-center">
                                 <strong>{{ item.anio }}</strong>
                             </td>
                             <td>
                                 {% if item.estado == 'evaluado' %}
-                                    <span class="badge bg-success">
-                                        <i class="bi bi-check-circle"></i> Evaluado
-                                    </span>
+                                    <span class="badge bg-success">✓ Evaluado</span>
                                 {% elif item.estado == 'pausado' %}
-                                    <span class="badge bg-warning text-dark">
-                                        <i class="bi bi-pause-circle"></i> Pausado
-                                    </span>
+                                    <span class="badge bg-warning text-dark">⏸ Pausado</span>
                                 {% else %}
-                                    <span class="badge bg-secondary">
-                                        <i class="bi bi-hourglass"></i> Pendiente
-                                    </span>
+                                    <span class="badge bg-secondary">○ Pendiente</span>
                                 {% endif %}
                             </td>
                             <td>
                                 {% if item.estado == 'evaluado' %}
-                                    Evaluación N°{{ item.info.evaluacion }}
-                                    {% if item.info.fecha %}
-                                        ({{ item.info.fecha|date:"d/m/Y" }})
-                                    {% endif %}
-                                {% elif item.estado == 'pausado' %}
                                     <small class="text-muted">
-                                        {{ item.info.motivo }}<br>
-                                        Pausado: {{ item.info.fecha }}
+                                        Evaluado en: <strong>Evaluación N°{{ item.info.evaluacion }}</strong><br>
+                                        Fecha: {{ item.info.fecha }}
+                                    </small>
+                                {% elif item.estado == 'pausado' %}
+                                    <small>
+                                        <strong>Motivo:</strong> {{ item.info.motivo }}<br>
+                                        <span class="text-muted">Pausado el {{ item.info.fecha }} por {{ item.info.usuario }}</span>
                                     </small>
                                 {% else %}
-                                    <span class="text-muted">Sin evaluar</span>
+                                    <small class="text-muted">
+                                        Año disponible para evaluación
+                                    </small>
                                 {% endif %}
                             </td>
                             <td class="text-center">
                                 <a href="{% url 'carrera_academica:gestionar_formularios_anio' ca.pk item.anio %}" 
-                                   class="btn btn-sm btn-outline-primary">
+                                   class="btn btn-sm btn-outline-info">
                                     <i class="bi bi-file-earmark-text"></i> Gestionar
                                 </a>
                             </td>
-                            <td class="text-center">
+                            <td>
                                 {% if item.estado == 'pendiente' %}
                                     <button type="button" 
-                                            class="btn btn-sm btn-warning"
+                                            class="btn btn-sm btn-warning w-100"
                                             data-bs-toggle="modal" 
-                                            data-bs-target="#modalPausar"
-                                            data-anio="{{ item.anio }}">
+                                            data-bs-target="#modalPausarAnio"
+                                            onclick="setAnioPausar({{ item.anio }})">
                                         <i class="bi bi-pause-circle"></i> Pausar
                                     </button>
                                 {% elif item.estado == 'pausado' %}
-                                    <form method="post" style="display:inline;">
+                                    <form method="post" style="display: inline;">
                                         {% csrf_token %}
                                         <input type="hidden" name="accion" value="reactivar">
                                         <input type="hidden" name="anio" value="{{ item.anio }}">
-                                        <button type="submit" class="btn btn-sm btn-success">
+                                        <button type="submit" class="btn btn-sm btn-success w-100">
                                             <i class="bi bi-play-circle"></i> Reactivar
                                         </button>
                                     </form>
@@ -113,51 +167,89 @@
                     </tbody>
                 </table>
             </div>
+            {% else %}
+            <div class="alert alert-info mb-0">
+                <i class="bi bi-info-circle"></i>
+                No hay años registrados en este expediente todavía.
+            </div>
+            {% endif %}
+        </div>
+        <div class="card-footer">
+            <a href="{% url 'detalle_ca' ca.pk %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Volver al Expediente
+            </a>
         </div>
     </div>
 
-    <!-- Botón volver -->
-    <div class="mt-4">
-        <a href="{% url 'carrera_academica:detalle_ca' ca.pk %}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left"></i> Volver al Expediente
-        </a>
+    <!-- Card: Información -->
+    <div class="card mt-4">
+        <div class="card-header bg-info text-white">
+            <h6 class="mb-0">
+                <i class="bi bi-info-circle"></i>
+                Información sobre la Gestión de Años
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Estados de Años:</h6>
+                    <ul class="small">
+                        <li><strong>Pendiente:</strong> Año disponible para evaluación</li>
+                        <li><strong>Pausado:</strong> Temporalmente excluido de evaluaciones (ej: licencia)</li>
+                        <li><strong>Evaluado:</strong> Ya fue evaluado en una evaluación bienal</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>Formularios por Año:</h6>
+                    <ul class="small">
+                        <li><strong>F04:</strong> Actividades de Docencia</li>
+                        <li><strong>F05:</strong> Investigación y Desarrollo</li>
+                        <li><strong>F06:</strong> Extensión</li>
+                        <li><strong>F07:</strong> Gestión</li>
+                        <li><strong>ENC:</strong> Encuesta Estudiantil</li>
+                        {% if ca.cargo.dedicacion in 'de,se' %}
+                        <li><strong>F13:</strong> Informe Anual (DE/SE)</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Modal para Pausar Año -->
-<div class="modal fade" id="modalPausar" tabindex="-1">
+<!-- Modal para pausar año -->
+<div class="modal fade" id="modalPausarAnio" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header bg-warning text-dark">
-                <h5 class="modal-title">
-                    <i class="bi bi-pause-circle"></i>
-                    Pausar Año
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="post">
+            <form method="post" id="formPausarAnio">
                 {% csrf_token %}
                 <input type="hidden" name="accion" value="pausar">
-                <input type="hidden" name="anio" id="anio_pausar">
+                <input type="hidden" name="anio" id="anioPausar">
+                
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">
+                        <i class="bi bi-pause-circle"></i>
+                        Pausar Año <span id="anioDisplay"></span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
                 
                 <div class="modal-body">
-                    <p>
-                        ¿Está seguro que desea pausar el año <strong id="display_anio"></strong>?
-                    </p>
-                    <p class="text-muted">
-                        El año pausado no se evaluará y no se contará en las evaluaciones futuras.
-                    </p>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        El año pausado no aparecerá en evaluaciones hasta que sea reactivado.
+                    </div>
                     
                     <div class="mb-3">
                         <label for="motivo" class="form-label">
-                            Motivo de la Pausa <span class="text-danger">*</span>
+                            Motivo del pausa <span class="text-danger">*</span>
                         </label>
                         <textarea class="form-control" 
-                                  id="motivo" 
                                   name="motivo" 
+                                  id="motivo" 
                                   rows="3" 
                                   required
-                                  placeholder="Ej: Licencia médica extendida, año sabático, etc."></textarea>
+                                  placeholder="Ej: Licencia médica extendida, Año sabático, etc."></textarea>
                     </div>
                 </div>
                 
@@ -175,13 +267,15 @@
 </div>
 
 <script>
-// Pasar año al modal
-document.getElementById('modalPausar').addEventListener('show.bs.modal', function (event) {
-    const button = event.relatedTarget;
-    const anio = button.getAttribute('data-anio');
-    
-    document.getElementById('anio_pausar').value = anio;
-    document.getElementById('display_anio').textContent = anio;
-});
+function setAnioPausar(anio) {
+    document.getElementById('anioPausar').value = anio;
+    document.getElementById('anioDisplay').textContent = anio;
+}
+
+function uncheckAll() {
+    document.querySelectorAll('#formAgregarAnios input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+    });
+}
 </script>
 {% endblock %}

@@ -736,24 +736,37 @@ def agendar_evaluacion_view(request, pk):
 @login_required
 def gestionar_anios_ca_view(request, pk):
     """
-    Vista para gestionar años de la CA: pausar, reactivar, ver estado.
+    Vista unificada para:
+    - Ver estado de años (pendiente/pausado/evaluado)
+    - Pausar/Reactivar años
+    - Agregar años nuevos al expediente
     """
     ca = get_object_or_404(CarreraAcademica, pk=pk)
 
     if request.method == 'POST':
         accion = request.POST.get('accion')
-        anio = int(request.POST.get('anio'))
 
+        # ===== PAUSAR AÑO =====
         if accion == 'pausar':
-            motivo = request.POST.get('motivo')
-            exito, mensaje = ca.pausar_anio(anio, motivo, request.user)
+            anio = int(request.POST.get('anio'))
+            motivo = request.POST.get('motivo', '').strip()
+
+            if not motivo:
+                messages.error(
+                    request, "Debe proporcionar un motivo para pausar el año")
+                return redirect('carrera_academica:gestionar_anios_ca', pk=pk)
+
+            exito, mensaje = ca.pausar_anio(
+                anio, motivo, request.user.username)
 
             if exito:
                 messages.success(request, mensaje)
             else:
                 messages.error(request, mensaje)
 
+        # ===== REACTIVAR AÑO =====
         elif accion == 'reactivar':
+            anio = int(request.POST.get('anio'))
             exito, mensaje = ca.reactivar_anio(anio)
 
             if exito:
@@ -761,14 +774,58 @@ def gestionar_anios_ca_view(request, pk):
             else:
                 messages.error(request, mensaje)
 
+        # ===== AGREGAR AÑOS NUEVOS =====
+        elif accion == 'agregar_anios':
+            anios_seleccionados = request.POST.getlist('anios')
+
+            if not anios_seleccionados:
+                messages.error(request, "Debe seleccionar al menos un año")
+                return redirect('carrera_academica:gestionar_anios_ca', pk=pk)
+
+            total_formularios = 0
+            anios_agregados = []
+
+            for anio_str in anios_seleccionados:
+                anio = int(anio_str)
+                creados, mensaje = ca.agregar_formularios_para_anio(anio)
+                total_formularios += creados
+                anios_agregados.append(anio)
+
+            messages.success(
+                request,
+                f"Se agregaron {len(anios_agregados)} año(s) con {total_formularios} formularios"
+            )
+
         return redirect('carrera_academica:gestionar_anios_ca', pk=pk)
 
-    # GET
+    # ===== GET: Preparar contexto =====
     resumen = ca.get_resumen_anios()
+
+    # Calcular años disponibles para agregar
+    start_year = ca.fecha_inicio.year
+    current_year = timezone.now().year
+    max_year = current_year + 5  # Permitir agregar hasta 5 años adelante
+
+    # Años que ya tienen formularios o están en el resumen
+    anios_existentes = {item['anio'] for item in resumen}
+
+    # Años disponibles = todos - los que ya existen
+    anios_disponibles = []
+    for anio in range(start_year, max_year + 1):
+        if anio not in anios_existentes:
+            anios_disponibles.append({
+                'anio': anio,
+                'es_actual': anio == current_year,
+                'es_pasado': anio < current_year,
+                'es_futuro': anio > current_year,
+            })
 
     context = {
         'ca': ca,
         'resumen': resumen,
+        'anios_disponibles': anios_disponibles,
+        'anio_actual': current_year,
+        'tiene_anios_disponibles': len(anios_disponibles) > 0,
     }
 
     return render(request, 'carrera_academica/gestionar_anios.html', context)
@@ -832,57 +889,3 @@ def gestionar_formularios_anio_view(request, pk, anio):
     }
 
     return render(request, 'carrera_academica/gestionar_formularios_anio.html', context)
-
-
-@login_required
-def agregar_anios_manual_view(request, pk):
-    """
-    Vista para agregar años manualmente a una CA.
-    Útil cuando se necesita extender el período sin prórroga formal.
-    """
-    ca = get_object_or_404(CarreraAcademica, pk=pk)
-
-    if request.method == 'POST':
-        anios_seleccionados = request.POST.getlist('anios')
-
-        if not anios_seleccionados:
-            messages.error(request, "Debe seleccionar al menos un año")
-            return redirect('carrera_academica:agregar_anios_manual', pk=pk)
-
-        total_formularios = 0
-        for anio_str in anios_seleccionados:
-            anio = int(anio_str)
-            creados, mensaje = ca.agregar_formularios_para_anio(anio)
-            total_formularios += creados
-
-        messages.success(
-            request,
-            f"Se agregaron {len(anios_seleccionados)} año(s) con {total_formularios} formularios"
-        )
-        return redirect('detalle_ca', pk=ca.pk)
-
-    # GET: Calcular años disponibles para agregar
-    start_year = ca.fecha_inicio.year
-    current_year = timezone.now().year
-    max_year = current_year + 5  # Permitir agregar hasta 5 años adelante
-
-    # Obtener años que ya tienen formularios
-    anios_con_formularios = set(
-        ca.formularios.filter(anio_correspondiente__isnull=False)
-        .values_list('anio_correspondiente', flat=True)
-        .distinct()
-    )
-
-    # Años disponibles = todos - los que ya tienen
-    anios_disponibles = []
-    for anio in range(start_year, max_year + 1):
-        if anio not in anios_con_formularios:
-            anios_disponibles.append(anio)
-
-    context = {
-        'ca': ca,
-        'anios_disponibles': anios_disponibles,
-        'anio_actual': current_year,
-    }
-
-    return render(request, 'carrera_academica/agregar_anios_manual.html', context)
