@@ -230,33 +230,53 @@ class CarreraAcademica(models.Model):
         """Retorna lista de años pausados con info"""
         return sorted(self.anios_pausados, key=lambda x: x['anio'], reverse=True)
 
-    def pausar_anio(self, anio, motivo, usuario=None):
-        """Pausa un año específico"""
+    def pausar_anio(self, anio, motivo, usuario):
+        """
+        Pausa un año específico.
+        No se pueden pausar años en evaluación o ya evaluados.
+        """
         # Validar que el año esté en el rango
         start_year = self.fecha_inicio.year
-        current_year = timezone.now().year
-
-        if not (start_year <= anio <= current_year):
-            return False, f"El año {anio} está fuera del rango de la CA ({start_year}-{current_year})"
-
-        # Verificar que no esté ya pausado
-        if any(item['anio'] == anio for item in self.anios_pausados):
+        end_year = self.fecha_vencimiento_actual.year
+    
+        if not (start_year <= anio <= end_year):
+            return False, f"El año {anio} está fuera del rango de la CA ({start_year}-{end_year})"
+    
+        # Verificar estado del año
+        resumen = self.get_resumen_anios()
+        estado_anio = None
+        for item in resumen:
+            if item['anio'] == anio:
+                estado_anio = item['estado']
+                break
+            
+        # No permitir pausar años evaluados
+        if estado_anio == 'evaluado':
+            evaluacion_num = next((item['info']['evaluacion']
+                                  for item in resumen if item['anio'] == anio), None)
+            return False, f"No se puede pausar el año {anio}. Ya fue evaluado en la Evaluación N°{evaluacion_num}"
+    
+        # No permitir pausar años en evaluación
+        if estado_anio == 'en_evaluacion':
+            evaluacion_num = next((item['info']['evaluacion']
+                                  for item in resumen if item['anio'] == anio), None)
+            return False, f"No se puede pausar el año {anio}. Está incluido en la Evaluación N°{evaluacion_num} en curso"
+    
+        # Verificar si ya está pausado
+        if estado_anio == 'pausado':
             return False, f"El año {anio} ya está pausado"
-
-        # Verificar que no esté evaluado
-        for ev in self.evaluaciones.all():
-            if anio in ev.anios_evaluados:
-                return False, f"El año {anio} ya fue evaluado en la Evaluación N°{ev.numero_evaluacion}"
-
-        # Agregar a la lista
-        self.anios_pausados.append({
+    
+        # Pausar el año
+        pausa = {
             'anio': anio,
             'motivo': motivo,
-            'fecha': timezone.now().date().isoformat(),
-            'usuario': str(usuario) if usuario else None
-        })
+            'fecha': timezone.now().strftime('%Y-%m-%d'),
+            'usuario': usuario
+        }
+    
+        self.anios_pausados.append(pausa)
         self.save()
-
+    
         return True, f"Año {anio} pausado exitosamente"
 
     def reactivar_anio(self, anio):

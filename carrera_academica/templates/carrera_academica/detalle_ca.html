@@ -120,24 +120,139 @@ indicando si están pausados, evaluados, o mostrando sus formularios
     </h6>
     
     {% if item.estado == 'evaluado' %}
+        <!-- Año cerrado: Solo mostrar info, no permitir edición -->
         <div class="alert alert-success">
             <i class="bi bi-check-circle"></i>
-            <strong>Año evaluado</strong> en Evaluación N°{{ item.info.evaluacion }} el {{ item.info.fecha }}
+            <strong>Año evaluado y cerrado</strong><br>
+            Evaluación N°{{ item.info.evaluacion }} finalizada el {{ item.info.fecha }}<br>
+            <small class="text-muted">No se pueden agregar ni modificar formularios</small>
         </div>
+        
+        <!-- Mostrar formularios en modo solo lectura -->
+        {% if item.formularios %}
+        <div class="card mb-3">
+            <div class="card-header bg-light">
+                <small class="text-muted">Formularios del año (solo lectura)</small>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Estado</th>
+                                <th>Fecha</th>
+                                <th>Archivo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for form in item.formularios %}
+                            <tr>
+                                <td>{{ form.get_tipo_formulario_display }}</td>
+                                <td>
+                                    {% if form.archivo %}
+                                        <span class="badge bg-success">✓</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if form.fecha_subida %}
+                                        {{ form.fecha_subida|date:"d/m/Y" }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if form.archivo %}
+                                        <a href="{{ form.archivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-file-pdf"></i> Ver
+                                        </a>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     
     {% elif item.estado == 'en_evaluacion' %}
+        <!-- Año en evaluación: Permitir subir formularios -->
         <div class="alert alert-primary">
             <i class="bi bi-hourglass-split"></i>
             <strong>En proceso de evaluación</strong> - Evaluación N°{{ item.info.evaluacion }}<br>
-            <small class="text-muted">El año se cerrará cuando se suba el acta (F12)</small>
+            <small>✅ Puedes seguir subiendo formularios hasta que se cierre el acta (F12)</small>
         </div>
         
-        {# Mostrar formularios del año #}
+        {# Mostrar formularios con botones de acción #}
         {% if item.formularios %}
-            {% include 'carrera_academica/partials/form_list.html' with formularios=item.formularios %}
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Descripción</th>
+                            <th>Estado</th>
+                            <th>Fecha Subida</th>
+                            <th>Archivo</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for form in item.formularios %}
+                        <tr>
+                            <td><strong>{{ form.tipo_formulario }}</strong></td>
+                            <td>{{ form.get_tipo_formulario_display }}</td>
+                            <td>
+                                {% if form.archivo %}
+                                    <span class="badge bg-success">✓ Subido</span>
+                                {% else %}
+                                    <span class="badge bg-warning">⚠ Pendiente</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if form.fecha_subida %}
+                                    {{ form.fecha_subida|date:"d/m/Y H:i" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if form.archivo %}
+                                    <a href="{{ form.archivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-file-pdf"></i> Ver
+                                    </a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <!-- Permitir subir/reemplazar mientras esté en evaluación -->
+                                <a href="{% url 'carrera_academica:subir_formulario' form.pk %}" 
+                                   class="btn btn-sm btn-primary">
+                                    {% if form.archivo %}
+                                        <i class="bi bi-arrow-repeat"></i> Reemplazar
+                                    {% else %}
+                                        <i class="bi bi-upload"></i> Subir
+                                    {% endif %}
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No hay formularios para este año.</p>
         {% endif %}
     
     {% elif item.estado == 'pausado' %}
+        <!-- Año pausado: No permitir acciones -->
         <div class="alert alert-warning">
             <i class="bi bi-pause-circle"></i>
             <strong>Año pausado:</strong> {{ item.info.motivo }}<br>
@@ -150,9 +265,63 @@ indicando si están pausados, evaluados, o mostrando sus formularios
         </div>
     
     {% else %}
-        {# Año pendiente - mostrar formularios normalmente #}
+        <!-- Año pendiente: Mostrar formularios con acciones normales -->
         {% if item.formularios %}
-            {% include 'carrera_academica/partials/form_list.html' with formularios=item.formularios %}
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Descripción</th>
+                            <th>Estado</th>
+                            <th>Fecha Subida</th>
+                            <th>Archivo</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for form in item.formularios %}
+                        <tr>
+                            <td><strong>{{ form.tipo_formulario }}</strong></td>
+                            <td>{{ form.get_tipo_formulario_display }}</td>
+                            <td>
+                                {% if form.archivo %}
+                                    <span class="badge bg-success">✓ Subido</span>
+                                {% else %}
+                                    <span class="badge bg-warning">⚠ Pendiente</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if form.fecha_subida %}
+                                    {{ form.fecha_subida|date:"d/m/Y H:i" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if form.archivo %}
+                                    <a href="{{ form.archivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-file-pdf"></i> Ver
+                                    </a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'carrera_academica:subir_formulario' form.pk %}" 
+                                   class="btn btn-sm btn-primary">
+                                    {% if form.archivo %}
+                                        <i class="bi bi-arrow-repeat"></i> Reemplazar
+                                    {% else %}
+                                        <i class="bi bi-upload"></i> Subir
+                                    {% endif %}
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         {% else %}
             <p class="text-muted">No hay formularios para este año.</p>
         {% endif %}

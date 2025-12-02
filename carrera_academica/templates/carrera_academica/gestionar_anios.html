@@ -136,33 +136,31 @@
                 {% endif %}
               </td>
               <td>
-                {% if item.estado == 'evaluado' %}
-                <small class="text-muted">
-                  Evaluado en:
-                  <strong>Evaluación N°{{ item.info.evaluacion }}</strong><br />
-                  Fecha: {{ item.info.fecha }}
-                </small>
-                {% elif item.estado == 'en_evaluacion' %}
-                <small class="text-primary">
-                  <strong
-                    >Evaluación N°{{ item.info.evaluacion }} en curso</strong
-                  ><br />
-                  <span class="text-muted">{{ item.info.mensaje }}</span>
-                </small>
-                {% elif item.estado == 'pausado' %}
-                <small>
-                  <strong>Motivo:</strong> {{ item.info.motivo }}<br />
-                  <span class="text-muted"
-                    >Pausado el {{ item.info.fecha }} por {{ item.info.usuario
-                    }}</span
-                  >
-                </small>
-                {% else %}
-                <small class="text-muted">
-                  Año disponible para evaluación
-                </small>
-                {% endif %}
-              </td>
+    {% if item.estado == 'pendiente' %}
+        <button type="button" 
+                class="btn btn-sm btn-warning w-100"
+                data-bs-toggle="modal" 
+                data-bs-target="#modalPausarAnio"
+                onclick="setAnioPausar({{ item.anio }})">
+            <i class="bi bi-pause-circle"></i> Pausar
+        </button>
+    {% elif item.estado == 'pausado' %}
+        <form method="post" style="display: inline;">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="reactivar">
+            <input type="hidden" name="anio" value="{{ item.anio }}">
+            <button type="submit" class="btn btn-sm btn-success w-100">
+                <i class="bi bi-play-circle"></i> Reactivar
+            </button>
+        </form>
+    {% elif item.estado == 'en_evaluacion' %}
+        <span class="text-muted small">
+            <i class="bi bi-lock"></i> En proceso
+        </span>
+    {% else %}
+        <span class="text-muted">-</span>
+    {% endif %}
+</td>
               <td class="text-center">
                 <a
                   href="{% url 'carrera_academica:gestionar_formularios_anio' ca.pk item.anio %}"
