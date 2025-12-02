@@ -146,7 +146,7 @@ def detalle_ca_view(request, pk):
                 f"Se subió el archivo para el formulario {formulario.tipo_formulario}.",
             )
 
-        return redirect("detalle_ca", pk=ca.pk)
+        return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
     # Obtener y separar los formularios
     current_year = timezone.now().year
@@ -198,23 +198,23 @@ def detalle_ca_view(request, pk):
     anios_pendientes = sorted(list(todos_los_anios - anios_ya_evaluados - anios_pausados))
 
     # Obtener resumen de años con formularios
-    resumen_completo = ca.get_resumen_anios()
+    resumen_anios = ca.get_resumen_anios()
 
-    # Agregar formularios a cada año del resumen
-    for item in resumen_completo:
-        if item['estado'] == 'pendiente':
-            # Solo agregamos formularios si está pendiente
-            anio = item['anio']
+    # Asociar formularios a cada año
+    form_anuales = ca.formularios.filter(anio_correspondiente__isnull=False).order_by(
+        'anio_correspondiente', 'tipo_formulario')
 
-            # Filtrar formularios visibles de este año
-            forms_del_anio = []
-            for form in formularios_visibles:
-                if form.anio_correspondiente == anio:
-                    forms_del_anio.append(form)
+    # Agrupar formularios por año
+    formularios_por_anio = {}
+    for form in form_anuales:
+        anio = form.anio_correspondiente
+        if anio not in formularios_por_anio:
+            formularios_por_anio[anio] = []
+        formularios_por_anio[anio].append(form)
 
-            item['formularios'] = forms_del_anio
-        else:
-            item['formularios'] = []
+    # Agregar formularios al resumen
+    for item in resumen_anios:
+        item['formularios'] = formularios_por_anio.get(item['anio'], [])
 
     # Lógica para el botón de notificación
     tipos_a_notificar = ["F02", "F04", "F05"]
@@ -232,7 +232,7 @@ def detalle_ca_view(request, pk):
         "expediente_form": expediente_form,
         "anios_pendientes_evaluacion": anios_pendientes,
         "hay_formularios_pendientes": hay_formularios_pendientes,
-        "resumen_anios": resumen_completo,
+        'resumen_anios': resumen_anios,
     }
     return render(request, "carrera_academica/detalle_ca.html", contexto)
 
@@ -301,7 +301,7 @@ def iniciar_evaluacion_view(request, pk):
                     request,
                     f"Evaluación N°{nuevo_num} creada, cubriendo los años {', '.join(anios_seleccionados)}.",
                 )
-                return redirect("detalle_ca", pk=ca.pk)
+                return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
             except ValidationError as e:
                 logger.warning(f"Error de validación al crear evaluación: {e}")

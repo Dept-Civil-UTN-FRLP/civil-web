@@ -195,25 +195,36 @@ class CarreraAcademica(models.Model):
     
     def get_anios_activos(self):
         """
-        Retorna lista de años que SÍ deben evaluarse.
-        Excluye años pausados.
+        Retorna lista de años disponibles para iniciar una nueva evaluación.
+        Excluye: pausados, en evaluación, y evaluados con acta.
         """
         start_year = self.fecha_inicio.year
-        end_year = timezone.now().year
-        todos_los_anios = set(range(start_year, end_year + 1))
+        end_year = self.fecha_vencimiento_actual.year
 
-        # Obtener años pausados
-        pausados = {item['anio'] for item in self.anios_pausados}
+        # Años pausados
+        pausados = {item['anio'] for item in self.get_anios_pausados()}
 
-        # Obtener años ya evaluados
-        evaluados = set()
+        # Años ya evaluados (con acta) o en evaluación
+        anios_no_disponibles = set()
+
         for ev in self.evaluaciones.all():
-            evaluados.update(ev.anios_evaluados)
+            # Verificar si tiene F12 subido
+            tiene_acta = ev.formularios_evaluacion.filter(
+                tipo_formulario='F12',
+                archivo__isnull=False
+            ).exclude(archivo='').exists()
 
-        # Activos = todos - pausados - evaluados
-        activos = todos_los_anios - pausados - evaluados
+            # Si tiene acta O está en evaluación, no disponible
+            for anio in ev.anios_evaluados:
+                anios_no_disponibles.add(anio)
 
-        return sorted(activos)
+        # Años activos = todos - (pausados + no_disponibles)
+        anios_activos = []
+        for anio in range(start_year, end_year + 1):
+            if anio not in pausados and anio not in anios_no_disponibles:
+                anios_activos.append(anio)
+
+        return sorted(anios_activos)
 
     def get_anios_pausados(self):
         """Retorna lista de años pausados con info"""
@@ -265,40 +276,73 @@ class CarreraAcademica(models.Model):
 
     def get_resumen_anios(self):
         """
-        Retorna resumen completo del estado de todos los años.
+        Retorna lista con estado de cada año: pendiente, pausado, en_evaluacion, evaluado.
+        Un año está 'evaluado' solo cuando existe un F12 (acta) subido.
         """
         start_year = self.fecha_inicio.year
-        current_year = timezone.now().year
+        end_year = self.fecha_vencimiento_actual.year
 
-        resumen = []
+        # Años pausados
+        pausados = {item['anio']: item for item in self.get_anios_pausados()}
 
-        for anio in range(start_year, current_year + 1):
-            estado = {
-                'anio': anio,
-                'estado': 'pendiente',  # por defecto
-                'info': None
-            }
+        # Años en evaluaciones
+        evaluaciones = self.evaluaciones.all()
+        anios_en_evaluacion = {}  # {año: evaluacion_id}
+        anios_evaluados = {}  # {año: {'evaluacion': N, 'fecha': date, 'tiene_acta': bool}}
 
-            # Verificar si está pausado
-            pausado = next(
-                (item for item in self.anios_pausados if item['anio'] == anio), None)
-            if pausado:
-                estado['estado'] = 'pausado'
-                estado['info'] = pausado
-                resumen.append(estado)
-                continue
+        for ev in evaluaciones:
+            # Verificar si la evaluación tiene F12 (acta) subido
+            tiene_acta = ev.formularios_evaluacion.filter(
+                tipo_formulario='F12',
+                archivo__isnull=False
+            ).exclude(archivo='').exists()
 
-            # Verificar si está evaluado
-            for ev in self.evaluaciones.all():
-                if anio in ev.anios_evaluados:
-                    estado['estado'] = 'evaluado'
-                    estado['info'] = {
+            for anio in ev.anios_evaluados:
+                if tiene_acta:
+                    # Evaluación cerrada con acta
+                    anios_evaluados[anio] = {
                         'evaluacion': ev.numero_evaluacion,
-                        'fecha': ev.fecha_evaluacion
+                        'fecha': ev.fecha_inicio.strftime('%d/%m/%Y'),
+                        'tiene_acta': True
                     }
-                    break
+                else:
+                    # Evaluación en curso (sin acta todavía)
+                    anios_en_evaluacion[anio] = ev.numero_evaluacion
 
-            resumen.append(estado)
+        # Construir resumen
+        resumen = []
+        for anio in range(start_year, end_year + 1):
+            if anio in anios_evaluados:
+                # Año con evaluación cerrada (tiene acta)
+                resumen.append({
+                    'anio': anio,
+                    'estado': 'evaluado',
+                    'info': anios_evaluados[anio]
+                })
+            elif anio in anios_en_evaluacion:
+                # Año en evaluación (sin acta todavía)
+                resumen.append({
+                    'anio': anio,
+                    'estado': 'en_evaluacion',
+                    'info': {
+                        'evaluacion': anios_en_evaluacion[anio],
+                        'mensaje': 'En proceso de evaluación'
+                    }
+                })
+            elif anio in pausados:
+                # Año pausado
+                resumen.append({
+                    'anio': anio,
+                    'estado': 'pausado',
+                    'info': pausados[anio]
+                })
+            else:
+                # Año pendiente
+                resumen.append({
+                    'anio': anio,
+                    'estado': 'pendiente',
+                    'info': None
+                })
 
         return resumen
     
