@@ -238,10 +238,10 @@ class CarreraAcademica(models.Model):
         # Validar que el año esté en el rango
         start_year = self.fecha_inicio.year
         end_year = self.fecha_vencimiento_actual.year
-    
+
         if not (start_year <= anio <= end_year):
             return False, f"El año {anio} está fuera del rango de la CA ({start_year}-{end_year})"
-    
+
         # Verificar estado del año
         resumen = self.get_resumen_anios()
         estado_anio = None
@@ -249,23 +249,23 @@ class CarreraAcademica(models.Model):
             if item['anio'] == anio:
                 estado_anio = item['estado']
                 break
-            
+
         # No permitir pausar años evaluados
         if estado_anio == 'evaluado':
             evaluacion_num = next((item['info']['evaluacion']
                                   for item in resumen if item['anio'] == anio), None)
             return False, f"No se puede pausar el año {anio}. Ya fue evaluado en la Evaluación N°{evaluacion_num}"
-    
+
         # No permitir pausar años en evaluación
         if estado_anio == 'en_evaluacion':
             evaluacion_num = next((item['info']['evaluacion']
                                   for item in resumen if item['anio'] == anio), None)
             return False, f"No se puede pausar el año {anio}. Está incluido en la Evaluación N°{evaluacion_num} en curso"
-    
+
         # Verificar si ya está pausado
         if estado_anio == 'pausado':
             return False, f"El año {anio} ya está pausado"
-    
+
         # Pausar el año
         pausa = {
             'anio': anio,
@@ -273,10 +273,10 @@ class CarreraAcademica(models.Model):
             'fecha': timezone.now().strftime('%Y-%m-%d'),
             'usuario': usuario
         }
-    
+
         self.anios_pausados.append(pausa)
         self.save()
-    
+
         return True, f"Año {anio} pausado exitosamente"
 
     def reactivar_anio(self, anio):
@@ -311,8 +311,7 @@ class CarreraAcademica(models.Model):
         anios_evaluados = {}  # {año: {'evaluacion': N, 'fecha': date, 'tiene_acta': bool}}
 
         for ev in evaluaciones:
-            # Verificar si la evaluación tiene F12 (acta) subido
-            tiene_acta = ev.formularios_evaluacion.filter(
+            tiene_acta = ev.formularios.filter(
                 tipo_formulario='F12',
                 archivo__isnull=False
             ).exclude(archivo='').exists()
@@ -322,7 +321,7 @@ class CarreraAcademica(models.Model):
                     # Evaluación cerrada con acta
                     anios_evaluados[anio] = {
                         'evaluacion': ev.numero_evaluacion,
-                        'fecha': ev.fecha_inicio.strftime('%d/%m/%Y'),
+                        'fecha': ev.fecha_iniciada.strftime('%d/%m/%Y'),
                         'tiene_acta': True
                     }
                 else:
