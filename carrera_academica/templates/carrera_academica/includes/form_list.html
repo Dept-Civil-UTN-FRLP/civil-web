@@ -33,10 +33,12 @@
                             </button>
                         </form>
                         
-                        {% if form.tipo_formulario in "F04 F05 F06 F07 F13 ENC" and form.estado == 'PEN' %}
+                        {% if form.tipo_formulario == 'F04' or form.tipo_formulario == 'F05' or form.tipo_formulario == 'F06' or form.tipo_formulario == 'F07' or form.tipo_formulario == 'F13' or form.tipo_formulario == 'ENC' %}
+                        {% if form.estado == 'PEN' %}
                         <a href="{% url 'carrera_academica:descargar_plantilla' pk=form.pk %}" class="btn btn-outline-secondary btn-sm ms-2" title="Descargar Plantilla">
                             ↓
                         </a>
+                        {% endif %}
                         {% endif %}
                     </div>
                     {% endif %}
