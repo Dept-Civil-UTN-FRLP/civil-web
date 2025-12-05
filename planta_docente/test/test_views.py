@@ -203,7 +203,7 @@ class DetalleCargoViewTestCase(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "planta_docente/detalle_cargo.html")
+        self.assertTemplateUsed(response, "planta_docente/cargo_detail.html")
 
     def test_detalle_cargo_muestra_informacion(self):
         """Test que detalle muestra información correcta."""
@@ -257,7 +257,7 @@ class DetalleDocenteViewTestCase(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "planta_docente/detalle_docente.html")
+        self.assertTemplateUsed(response, "planta_docente/docente_detail.html")
 
     def test_detalle_docente_muestra_edad(self):
         """Test que muestra la edad calculada."""
