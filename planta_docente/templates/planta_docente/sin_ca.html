@@ -63,7 +63,7 @@
 
                         <!-- Vencimiento -->
                         <td>
-                            {% include 'planta_docente/includes/badge_vencimiento.html' with estado_venc=cargo.estado_venc %}
+                            {% include 'planta_docente/components/badges/vencimiento.html' with estado_venc=cargo.estado_venc %}
                             <br>
                             <small class="text-muted">{{ cargo.fecha_vencimiento|date:"d/m/Y" }}</small>
                         </td>

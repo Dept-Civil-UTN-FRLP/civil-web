@@ -76,17 +76,17 @@
 <div class="tab-content">
     <!-- Vencidos -->
     <div class="tab-pane fade show active" id="vencidos-tab">
-        {% include 'planta_docente/includes/tabla_vencimientos.html' with cargos=vencidos tipo='vencido' %}
+        {% include 'planta_docente/components/tables/vencimientos.html' with cargos=vencidos tipo='vencido' %}
     </div>
 
     <!-- Críticos -->
     <div class="tab-pane fade" id="criticos-tab">
-        {% include 'planta_docente/includes/tabla_vencimientos.html' with cargos=criticos tipo='critico' %}
+        {% include 'planta_docente/components/tables/vencimientos.html' with cargos=criticos tipo='critico' %}
     </div>
 
     <!-- Próximos -->
     <div class="tab-pane fade" id="proximos-tab">
-        {% include 'planta_docente/includes/tabla_vencimientos.html' with cargos=proximos tipo='proximo' %}
+        {% include 'planta_docente/components/tables/vencimientos.html' with cargos=proximos tipo='proximo' %}
     </div>
 </div>
 

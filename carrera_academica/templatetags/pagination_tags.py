@@ -23,7 +23,7 @@ def url_replace(context, **kwargs):
     return query.urlencode()
 
 
-@register.inclusion_tag("pagination/pagination.html", takes_context=True)
+@register.inclusion_tag("components\pagination.html", takes_context=True)
 def render_pagination(context, page_obj, show_page_size=True):
     """
     Renderiza los controles de paginación.
