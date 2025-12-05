@@ -1,0 +1,43 @@
+{# Component: Card de Junta Evaluadora #}
+{# Uso: {% include 'carrera_academica/components/ca/junta.html' with ca=ca %} #}
+
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Junta Evaluadora</span>
+        <div>
+            <a href="{% url 'carrera_academica:generar_propuesta_jurado' pk=ca.pk %}" class="btn btn-info btn-sm">
+                Generar Planilla
+            </a>
+            <a href="{% url 'carrera_academica:editar_junta' pk=ca.pk %}" class="btn btn-outline-secondary btn-sm">
+                Editar
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        {% with junta=ca.junta_evaluadora %}
+            {% if junta %}
+                <strong>Miembro Interno Titular:</strong>
+                <p>{{ junta.miembro_interno_titular|default:"No asignado." }}</p>
+                
+                <strong>Miembros Externos Titulares:</strong>
+                <ul>
+                    {% for miembro in junta.miembros_externos_titulares.all %}
+                        <li>{{ miembro }}</li>
+                    {% empty %}
+                        <li>No asignados.</li>
+                    {% endfor %}
+                </ul>
+                
+                <hr>
+                
+                <strong>Veedor Alumno Titular:</strong>
+                <p>{{ junta.veedor_alumno_titular|default:"No asignado." }}</p>
+                
+                <strong>Veedor Graduado Titular:</strong>
+                <p>{{ junta.veedor_graduado_titular|default:"No asignado." }}</p>
+            {% else %}
+                <p class="text-muted">Aún no se ha asignado una Junta Evaluadora.</p>
+            {% endif %}
+        {% endwith %}
+    </div>
+</div>

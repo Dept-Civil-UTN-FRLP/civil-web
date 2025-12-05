@@ -1,0 +1,18 @@
+{# Component: Header de Solicitud #}
+{# Uso: {% include 'equivalencias/components/solicitud_header.html' with solicitud=solicitud %} #}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h2><i class="bi bi-file-earmark-person"></i> Solicitud de Equivalencia</h2>
+        <p class="text-muted mb-0">
+            <strong>Estudiante:</strong> {{ solicitud.id_estudiante.nombre_completo }}
+            {% if solicitud.id_estudiante.dni_pasaporte %}
+                | <strong>DNI/Pasaporte:</strong> {{ solicitud.id_estudiante.dni_pasaporte }}
+            {% endif %}
+            | <strong>Fecha:</strong> {{ solicitud.fecha_inicio|date:"d/m/Y H:i" }}
+        </p>
+    </div>
+    <span class="badge {% if solicitud.estado_general == 'Completada' %}bg-secondary{% elif solicitud.estado_general == 'Cancelada' %}bg-danger{% else %}bg-info{% endif %} fs-6">
+        {{ solicitud.estado_general }}
+    </span>
+</div>

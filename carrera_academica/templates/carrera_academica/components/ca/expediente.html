@@ -1,0 +1,74 @@
+{# Component: Card de Expediente #}
+{# Uso: {% include 'carrera_academica/components/ca/expediente.html' with ca=ca expediente_form=expediente_form %} #}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">{{ ca.cargo.docente }}</h5>
+        
+        <p class="card-text mb-1 d-flex align-items-center">
+            <strong class="me-2">Expediente:</strong>
+            {% if ca.numero_expediente %}
+                {{ ca.numero_expediente }}
+            {% else %}
+                <form action="{% url 'carrera_academica:asignar_expediente' pk=ca.pk %}" method="POST" class="d-inline-flex">
+                    {% csrf_token %}
+                    {{ expediente_form.numero_expediente }}
+                    <button type="submit" class="btn btn-sm btn-outline-success ms-2">Asignar</button>
+                </form>
+            {% endif %}
+        </p>
+        
+        <p class="card-text mb-1">
+            <strong>Cargo:</strong> {{ ca.cargo.get_categoria_display }} {{ ca.cargo.get_caracter_display }} en {{ ca.cargo.asignatura.nombre|title }}
+        </p>
+        
+        <p class="card-text mb-1">
+            <strong>Período Original:</strong> {{ ca.fecha_inicio|date:"d/m/Y" }} al {{ ca.fecha_vencimiento_original|date:"d/m/Y" }}
+        </p>
+        
+        <p class="card-text mb-1">
+            <strong>Vencimiento Actual (con prórrogas):</strong> <strong class="text-danger">{{ ca.fecha_vencimiento_actual|date:"d/m/Y" }}</strong>
+        </p>
+        
+        <p class="card-text">
+            <strong>Estado:</strong> {{ ca.get_estado_display }}
+        </p>
+        
+        {% if ca.estado == 'ACT' %}
+        <hr>
+        <form action="{% url 'carrera_academica:finalizar_ca' pk=ca.pk %}" method="POST" 
+              onsubmit="return confirm('¿Estás seguro de que querés finalizar este expediente? Esta acción no se puede deshacer fácilmente.');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-warning w-100">
+                Finalizar Expediente
+            </button>
+        </form>
+        {% endif %}
+        
+        <hr>
+        
+        <p class="card-text small mb-1">
+            <strong>Res. Designación:</strong>
+            {% if ca.resolucion_designacion %}
+                {{ ca.resolucion_designacion }}
+                {% if ca.resolucion_designacion.file %}
+                    <a href="{{ ca.resolucion_designacion.file.url }}" target="_blank" class="ms-2 fw-bold">(Ver Archivo)</a>
+                {% endif %}
+            {% else %}
+                No asignada.
+            {% endif %}
+        </p>
+        
+        <p class="card-text small">
+            <strong>Res. Puesta en Función:</strong>
+            {% if ca.resolucion_puesta_en_funcion %}
+                {{ ca.resolucion_puesta_en_funcion }}
+                {% if ca.resolucion_puesta_en_funcion.file %}
+                    <a href="{{ ca.resolucion_puesta_en_funcion.file.url }}" target="_blank" class="ms-2 fw-bold">(Ver Archivo)</a>
+                {% endif %}
+            {% else %}
+                No asignada.
+            {% endif %}
+        </p>
+    </div>
+</div>
