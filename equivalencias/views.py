@@ -682,19 +682,20 @@ def estadisticas_view(request):
 
     return render(request, "equivalencias/estadisticas.html", contexto)
 
-@login_required
-def estadisticas_asignaturas_view(request):
-    """Estadísticas detalladas por asignatura."""
 
-    # Obtener todas las asignaturas con sus estadísticas
+@login_required
+def pendientes_view(request):
+    """Vista de seguimiento de equivalencias pendientes por asignatura."""
+
+    # Solo asignaturas que tienen pendientes
     asignaturas_stats = (
         AsignaturaParaEquivalencia.objects
         .select_related('asignatura', 'docente_responsable')
         .prefetch_related('docente_responsable__correos')
         .annotate(
-            total_solicitudes=Count('detallesolicitud'),
             pendientes=Count('detallesolicitud', filter=Q(
                 detallesolicitud__estado_asignatura='Enviada a Cátedra')),
+            total_solicitudes=Count('detallesolicitud'),
             aprobadas=Count('detallesolicitud', filter=Q(
                 detallesolicitud__estado_asignatura='Aprobada')),
             denegadas=Count('detallesolicitud', filter=Q(
@@ -702,12 +703,14 @@ def estadisticas_asignaturas_view(request):
             requiere_pc=Count('detallesolicitud', filter=Q(
                 detallesolicitud__estado_asignatura='Requiere PC')),
         )
-        .filter(total_solicitudes__gt=0)
+        .filter(pendientes__gt=0)  # Solo las que tienen pendientes
         .order_by('-pendientes', 'asignatura__nombre')
     )
 
     # Para cada asignatura, obtener los detalles pendientes
     now = timezone.now()
+    total_pendientes = 0
+
     for asignatura in asignaturas_stats:
         detalles = (
             DetalleSolicitud.objects
@@ -725,9 +728,11 @@ def estadisticas_asignaturas_view(request):
             detalle.dias_espera = delta.days
 
         asignatura.detalles_pendientes = detalles
+        total_pendientes += asignatura.pendientes
 
     contexto = {
         'asignaturas_stats': asignaturas_stats,
+        'total_pendientes': total_pendientes,
     }
 
-    return render(request, 'equivalencias/estadisticas_asignaturas.html', contexto)
+    return render(request, 'equivalencias/pendientes.html', contexto)
