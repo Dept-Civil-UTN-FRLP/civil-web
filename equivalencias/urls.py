@@ -31,4 +31,5 @@ urlpatterns = [
         name="reenviar_pendientes",
     ),
     path("estadisticas/", views.estadisticas_view, name="estadisticas"),
+    path("pendientes/", views.pendientes_view, name="pendientes"),
 ]

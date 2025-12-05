@@ -17,6 +17,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.utils import timezone
 from docx import Document
+from django.db.models import Q
 from weasyprint import HTML
 
 from config.pagination import paginate_queryset
@@ -680,3 +681,58 @@ def estadisticas_view(request):
     }
 
     return render(request, "equivalencias/estadisticas.html", contexto)
+
+
+@login_required
+def pendientes_view(request):
+    """Vista de seguimiento de equivalencias pendientes por asignatura."""
+
+    # Solo asignaturas que tienen pendientes
+    asignaturas_stats = (
+        AsignaturaParaEquivalencia.objects
+        .select_related('asignatura', 'docente_responsable')
+        .prefetch_related('docente_responsable__correos')
+        .annotate(
+            pendientes=Count('detallesolicitud', filter=Q(
+                detallesolicitud__estado_asignatura='Enviada a Cátedra')),
+            total_solicitudes=Count('detallesolicitud'),
+            aprobadas=Count('detallesolicitud', filter=Q(
+                detallesolicitud__estado_asignatura='Aprobada')),
+            denegadas=Count('detallesolicitud', filter=Q(
+                detallesolicitud__estado_asignatura='Denegada')),
+            requiere_pc=Count('detallesolicitud', filter=Q(
+                detallesolicitud__estado_asignatura='Requiere PC')),
+        )
+        .filter(pendientes__gt=0)  # Solo las que tienen pendientes
+        .order_by('-pendientes', 'asignatura__nombre')
+    )
+
+    # Para cada asignatura, obtener los detalles pendientes
+    now = timezone.now()
+    total_pendientes = 0
+
+    for asignatura in asignaturas_stats:
+        detalles = (
+            DetalleSolicitud.objects
+            .filter(
+                id_asignatura=asignatura,
+                estado_asignatura='Enviada a Cátedra'
+            )
+            .select_related('id_solicitud__id_estudiante')
+            .order_by('id_solicitud__fecha_inicio')
+        )
+
+        # Calcular días de espera para cada detalle
+        for detalle in detalles:
+            delta = now - detalle.id_solicitud.fecha_inicio
+            detalle.dias_espera = delta.days
+
+        asignatura.detalles_pendientes = detalles
+        total_pendientes += asignatura.pendientes
+
+    contexto = {
+        'asignaturas_stats': asignaturas_stats,
+        'total_pendientes': total_pendientes,
+    }
+
+    return render(request, 'equivalencias/pendientes.html', contexto)
