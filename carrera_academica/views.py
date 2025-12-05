@@ -234,7 +234,7 @@ def detalle_ca_view(request, pk):
         "hay_formularios_pendientes": hay_formularios_pendientes,
         'resumen_anios': resumen_anios,
     }
-    return render(request, "carrera_academica/detalle_ca.html", contexto)
+    return render(request, "carrera_academica/ca_detail.html", contexto)
 
 
 @login_required
@@ -318,7 +318,7 @@ def iniciar_evaluacion_view(request, pk):
         form.fields["anios_a_evaluar"].choices = [(y, y) for y in anios_pendientes]
 
     return render(
-        request, "carrera_academica/iniciar_evaluacion.html", {"form": form, "ca": ca}
+        request, "carrera_academica/evaluacion_create.html", {"form": form, "ca": ca}
     )
 
 
@@ -480,7 +480,7 @@ def crear_ca_view(request):
         "ca_form": ca_form,
         "cargo_form": cargo_form,
     }
-    return render(request, "carrera_academica/crear_ca.html", contexto)
+    return render(request, "carrera_academica/ca_create.html", contexto)
 
 
 @login_required
@@ -511,7 +511,7 @@ def editar_junta_view(request, pk):
         "categoria_choices": Cargo.CATEGORIA_CHOICES,
         "dedicacion_choices": Cargo.DEDICACION_CHOICES,
     }
-    return render(request, "carrera_academica/editar_junta.html", contexto)
+    return render(request, "carrera_academica/junta_update.html", contexto)
 
 
 @login_required

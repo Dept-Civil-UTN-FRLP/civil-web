@@ -373,7 +373,7 @@ def detalle_cargo_view(request, pk):
         "resoluciones": resoluciones,
     }
 
-    return render(request, "planta_docente/detalle_cargo.html", contexto)
+    return render(request, "planta_docente/cargo_detail.html", contexto)
 
 
 @login_required
@@ -431,7 +431,7 @@ def detalle_docente_view(request, pk):
         "otros_correos": otros_correos,
     }
 
-    return render(request, "planta_docente/detalle_docente.html", contexto)
+    return render(request, "planta_docente/docente_detail.html", contexto)
 
 
 @login_required
@@ -1010,7 +1010,7 @@ def crear_resolucion_cargo(request, pk):
         'origen_choices': Resolucion.ORIGEN_CHOICES,
     }
 
-    return render(request, 'planta_docente/crear_resolucion.html', contexto)
+    return render(request, 'planta_docente/resolucion_create.html', contexto)
 
 
 @login_required

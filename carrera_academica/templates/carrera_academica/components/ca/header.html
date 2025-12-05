@@ -1,5 +1,13 @@
-{# Component: Header de Carrera Académica #}
-{# Uso: {% include 'carrera_academica/components/ca/header.html' with ca=ca %} #}
+{% comment %}
+Component: Header Carrera Académica
+Botones de navegación y acciones principales del expediente
+
+Parámetros requeridos:
+- ca: Objeto CarreraAcademica
+
+Uso:
+{% include 'carrera_academica/components/ca/header.html' with ca=carrera %}
+{% endcomment %}
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <a href="{% url 'carrera_academica:dashboard_ca' %}" class="btn btn-secondary btn-sm">

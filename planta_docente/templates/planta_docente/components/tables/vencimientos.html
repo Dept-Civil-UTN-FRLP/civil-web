@@ -1,3 +1,14 @@
+{% comment %}
+Component: Tabla de Contratos a Vencer
+Muestra tabla de cargos con contratos próximos a vencer
+
+Parámetros requeridos:
+- contratos_a_vencer: QuerySet de Cargos
+
+Uso:
+{% include 'planta_docente/components/tables/vencimientos.html' with contratos_a_vencer=cargos %}
+{% endcomment %}
+
 <!-- Tabla reutilizable para mostrar cargos con vencimiento -->
 {% if cargos %}
 <div class="table-responsive">

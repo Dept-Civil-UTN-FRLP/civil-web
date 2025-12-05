@@ -419,7 +419,7 @@ def solicitud_detalle_view(request, pk):
         "estado_choices": estado_choices,
         "solicitud_completa": solicitud_completa,
     }
-    return render(request, "equivalencias/solicitud_detalle.html", contexto)
+    return render(request, "equivalencias/solicitud_detail.html", contexto)
 
 
 @login_required
@@ -505,7 +505,7 @@ def crear_solicitud_view(request):
         "estudiantes": estudiantes,
         "asignaturas": asignaturas,
     }
-    return render(request, "equivalencias/crear_solicitud.html", contexto)
+    return render(request, "equivalencias/solicitud_create.html", contexto)
 
 
 @login_required
