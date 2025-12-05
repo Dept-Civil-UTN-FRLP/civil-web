@@ -17,6 +17,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.utils import timezone
 from docx import Document
+from django.db.models import Q
 from weasyprint import HTML
 
 from config.pagination import paginate_queryset
@@ -680,3 +681,41 @@ def estadisticas_view(request):
     }
 
     return render(request, "equivalencias/estadisticas.html", contexto)
+
+@login_required
+def estadisticas_asignaturas_view(request):
+    """Estadísticas detalladas por asignatura."""
+    
+    # Obtener todas las asignaturas con sus estadísticas
+    asignaturas_stats = (
+        AsignaturaParaEquivalencia.objects
+        .select_related('asignatura', 'docente_responsable')
+        .prefetch_related('docente_responsable__correos')
+        .annotate(
+            total_solicitudes=Count('detallesolicitud'),
+            pendientes=Count('detallesolicitud', filter=Q(detallesolicitud__estado_asignatura='Enviada a Cátedra')),
+            aprobadas=Count('detallesolicitud', filter=Q(detallesolicitud__estado_asignatura='Aprobada')),
+            denegadas=Count('detallesolicitud', filter=Q(detallesolicitud__estado_asignatura='Denegada')),
+            requiere_pc=Count('detallesolicitud', filter=Q(detallesolicitud__estado_asignatura='Requiere PC')),
+        )
+        .filter(total_solicitudes__gt=0)
+        .order_by('-pendientes', 'asignatura__nombre')
+    )
+    
+    # Para cada asignatura, obtener los detalles pendientes
+    for asignatura in asignaturas_stats:
+        asignatura.detalles_pendientes = (
+            DetalleSolicitud.objects
+            .filter(
+                id_asignatura=asignatura,
+                estado_asignatura='Enviada a Cátedra'
+            )
+            .select_related('id_solicitud__id_estudiante')
+            .order_by('id_solicitud__fecha_inicio')
+        )
+    
+    contexto = {
+        'asignaturas_stats': asignaturas_stats,
+    }
+    
+    return render(request, 'equivalencias/estadisticas_asignaturas.html', contexto)
