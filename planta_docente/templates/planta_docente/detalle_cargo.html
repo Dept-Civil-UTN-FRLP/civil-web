@@ -15,7 +15,7 @@
 </div>
 
 <!-- Alertas si las hay -->
-{% include 'planta_docente/includes/card_alertas.html' with alertas=alertas %}
+{% include 'planta_docente/components/cards/alertas.html' with alertas=alertas %}
 
 <div class="row">
     <!-- Columna principal -->
@@ -48,7 +48,7 @@
                                     <i class="bi bi-pause-circle"></i> Suspendido (Lic. M.J.)
                                 </span>
                             {% else %}
-                                {% include 'planta_docente/includes/badge_vencimiento.html' with estado_venc=estado_venc %}
+                                {% include 'planta_docente/components/badges/vencimiento.html' with estado_venc=estado_venc %}
                             {% endif %}
                         </p>
                         {% endif %}
@@ -489,7 +489,7 @@
     <!-- Sidebar -->
     <div class="col-md-4">
         <!-- Información del Docente -->
-        {% include 'planta_docente/includes/card_docente.html' with docente=cargo.docente %}
+        {% include 'planta_docente/components/cards/docente.html' with docente=cargo.docente %}
 
         <!-- Estado de Jubilación -->
         <div class="card mb-3">
@@ -502,7 +502,7 @@
                 </p>
                 <p class="mb-2">
                     <strong>Estado:</strong>
-                    {% include 'planta_docente/includes/badge_jubilacion.html' with estado_jub=estado_jub %}
+                    {% include 'planta_docente/components/badges/jubilacion.html' with estado_jub=estado_jub %}
                 </p>
                 {% if estado_jub.dias_hasta_65 %}
                 <p class="mb-0 small text-muted">

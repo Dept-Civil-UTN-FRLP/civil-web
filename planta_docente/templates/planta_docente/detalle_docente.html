@@ -70,7 +70,7 @@
                                 <!-- Vencimiento -->
                                 <td>
                                     {% if cargo.fecha_vencimiento %}
-                                        {% include 'planta_docente/includes/badge_vencimiento.html' with estado_venc=cargo.estado_venc %}
+                                        {% include 'planta_docente/components/badges/vencimiento.html' with estado_venc=cargo.estado_venc %}
                                         <br>
                                         <small class="text-muted">{{ cargo.fecha_vencimiento|date:"d/m/Y" }}</small>
                                     {% else %}
@@ -238,7 +238,7 @@
                 </p>
                 <p class="mb-2">
                     <strong>Estado:</strong><br>
-                    {% include 'planta_docente/includes/badge_jubilacion.html' with estado_jub=estado_jub %}
+                    {% include 'planta_docente/components/badges/jubilacion.html' with estado_jub=estado_jub %}
                 </p>
                 
                 {% if estado_jub.dias_hasta_65 %}

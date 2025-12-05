@@ -86,7 +86,7 @@
         <div class="card-header">Curriculum Vitae</div>
         <div class="card-body">
             {% if form_cv %}
-                {% include 'carrera_academica/includes/form_list.html' with formularios=form_cv|as_list ca=ca %}
+                {% include 'carrera_academica/components/form_list.html' with formularios=form_cv|as_list ca=ca %}
             {% else %}
                 <p class="text-muted">El formulario para el CV no ha sido generado.</p>
             {% endif %}
@@ -95,7 +95,7 @@
         <h4>Checklist de Formularios</h4>
         
         <h5>Formularios de Inicio</h5>
-        {% include 'carrera_academica/includes/form_list.html' with formularios=form_unicos ca=ca %}
+        {% include 'carrera_academica/components/form_list.html' with formularios=form_unicos ca=ca %}
 
         <h5 class="mt-4">Formularios Anuales</h5>
 
@@ -192,7 +192,7 @@ indicando si están pausados, evaluados, o mostrando sus formularios
         {# Mostrar formularios con botones de acción #}
         {% if item.formularios %}
             <!-- Año pendiente: Mostrar formularios con acciones normales -->
-        {% include 'carrera_academica/includes/form_list.html' with formularios=item.formularios ca=ca %}
+        {% include 'carrera_academica/components/form_list.html' with formularios=item.formularios ca=ca %}
         {% endif %}
     
     {% elif item.estado == 'pausado' %}
@@ -210,7 +210,7 @@ indicando si están pausados, evaluados, o mostrando sus formularios
     
        {% else %}
         <!-- Año pendiente: Mostrar formularios con acciones normales -->
-        {% include 'carrera_academica/includes/form_list.html' with formularios=item.formularios ca=ca %}
+        {% include 'carrera_academica/components/form_list.html' with formularios=item.formularios ca=ca %}
     {% endif %}
     
     <hr>
@@ -255,7 +255,7 @@ indicando si están pausados, evaluados, o mostrando sus formularios
                     </form>
 
                     <h6 class="mt-3">Formularios de esta Evaluación</h6>
-                    {% include 'carrera_academica/includes/form_list.html' with formularios=evaluacion.formularios.all ca=ca %}
+                    {% include 'carrera_academica/components/form_list.html' with formularios=evaluacion.formularios.all ca=ca %}
                 </div>
             </div>
         {% endfor %}
