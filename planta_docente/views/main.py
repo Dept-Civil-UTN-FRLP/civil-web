@@ -588,7 +588,7 @@ def iniciar_ca_desde_cargo_view(request, pk):
     if hasattr(cargo, "carrera_academica"):
         messages.warning(
             request, "Este cargo ya tiene una Carrera Académica iniciada.")
-        return redirect("detalle_ca", pk=cargo.carrera_academica.pk)
+        return redirect("carrera_academica:detalle_ca", pk=cargo.carrera_academica.pk)
 
     # Solo verificar que NO esté de baja y que el docente NO esté jubilado
     if cargo.estado == 'baja':
@@ -621,7 +621,7 @@ def iniciar_ca_desde_cargo_view(request, pk):
                 request,
                 f"Carrera Académica iniciada exitosamente para {cargo.docente}.",
             )
-            return redirect("detalle_ca", pk=nueva_ca.pk)
+            return redirect("carrera_academica:detalle_ca", pk=nueva_ca.pk)
 
         except Exception as e:
             messages.error(request, f"Error al crear la Carrera Académica: {str(e)}")

@@ -94,6 +94,12 @@ class CarreraAcademica(models.Model):
         help_text="Resolución de puesta en función (Decano)",
     )
     fecha_finalizacion = models.DateTimeField(null=True, blank=True)
+    anios_pausados = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="Años Pausados",
+        help_text="Lista de años que no se evaluarán. Formato: [{'anio': 2022, 'motivo': '...', 'fecha': '2022-03-15', 'usuario': 'admin'}]"
+    )
     objects = CarreraAcademicaManager()
 
     def clean(self):
@@ -186,6 +192,243 @@ class CarreraAcademica(models.Model):
             return False, "No hay años pendientes de evaluación"
 
         return True, ""
+    
+    def get_anios_activos(self):
+        """
+        Retorna lista de años disponibles para iniciar una nueva evaluación.
+        Excluye: pausados, en evaluación, y evaluados con acta.
+        """
+        start_year = self.fecha_inicio.year
+        end_year = self.fecha_vencimiento_actual.year
+
+        # Años pausados
+        pausados = {item['anio'] for item in self.get_anios_pausados()}
+
+        # Años ya evaluados (con acta) o en evaluación
+        anios_no_disponibles = set()
+
+        for ev in self.evaluaciones.all():
+            # Verificar si tiene F12 subido
+            tiene_acta = ev.formularios_evaluacion.filter(
+                tipo_formulario='F12',
+                archivo__isnull=False
+            ).exclude(archivo='').exists()
+
+            # Si tiene acta O está en evaluación, no disponible
+            for anio in ev.anios_evaluados:
+                anios_no_disponibles.add(anio)
+
+        # Años activos = todos - (pausados + no_disponibles)
+        anios_activos = []
+        for anio in range(start_year, end_year + 1):
+            if anio not in pausados and anio not in anios_no_disponibles:
+                anios_activos.append(anio)
+
+        return sorted(anios_activos)
+
+    def get_anios_pausados(self):
+        """Retorna lista de años pausados con info"""
+        return sorted(self.anios_pausados, key=lambda x: x['anio'], reverse=True)
+
+    def pausar_anio(self, anio, motivo, usuario):
+        """
+        Pausa un año específico.
+        No se pueden pausar años en evaluación o ya evaluados.
+        """
+        # Validar que el año esté en el rango
+        start_year = self.fecha_inicio.year
+        end_year = self.fecha_vencimiento_actual.year
+
+        if not (start_year <= anio <= end_year):
+            return False, f"El año {anio} está fuera del rango de la CA ({start_year}-{end_year})"
+
+        # Verificar estado del año
+        resumen = self.get_resumen_anios()
+        estado_anio = None
+        for item in resumen:
+            if item['anio'] == anio:
+                estado_anio = item['estado']
+                break
+
+        # No permitir pausar años evaluados
+        if estado_anio == 'evaluado':
+            evaluacion_num = next((item['info']['evaluacion']
+                                  for item in resumen if item['anio'] == anio), None)
+            return False, f"No se puede pausar el año {anio}. Ya fue evaluado en la Evaluación N°{evaluacion_num}"
+
+        # No permitir pausar años en evaluación
+        if estado_anio == 'en_evaluacion':
+            evaluacion_num = next((item['info']['evaluacion']
+                                  for item in resumen if item['anio'] == anio), None)
+            return False, f"No se puede pausar el año {anio}. Está incluido en la Evaluación N°{evaluacion_num} en curso"
+
+        # Verificar si ya está pausado
+        if estado_anio == 'pausado':
+            return False, f"El año {anio} ya está pausado"
+
+        # Pausar el año
+        pausa = {
+            'anio': anio,
+            'motivo': motivo,
+            'fecha': timezone.now().strftime('%Y-%m-%d'),
+            'usuario': usuario
+        }
+
+        self.anios_pausados.append(pausa)
+        self.save()
+
+        return True, f"Año {anio} pausado exitosamente"
+
+    def reactivar_anio(self, anio):
+        """Reactiva un año pausado"""
+        # Buscar y eliminar
+        original_len = len(self.anios_pausados)
+        self.anios_pausados = [
+            item for item in self.anios_pausados
+            if item['anio'] != anio
+        ]
+
+        if len(self.anios_pausados) == original_len:
+            return False, f"El año {anio} no está pausado"
+
+        self.save()
+        return True, f"Año {anio} reactivado exitosamente"
+
+    def get_resumen_anios(self):
+        """
+        Retorna lista con estado de cada año: pendiente, pausado, en_evaluacion, evaluado.
+        Un año está 'evaluado' solo cuando existe un F12 (acta) subido.
+        """
+        start_year = self.fecha_inicio.year
+        end_year = self.fecha_vencimiento_actual.year
+
+        # Años pausados
+        pausados = {item['anio']: item for item in self.get_anios_pausados()}
+
+        # Años en evaluaciones
+        evaluaciones = self.evaluaciones.all()
+        anios_en_evaluacion = {}  # {año: evaluacion_id}
+        anios_evaluados = {}  # {año: {'evaluacion': N, 'fecha': date, 'tiene_acta': bool}}
+
+        for ev in evaluaciones:
+            tiene_acta = ev.formularios.filter(
+                tipo_formulario='F12',
+                archivo__isnull=False
+            ).exclude(archivo='').exists()
+
+            for anio in ev.anios_evaluados:
+                if tiene_acta:
+                    # Evaluación cerrada con acta
+                    anios_evaluados[anio] = {
+                        'evaluacion': ev.numero_evaluacion,
+                        'fecha': ev.fecha_iniciada.strftime('%d/%m/%Y'),
+                        'tiene_acta': True
+                    }
+                else:
+                    # Evaluación en curso (sin acta todavía)
+                    anios_en_evaluacion[anio] = ev.numero_evaluacion
+
+        # Construir resumen
+        resumen = []
+        for anio in range(start_year, end_year + 1):
+            if anio in anios_evaluados:
+                # Año con evaluación cerrada (tiene acta)
+                resumen.append({
+                    'anio': anio,
+                    'estado': 'evaluado',
+                    'info': anios_evaluados[anio]
+                })
+            elif anio in anios_en_evaluacion:
+                # Año en evaluación (sin acta todavía)
+                resumen.append({
+                    'anio': anio,
+                    'estado': 'en_evaluacion',
+                    'info': {
+                        'evaluacion': anios_en_evaluacion[anio],
+                        'mensaje': 'En proceso de evaluación'
+                    }
+                })
+            elif anio in pausados:
+                # Año pausado
+                resumen.append({
+                    'anio': anio,
+                    'estado': 'pausado',
+                    'info': pausados[anio]
+                })
+            else:
+                # Año pendiente
+                resumen.append({
+                    'anio': anio,
+                    'estado': 'pendiente',
+                    'info': None
+                })
+
+        return resumen
+    
+    def agregar_formularios_para_anio(self, anio):
+        """
+        Crea formularios para un año específico según la dedicación del cargo.
+        Retorna cantidad de formularios creados.
+        """
+        # Validar que el año esté en el rango de la CA
+        start_year = self.fecha_inicio.year
+        end_year = self.fecha_vencimiento_actual.year
+
+        if not (start_year <= anio <= end_year):
+            return 0, f"El año {anio} está fuera del rango de la CA ({start_year}-{end_year})"
+
+        # Tipos de formularios anuales base
+        tipos_anuales = ['F04', 'F05', 'F06', 'F07', 'ENC']
+
+        # Agregar F13 si es DE o SE
+        if self.cargo.dedicacion in ['de', 'se']:
+            tipos_anuales.append('F13')
+
+        # Crear formularios que no existan
+        creados = 0
+        for tipo in tipos_anuales:
+            # Verificar si ya existe
+            existe = Formulario.objects.filter(
+                carrera_academica=self,
+                tipo_formulario=tipo,
+                anio_correspondiente=anio
+            ).exists()
+
+            if not existe:
+                Formulario.objects.create(
+                    carrera_academica=self,
+                    tipo_formulario=tipo,
+                    anio_correspondiente=anio
+                )
+                creados += 1
+
+        return creados, f"Se crearon {creados} formularios para el año {anio}"
+
+    def agregar_anios_por_prorroga(self, nueva_fecha_vencimiento):
+        """
+        Agrega formularios para años nuevos cuando se prorroga la CA.
+        Retorna (años_agregados, formularios_creados, mensaje).
+        """
+        anio_actual_vencimiento = self.fecha_vencimiento_actual.year
+        anio_nuevo_vencimiento = nueva_fecha_vencimiento.year
+
+        if anio_nuevo_vencimiento <= anio_actual_vencimiento:
+            return [], 0, "La nueva fecha no extiende el período de la CA"
+
+        # Calcular años nuevos
+        anios_nuevos = list(
+            range(anio_actual_vencimiento + 1, anio_nuevo_vencimiento + 1))
+
+        total_formularios = 0
+        for anio in anios_nuevos:
+            creados, _ = self.agregar_formularios_para_anio(anio)
+            total_formularios += creados
+
+        return (
+            anios_nuevos,
+            total_formularios,
+            f"Se agregaron {len(anios_nuevos)} año(s) con {total_formularios} formularios"
+        )
 
     class Meta:
         verbose_name = "Carrera Académica"

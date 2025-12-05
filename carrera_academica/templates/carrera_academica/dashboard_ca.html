@@ -5,7 +5,7 @@
 {% block content %}
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h1>Dashboard de Carrera Académica</h1>
-    <a href="{% url 'crear_ca' %}" class="btn btn-success">
+    <a href="{% url 'carrera_academica:crear_ca' %}" class="btn btn-success">
         + Nueva Carrera Académica
     </a>
   </div>
@@ -69,7 +69,7 @@
           </span>
         </td>
         <td>
-            <a href="{% url 'detalle_ca' pk=ca.pk %}" class="btn btn-primary btn-sm">Ver Expediente</a>
+            <a href="{% url 'carrera_academica:detalle_ca' pk=ca.pk %}" class="btn btn-primary btn-sm">Ver Expediente</a>
         </td>
       </tr>
       {% empty %}

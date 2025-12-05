@@ -1,7 +1,8 @@
 # carrera_academica/urls.py
 from django.urls import path
-
 from . import views
+
+app_name = 'carrera_academica'
 
 urlpatterns = [
     path("", views.dashboard_ca_view, name="dashboard_ca"),
@@ -64,5 +65,15 @@ urlpatterns = [
         "evaluacion/<int:pk>/agendar/",
         views.agendar_evaluacion_view,
         name="agendar_evaluacion",
+    ),
+    path(
+        "expediente/<int:pk>/gestionar-anios/",
+        views.gestionar_anios_ca_view,
+        name="gestionar_anios_ca",
+    ),
+    path(
+        "expediente/<int:pk>/anio/<int:anio>/formularios/",
+        views.gestionar_formularios_anio_view,
+        name="gestionar_formularios_anio",
     ),
 ]
