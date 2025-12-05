@@ -1,5 +1,17 @@
-{# Component: Grid de Documentación #}
-{# Uso: {% include 'equivalencias/components/documentacion_grid.html' with documentos=documentos %} #}
+{% comment %}
+Component: Grid Documentación
+Grid responsive con documentos adjuntos por tipo
+
+Parámetros requeridos:
+- solicitud: Objeto SolicitudEquivalencia
+
+Uso:
+{% include 'equivalencias/components/documentacion_grid.html' with solicitud=solicitud %}
+{% endcomment %}
+
+{% load static %}
+
+{% with documentos=solicitud.documentacion_equivalencia_set.all %}
 
 {% if documentos %}
 <div class="card mb-4">

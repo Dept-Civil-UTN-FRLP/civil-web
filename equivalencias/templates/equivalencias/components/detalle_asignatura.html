@@ -1,5 +1,14 @@
-{# Component: Card de Detalle de Asignatura con Formulario #}
-{# Uso: {% include 'equivalencias/components/detalle_asignatura.html' with detalle=detalle estado_choices=estado_choices solicitud=solicitud %} #}
+{% comment %}
+Component: Card Detalle Asignatura
+Card con información de asignatura equivalente, form de estado y acciones
+
+Parámetros requeridos:
+- detalle: Objeto DetalleEquivalencia
+- solicitud: Objeto SolicitudEquivalencia
+
+Uso:
+{% include 'equivalencias/components/detalle_asignatura.html' with detalle=detalle solicitud=solicitud %}
+{% endcomment %}
 
 <div class="list-group-item">
     <form method="POST" class="row align-items-center">

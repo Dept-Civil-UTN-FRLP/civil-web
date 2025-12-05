@@ -1,5 +1,14 @@
-{# Component: Sección de Evaluaciones #}
-{# Uso: {% include 'carrera_academica/components/ca/evaluaciones.html' with ca=ca anios_pendientes_evaluacion=anios_pendientes_evaluacion %} #}
+{% comment %}
+Component: Sección de Evaluaciones
+Formularios completos de evaluación por año con toda la lógica de estados
+
+Parámetros requeridos:
+- ca: Objeto CarreraAcademica
+- form_dict: Dict con formularios organizados por año
+
+Uso:
+{% include 'carrera_academica/components/ca/evaluaciones.html' with ca=carrera form_dict=formularios %}
+{% endcomment %}
 
 <div class="d-flex justify-content-between align-items-center mt-4">
     <h5>Evaluaciones</h5>

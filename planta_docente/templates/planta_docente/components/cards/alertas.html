@@ -1,3 +1,15 @@
+{% comment %}
+Component: Card de Alertas
+Muestra alertas de contratos próximos a vencer y jubilaciones próximas
+
+Parámetros requeridos:
+- contratos_a_vencer: QuerySet de Cargos
+- proximas_jubilaciones: QuerySet de Docentes
+
+Uso:
+{% include 'planta_docente/components/cards/alertas.html' with contratos_a_vencer=contratos proximas_jubilaciones=jubilaciones %}
+{% endcomment %}
+
 <!-- Card de alertas para un cargo -->
 {% if alertas %}
 <div class="alert alert-warning alert-dismissible fade show" role="alert">

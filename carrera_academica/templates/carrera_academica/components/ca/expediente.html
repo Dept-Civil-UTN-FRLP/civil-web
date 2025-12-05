@@ -1,5 +1,13 @@
-{# Component: Card de Expediente #}
-{# Uso: {% include 'carrera_academica/components/ca/expediente.html' with ca=ca expediente_form=expediente_form %} #}
+{% comment %}
+Component: Card Expediente
+Información principal del expediente CA con datos del cargo y resoluciones
+
+Parámetros requeridos:
+- ca: Objeto CarreraAcademica
+
+Uso:
+{% include 'carrera_academica/components/ca/expediente.html' with ca=carrera %}
+{% endcomment %}
 
 <div class="card mb-4">
     <div class="card-body">

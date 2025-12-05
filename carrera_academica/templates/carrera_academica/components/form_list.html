@@ -1,3 +1,16 @@
+{% comment %}
+Component: Lista de Formularios
+Muestra lista de formularios de un año con estado y acciones
+
+Parámetros requeridos:
+- year: Entero con el año
+- forms: Lista de formularios del año
+- ca: Objeto CarreraAcademica
+
+Uso:
+{% include 'carrera_academica/components/form_list.html' with year=anio forms=formularios ca=carrera %}
+{% endcomment %}
+
 <table class="table table-sm table-bordered align-middle">
     <tbody>
         {% for form in formularios %}

@@ -1,3 +1,14 @@
+{% comment %}
+Component: Badge Vencimiento
+Muestra estado de vencimiento de contrato con color según urgencia
+
+Parámetros requeridos:
+- cargo: Objeto Cargo
+
+Uso:
+{% include 'planta_docente/components/badges/vencimiento.html' with cargo=cargo %}
+{% endcomment %}
+
 <!-- Badge de estado de vencimiento con tooltip -->
 <span class="badge {{ estado_venc.badge_class }}" 
       data-bs-toggle="tooltip" 

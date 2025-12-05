@@ -1,0 +1,19 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_title %}Carrera Académica - Notificación{% endblock %}
+
+{% block email_content %}
+<h3>{{ asunto }}</h3>
+<p>{{ mensaje|safe }}</p>
+
+{% if ca %}
+<p><strong>Docente:</strong> {{ ca.cargo.docente.get_full_name }}</p>
+<p><strong>Cargo:</strong> {{ ca.cargo }}</p>
+{% endif %}
+
+{% if detalle_url %}
+<p style="margin-top: 20px;">
+    <a href="{{ detalle_url }}" class="btn">Ver Expediente</a>
+</p>
+{% endif %}
+{% endblock %}

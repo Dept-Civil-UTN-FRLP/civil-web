@@ -1,3 +1,14 @@
+{% comment %}
+Component: Badge Jubilación
+Muestra estado de jubilación del docente con color según proximidad
+
+Parámetros requeridos:
+- docente: Objeto Docente
+
+Uso:
+{% include 'planta_docente/components/badges/jubilacion.html' with docente=docente %}
+{% endcomment %}
+
 <!-- Badge de estado de jubilación -->
 <span class="badge {{ estado_jub.badge_class }}"
       data-bs-toggle="tooltip"
