@@ -685,7 +685,7 @@ def estadisticas_view(request):
 @login_required
 def estadisticas_asignaturas_view(request):
     """Estadísticas detalladas por asignatura."""
-    
+
     # Obtener todas las asignaturas con sus estadísticas
     asignaturas_stats = (
         AsignaturaParaEquivalencia.objects
@@ -693,18 +693,23 @@ def estadisticas_asignaturas_view(request):
         .prefetch_related('docente_responsable__correos')
         .annotate(
             total_solicitudes=Count('detallesolicitud'),
-            pendientes=Count('detallesolicitud', filter=Q(detallesolicitud__estado_asignatura='Enviada a Cátedra')),
-            aprobadas=Count('detallesolicitud', filter=Q(detallesolicitud__estado_asignatura='Aprobada')),
-            denegadas=Count('detallesolicitud', filter=Q(detallesolicitud__estado_asignatura='Denegada')),
-            requiere_pc=Count('detallesolicitud', filter=Q(detallesolicitud__estado_asignatura='Requiere PC')),
+            pendientes=Count('detallesolicitud', filter=Q(
+                detallesolicitud__estado_asignatura='Enviada a Cátedra')),
+            aprobadas=Count('detallesolicitud', filter=Q(
+                detallesolicitud__estado_asignatura='Aprobada')),
+            denegadas=Count('detallesolicitud', filter=Q(
+                detallesolicitud__estado_asignatura='Denegada')),
+            requiere_pc=Count('detallesolicitud', filter=Q(
+                detallesolicitud__estado_asignatura='Requiere PC')),
         )
         .filter(total_solicitudes__gt=0)
         .order_by('-pendientes', 'asignatura__nombre')
     )
-    
+
     # Para cada asignatura, obtener los detalles pendientes
+    now = timezone.now()
     for asignatura in asignaturas_stats:
-        asignatura.detalles_pendientes = (
+        detalles = (
             DetalleSolicitud.objects
             .filter(
                 id_asignatura=asignatura,
@@ -713,9 +718,16 @@ def estadisticas_asignaturas_view(request):
             .select_related('id_solicitud__id_estudiante')
             .order_by('id_solicitud__fecha_inicio')
         )
-    
+
+        # Calcular días de espera para cada detalle
+        for detalle in detalles:
+            delta = now - detalle.id_solicitud.fecha_inicio
+            detalle.dias_espera = delta.days
+
+        asignatura.detalles_pendientes = detalles
+
     contexto = {
         'asignaturas_stats': asignaturas_stats,
     }
-    
+
     return render(request, 'equivalencias/estadisticas_asignaturas.html', contexto)

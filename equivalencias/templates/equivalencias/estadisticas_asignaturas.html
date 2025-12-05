@@ -1,3 +1,4 @@
+<!-- equivalencias/templates/equivalencias/estadisticas_asignaturas.html -->
 {% extends 'equivalencias/base.html' %}
 
 {% block content %}
@@ -95,12 +96,9 @@
                                 <td>{{ detalle.id_solicitud.id_estudiante.dni_pasaporte }}</td>
                                 <td>{{ detalle.id_solicitud.fecha_inicio|date:"d/m/Y" }}</td>
                                 <td>
-                                    {% now "U" as now_timestamp %}
-                                    {% with dias=(now_timestamp|add:"0"|floatformat:0|add:detalle.id_solicitud.fecha_inicio.timestamp|add:"0"|floatformat:0|add:"-")|floatformat:0 %}
-                                        <span class="badge bg-{% if dias|add:"0" > 30 %}danger{% elif dias|add:"0" > 15 %}warning{% else %}secondary{% endif %}">
-                                            {{ detalle.id_solicitud.fecha_inicio|timesince }}
-                                        </span>
-                                    {% endwith %}
+                                    <span class="badge bg-{% if detalle.dias_espera > 30 %}danger{% elif detalle.dias_espera > 15 %}warning{% else %}secondary{% endif %}">
+                                        {{ detalle.dias_espera }} días
+                                    </span>
                                 </td>
                                 <td>
                                     <a href="{% url 'solicitud_detalle' pk=detalle.id_solicitud.pk %}" 
