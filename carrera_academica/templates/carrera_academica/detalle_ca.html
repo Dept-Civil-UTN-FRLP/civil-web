@@ -191,64 +191,8 @@ indicando si están pausados, evaluados, o mostrando sus formularios
         
         {# Mostrar formularios con botones de acción #}
         {% if item.formularios %}
-            <div class="table-responsive">
-                <table class="table table-hover table-bordered">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Tipo</th>
-                            <th>Descripción</th>
-                            <th>Estado</th>
-                            <th>Fecha Subida</th>
-                            <th>Archivo</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for form in item.formularios %}
-                        <tr>
-                            <td><strong>{{ form.tipo_formulario }}</strong></td>
-                            <td>{{ form.get_tipo_formulario_display }}</td>
-                            <td>
-                                {% if form.archivo %}
-                                    <span class="badge bg-success">✓ Subido</span>
-                                {% else %}
-                                    <span class="badge bg-warning">⚠ Pendiente</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if form.fecha_subida %}
-                                    {{ form.fecha_subida|date:"d/m/Y H:i" }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if form.archivo %}
-                                    <a href="{{ form.archivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-file-pdf"></i> Ver
-                                    </a>
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                            <td>
-                                <!-- Permitir subir/reemplazar mientras esté en evaluación -->
-                                <a href="{% url 'carrera_academica:subir_formulario' form.pk %}" 
-                                   class="btn btn-sm btn-primary">
-                                    {% if form.archivo %}
-                                        <i class="bi bi-arrow-repeat"></i> Reemplazar
-                                    {% else %}
-                                        <i class="bi bi-upload"></i> Subir
-                                    {% endif %}
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <p class="text-muted">No hay formularios para este año.</p>
+            <!-- Año pendiente: Mostrar formularios con acciones normales -->
+        {% include 'carrera_academica/includes/form_list.html' with formularios=item.formularios ca=ca %}
         {% endif %}
     
     {% elif item.estado == 'pausado' %}
@@ -264,67 +208,9 @@ indicando si están pausados, evaluados, o mostrando sus formularios
             </div>
         </div>
     
-    {% else %}
+       {% else %}
         <!-- Año pendiente: Mostrar formularios con acciones normales -->
-        {% if item.formularios %}
-            <div class="table-responsive">
-                <table class="table table-hover table-bordered">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Tipo</th>
-                            <th>Descripción</th>
-                            <th>Estado</th>
-                            <th>Fecha Subida</th>
-                            <th>Archivo</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for form in item.formularios %}
-                        <tr>
-                            <td><strong>{{ form.tipo_formulario }}</strong></td>
-                            <td>{{ form.get_tipo_formulario_display }}</td>
-                            <td>
-                                {% if form.archivo %}
-                                    <span class="badge bg-success">✓ Subido</span>
-                                {% else %}
-                                    <span class="badge bg-warning">⚠ Pendiente</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if form.fecha_subida %}
-                                    {{ form.fecha_subida|date:"d/m/Y H:i" }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if form.archivo %}
-                                    <a href="{{ form.archivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-file-pdf"></i> Ver
-                                    </a>
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                            <td>
-                                <a href="{% url 'carrera_academica:subir_formulario' form.pk %}" 
-                                   class="btn btn-sm btn-primary">
-                                    {% if form.archivo %}
-                                        <i class="bi bi-arrow-repeat"></i> Reemplazar
-                                    {% else %}
-                                        <i class="bi bi-upload"></i> Subir
-                                    {% endif %}
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <p class="text-muted">No hay formularios para este año.</p>
-        {% endif %}
+        {% include 'carrera_academica/includes/form_list.html' with formularios=item.formularios ca=ca %}
     {% endif %}
     
     <hr>
