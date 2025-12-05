@@ -26,6 +26,12 @@
             </a>
           </li>
           <li class="nav-item">
+  <a class="nav-link {% if request.resolver_match.url_name == 'pendientes' %}active{% endif %}" 
+     href="{% url 'pendientes' %}">
+    <i class="bi bi-hourglass-split"></i> Pendientes
+  </a>
+</li>
+          <li class="nav-item">
             <a class="nav-link {% if 'carrera_academica' in request.path %}active{% endif %}" 
                href="{% url 'carrera_academica:dashboard_ca' %}">
               <i class="bi bi-mortarboard"></i> Carrera Académica
