@@ -1,0 +1,113 @@
+{% comment %}
+Component: Navbar Principal
+Navegación global con dropdowns por módulo y detección de sección activa
+
+Variables esperadas en context:
+- user: Usuario autenticado
+- request: Request object para detección de ruta activa
+{% endcomment %}
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="{% url 'dashboard' %}">
+      <i class="bi bi-folder2-open"></i> 
+      <span class="d-none d-md-inline">Gestor de Expedientes</span>
+      <span class="d-md-none">UTN FRLP</span>
+    </a>
+    
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarMain">
+      <ul class="navbar-nav me-auto">
+        
+        <!-- Equivalencias -->
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle {% if 'equivalencias' in request.resolver_match.app_name or request.resolver_match.url_name in 'dashboard,pendientes,estadisticas' %}active{% endif %}" 
+             href="#" role="button" data-bs-toggle="dropdown">
+            <i class="bi bi-file-earmark-text"></i> Equivalencias
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{% url 'dashboard' %}">
+              <i class="bi bi-grid"></i> Dashboard
+            </a></li>
+            <li><a class="dropdown-item" href="{% url 'pendientes' %}">
+              <i class="bi bi-hourglass-split"></i> Pendientes
+            </a></li>
+            <li><a class="dropdown-item" href="{% url 'estadisticas' %}">
+              <i class="bi bi-bar-chart"></i> Estadísticas
+            </a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{% url 'crear_solicitud' %}">
+              <i class="bi bi-plus-circle"></i> Nueva Solicitud
+            </a></li>
+          </ul>
+        </li>
+
+        <!-- Carrera Académica -->
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle {% if 'carrera_academica' in request.resolver_match.app_name %}active{% endif %}" 
+             href="#" role="button" data-bs-toggle="dropdown">
+            <i class="bi bi-mortarboard"></i> Carrera Académica
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{% url 'carrera_academica:dashboard_ca' %}">
+              <i class="bi bi-grid"></i> Dashboard
+            </a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{% url 'carrera_academica:crear_ca' %}">
+              <i class="bi bi-plus-circle"></i> Nuevo Expediente
+            </a></li>
+          </ul>
+        </li>
+
+            <!-- Planta Docente -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle {% if 'planta_docente' in request.resolver_match.app_name %}active{% endif %}" 
+                 href="#" role="button" data-bs-toggle="dropdown">
+                <i class="bi bi-person-badge"></i> Planta Docente
+              </a>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{% url 'planta_docente:dashboard' %}">
+                  <i class="bi bi-grid"></i> Dashboard
+                </a></li>
+                <li><a class="dropdown-item" href="{% url 'planta_docente:vencimientos' %}">
+                  <i class="bi bi-calendar-x"></i> Vencimientos
+                </a></li>
+                <li><a class="dropdown-item" href="{% url 'planta_docente:jubilaciones' %}">
+                  <i class="bi bi-calendar-check"></i> Jubilaciones
+                </a></li>
+                <li><a class="dropdown-item" href="{% url 'planta_docente:dashboard_asignaturas' %}">
+                  <i class="bi bi-diagram-3"></i> Estructura de Cátedra
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{% url 'planta_docente:crear_cargo' %}">
+                  <i class="bi bi-plus-circle"></i> Nuevo Cargo
+                </a></li>
+              </ul>
+            </li>
+
+      </ul>
+
+      <!-- Menú Usuario -->
+      <ul class="navbar-nav">
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+            <i class="bi bi-person-circle"></i> 
+            <span class="d-none d-lg-inline">{{ user.get_full_name|default:user.username }}</span>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="{% url 'admin:index' %}" target="_blank">
+              <i class="bi bi-gear"></i> Panel Admin
+            </a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{% url 'admin:logout' %}">
+              <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+            </a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
