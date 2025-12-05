@@ -1,210 +1,82 @@
-{% extends 'equivalencias/base.html' %}
+{% extends 'equivalencias/base_equivalencias.html' %}
 
-{% block content %}
-  <a href="{% url 'dashboard' %}" class="btn btn-secondary btn-sm mb-3">
+{% block equiv_content %}
+
+<a href="{% url 'dashboard' %}" class="btn btn-secondary btn-sm mb-3">
     <i class="bi bi-arrow-left"></i> Volver al Dashboard
-  </a>
-  
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-      <h2><i class="bi bi-file-earmark-person"></i> Solicitud de Equivalencia</h2>
-      <p class="text-muted mb-0">
-        <strong>Estudiante:</strong> {{ solicitud.id_estudiante.nombre_completo }}
-        {% if solicitud.id_estudiante.dni_pasaporte %}
-          | <strong>DNI/Pasaporte:</strong> {{ solicitud.id_estudiante.dni_pasaporte }}
-        {% endif %}
-        | <strong>Fecha:</strong> {{ solicitud.fecha_inicio|date:"d/m/Y H:i" }}
-      </p>
-    </div>
-    <span class="badge {% if solicitud.estado_general == 'Completada' %}bg-secondary{% elif solicitud.estado_general == 'Cancelada' %}bg-danger{% else %}bg-info{% endif %} fs-6">
-      {{ solicitud.estado_general }}
-    </span>
-  </div>
-  
-  <hr>
+</a>
 
-  <!-- Documentación Adjunta -->
-  {% if documentos %}
-  <div class="card mb-4">
-    <div class="card-header bg-light">
-      <i class="bi bi-paperclip"></i> Documentación Adjunta
-      <span class="badge bg-primary">{{ documentos|length }}</span>
-    </div>
-    <div class="card-body">
-      <div class="row">
-        {% for doc in documentos %}
-        <div class="col-md-6 col-lg-4 mb-3">
-          <div class="card h-100 border-secondary">
-            <div class="card-body d-flex flex-column">
-              <div class="text-center mb-2">
-                {% if doc.archivo.name|slice:"-4:" == ".pdf" %}
-                  <i class="bi bi-file-pdf text-danger" style="font-size: 3rem;"></i>
-                {% elif doc.archivo.name|slice:"-4:" == ".doc" or doc.archivo.name|slice:"-5:" == ".docx" %}
-                  <i class="bi bi-file-word text-primary" style="font-size: 3rem;"></i>
-                {% elif doc.archivo.name|slice:"-4:" == ".jpg" or doc.archivo.name|slice:"-4:" == ".png" or doc.archivo.name|slice:"-5:" == ".jpeg" %}
-                  <i class="bi bi-file-image text-success" style="font-size: 3rem;"></i>
-                {% else %}
-                  <i class="bi bi-file-earmark text-secondary" style="font-size: 3rem;"></i>
-                {% endif %}
-              </div>
-              <p class="small text-muted mb-2 text-center text-truncate" title="{{ doc.archivo.name }}">
-                {{ doc.archivo.name|slice:"27:" }}
-              </p>
-              <div class="mt-auto">
-                <a href="{{ doc.archivo.url }}" 
-                   target="_blank" 
-                   class="btn btn-sm btn-outline-primary w-100"
-                   data-bs-toggle="tooltip"
-                   title="Abrir documento">
-                  <i class="bi bi-box-arrow-up-right"></i> Abrir
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-  {% endif %}
+{# Header de solicitud #}
+{% include 'equivalencias/components/solicitud_header.html' with solicitud=solicitud %}
 
-  <div class="d-flex justify-content-end mb-3">
+<hr>
+
+{# Documentación adjunta #}
+{% include 'equivalencias/components/documentacion_grid.html' with documentos=documentos %}
+
+{# Botón reenviar a todos los pendientes #}
+<div class="d-flex justify-content-end mb-3">
     <a href="{% url 'reenviar_pendientes' pk=solicitud.pk %}" class="btn btn-warning">
-      <i class="bi bi-send"></i> Reenviar a todos los Pendientes
+        <i class="bi bi-send"></i> Reenviar a todos los Pendientes
     </a>
-  </div>
+</div>
 
-  <h4><i class="bi bi-list-check"></i> Asignaturas Solicitadas</h4>
-  <div class="list-group">
+{# Asignaturas solicitadas #}
+<h4><i class="bi bi-list-check"></i> Asignaturas Solicitadas</h4>
+<div class="list-group">
     {% for detalle in detalles %}
-      <div class="list-group-item">
-        <form method="POST" class="row align-items-center">
-          {% csrf_token %}
-          <input type="hidden" name="detalle_id" value="{{ detalle.pk }}">
-          
-          <!-- Asignatura y Docente Responsable -->
-          <div class="col-md-4">
-            <strong>{{ detalle.id_asignatura.asignatura.nombre|title }}</strong>
-            <br>
-            {% if detalle.id_asignatura.docente_responsable %}
-              <small class="text-muted">
-                <i class="bi bi-person-check"></i> 
-                <strong>Responsable:</strong> 
-                <a href="{% url 'planta_docente:detalle_docente' pk=detalle.id_asignatura.docente_responsable.pk %}" 
-                   class="text-decoration-none"
-                   data-bs-toggle="tooltip"
-                   title="Ver perfil del docente">
-                  {{ detalle.id_asignatura.docente_responsable }}
-                </a>
-              </small>
-              <br>
-              {% with correo=detalle.id_asignatura.docente_responsable.correos.all.0 %}
-                {% if correo %}
-                  <small class="text-muted">
-                    <i class="bi bi-envelope"></i> 
-                    <a href="mailto:{{ correo.email }}">{{ correo.email }}</a>
-                  </small>
-                {% endif %}
-              {% endwith %}
-            {% else %}
-              <small class="text-warning">
-                <i class="bi bi-exclamation-triangle"></i> Sin docente responsable asignado
-              </small>
-            {% endif %}
-          </div>
-          
-          <!-- Estado -->
-          <div class="col-md-4">
-            <label class="form-label small">Estado del Dictamen:</label>
-            <select name="estado_asignatura" class="form-select form-select-sm">
-              {% for value, text in estado_choices %}
-                <option value="{{ value }}" {% if detalle.estado_asignatura == value %}selected{% endif %}>
-                  {{ text }}
-                </option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <!-- Botón Actualizar -->
-          <div class="col-md-4 text-end">
-            <button type="submit" class="btn btn-success btn-sm">
-              <i class="bi bi-save"></i> Actualizar
-            </button>
-          </div>
-
-          <!-- Detalle PC si corresponde -->
-          {% if detalle.estado_asignatura == 'Requiere PC' %}
-          <div class="col-12 mt-3">
-            <label class="form-label small"><strong>Temario del Programa Complementario:</strong></label>
-            <textarea name="detalle_pc" 
-                      class="form-control form-control-sm" 
-                      rows="3"
-                      placeholder="Indicar temas específicos para el Programa Complementario...">{{ detalle.detalle_pc|default_if_none:"" }}</textarea>
-          </div>
-          {% endif %}
-        </form>
-
-        <!-- Botón reenviar si está pendiente -->
-        {% if detalle.estado_asignatura == 'Enviada a Cátedra' %}
-        <div class="text-end mt-2">
-          <a href="{% url 'reenviar_email_asignatura' pk=solicitud.pk detalle_pk=detalle.pk %}" 
-             class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-arrow-repeat"></i> Reenviar Correo a esta Cátedra
-          </a>
-        </div>
-        {% endif %}
-      </div>
+        {% include 'equivalencias/components/detalle_asignatura.html' with detalle=detalle estado_choices=estado_choices solicitud=solicitud %}
     {% endfor %}
-  </div>
+</div>
 
-  <!-- Card de Finalización -->
-  {% if solicitud_completa %}
-  <div class="card mt-4 border-success">
+{# Card de finalización #}
+{% if solicitud_completa %}
+<div class="card mt-4 border-success">
     <div class="card-header bg-success text-white">
-      <i class="bi bi-check-circle"></i> Proceso de Dictamen Finalizado
+        <i class="bi bi-check-circle"></i> Proceso de Dictamen Finalizado
     </div>
     <div class="card-body">
-      <p>Todas las asignaturas han sido dictaminadas. El siguiente paso es generar el acta, firmarla y enviarla al Departamento de Alumnos.</p>
-      
-      <div class="mb-3">
-        <a href="{% url 'generar_acta_pdf' pk=solicitud.pk %}" class="btn btn-primary">
-          <i class="bi bi-file-pdf"></i> 1. Descargar Acta para Firmar (PDF)
-        </a>
-      </div>
-      
-      <hr>
-      
-      <h5><i class="bi bi-upload"></i> 2. Subir y Enviar Acta Firmada</h5>
-      <form action="{% url 'finalizar_solicitud' pk=solicitud.pk %}" method="POST" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div class="input-group">
-          <input type="file" class="form-control" name="acta_firmada" accept=".pdf" required>
-          <button class="btn btn-danger" type="submit">
-            <i class="bi bi-send-check"></i> Enviar a Dpto. de Alumnos y Archivar
-          </button>
+        <p>Todas las asignaturas han sido dictaminadas. El siguiente paso es generar el acta, firmarla y enviarla al Departamento de Alumnos.</p>
+        
+        <div class="mb-3">
+            <a href="{% url 'generar_acta_pdf' pk=solicitud.pk %}" class="btn btn-primary">
+                <i class="bi bi-file-pdf"></i> 1. Descargar Acta para Firmar (PDF)
+            </a>
         </div>
-        {% if solicitud.acta_firmada %}
-          <p class="mt-2 text-success">
-            <i class="bi bi-check-circle-fill"></i> Ya hay un acta firmada subida: 
-            <a href="{{ solicitud.acta_firmada.url }}" target="_blank" class="text-decoration-none">
-              <i class="bi bi-file-pdf"></i> Ver acta
-            </a>. 
-            Puedes reemplazarla subiendo una nueva.
-          </p>
-        {% endif %}
-      </form>
+        
+        <hr>
+        
+        <h5><i class="bi bi-upload"></i> 2. Subir y Enviar Acta Firmada</h5>
+        <form action="{% url 'finalizar_solicitud' pk=solicitud.pk %}" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="input-group">
+                <input type="file" class="form-control" name="acta_firmada" accept=".pdf" required>
+                <button class="btn btn-danger" type="submit">
+                    <i class="bi bi-send-check"></i> Enviar a Dpto. de Alumnos y Archivar
+                </button>
+            </div>
+            {% if solicitud.acta_firmada %}
+                <p class="mt-2 text-success">
+                    <i class="bi bi-check-circle-fill"></i> Ya hay un acta firmada subida: 
+                    <a href="{{ solicitud.acta_firmada.url }}" target="_blank" class="text-decoration-none">
+                        <i class="bi bi-file-pdf"></i> Ver acta
+                    </a>. 
+                    Puedes reemplazarla subiendo una nueva.
+                </p>
+            {% endif %}
+        </form>
     </div>
-  </div>
-  {% endif %}
+</div>
+{% endif %}
 
-  <!-- Script para tooltips -->
-  <script>
-  document.addEventListener('DOMContentLoaded', function() {
-      var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-      var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-          return new bootstrap.Tooltip(tooltipTriggerEl);
-      });
-  });
-  </script>
+<!-- Script para tooltips -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
 
 {% endblock %}

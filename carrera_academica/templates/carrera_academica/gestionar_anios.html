@@ -45,9 +45,7 @@
 
         <p class="text-muted mb-3">
           <i class="bi bi-info-circle"></i>
-          Se crearán automáticamente los formularios F04, F05, F06, F07, ENC {%
-          if ca.cargo.dedicacion in 'de,se' %}y F13{% endif %} para cada año
-          seleccionado.
+          Se crearán automáticamente los formularios F04, F05, F06, F07, ENC {% if ca.cargo.dedicacion in 'de,se' %}y F13{% endif %} para cada año seleccionado.
         </p>
 
         <div class="row mb-3">
@@ -60,12 +58,7 @@
                 name="anios"
                 value="{{ item.anio }}"
                 id="anio_nuevo_{{ item.anio }}"
-                {%
-                if
-                item.es_actual
-                %}checked{%
-                endif
-                %}
+                {% if item.es_actual %}checked{% endif %}
               />
               <label class="form-check-label" for="anio_nuevo_{{ item.anio }}">
                 <strong>{{ item.anio }}</strong>
@@ -136,6 +129,33 @@
                 {% endif %}
               </td>
               <td>
+    {% if item.estado == 'evaluado' %}
+        <small class="text-muted">
+            <i class="bi bi-check-circle"></i> Evaluación N°{{ item.info.evaluacion }}<br>
+            Finalizada: {{ item.info.fecha|date:"d/m/Y" }}
+        </small>
+    {% elif item.estado == 'en_evaluacion' %}
+        <small class="text-primary">
+            <i class="bi bi-hourglass-split"></i> Evaluación N°{{ item.info.evaluacion }} en curso
+        </small>
+    {% elif item.estado == 'pausado' %}
+        <small class="text-warning">
+            <i class="bi bi-pause-circle"></i> {{ item.info.motivo }}<br>
+            Desde: {{ item.info.fecha|date:"d/m/Y" }}
+        </small>
+    {% else %}
+        <small class="text-muted">Disponible para evaluación</small>
+    {% endif %}
+</td>
+              <td class="text-center">
+                <a
+                  href="{% url 'carrera_academica:gestionar_formularios_anio' ca.pk item.anio %}"
+                  class="btn btn-sm btn-outline-info"
+                >
+                  <i class="bi bi-file-earmark-text"></i> Gestionar
+                </a>
+              </td>
+              <td>
     {% if item.estado == 'pendiente' %}
         <button type="button" 
                 class="btn btn-sm btn-warning w-100"
@@ -154,47 +174,11 @@
             </button>
         </form>
     {% elif item.estado == 'en_evaluacion' %}
-        <span class="text-muted small">
-            <i class="bi bi-lock"></i> En proceso
-        </span>
+        <span class="text-muted small">En proceso</span>
     {% else %}
         <span class="text-muted">-</span>
     {% endif %}
 </td>
-              <td class="text-center">
-                <a
-                  href="{% url 'carrera_academica:gestionar_formularios_anio' ca.pk item.anio %}"
-                  class="btn btn-sm btn-outline-info"
-                >
-                  <i class="bi bi-file-earmark-text"></i> Gestionar
-                </a>
-              </td>
-              <td>
-                {% if item.estado == 'pendiente' %}
-                <button
-                  type="button"
-                  class="btn btn-sm btn-warning w-100"
-                  data-bs-toggle="modal"
-                  data-bs-target="#modalPausarAnio"
-                  onclick="setAnioPausar({{ item.anio }})"
-                >
-                  <i class="bi bi-pause-circle"></i> Pausar
-                </button>
-                {% elif item.estado == 'pausado' %}
-                <form method="post" style="display: inline">
-                  {% csrf_token %}
-                  <input type="hidden" name="accion" value="reactivar" />
-                  <input type="hidden" name="anio" value="{{ item.anio }}" />
-                  <button type="submit" class="btn btn-sm btn-success w-100">
-                    <i class="bi bi-play-circle"></i> Reactivar
-                  </button>
-                </form>
-                {% elif item.estado == 'en_evaluacion' %}
-                <span class="text-muted small">En proceso</span>
-                {% else %}
-                <span class="text-muted">-</span>
-                {% endif %}
-              </td>
             </tr>
             {% endfor %}
           </tbody>
