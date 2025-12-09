@@ -71,9 +71,9 @@
           <div class="mt-4 d-flex gap-2">
             <form method="post" action="{% url 'generar_y_enviar_acta' solicitud.pk %}" class="d-inline">
               {% csrf_token %}
-              <button type="submit" class="btn btn-success" onclick="return confirm('¿Confirmar generación y envío del acta a {{ solicitud.id_estudiante.email }}?')">
-                <i class="bi bi-check-circle"></i> Confirmar y Enviar por Email
-              </button>
+              <button type="submit" class="btn btn-success" onclick="return confirm('¿Confirmar generación y envío del acta al Departamento de Alumnos?')">
+  <i class="bi bi-check-circle"></i> Confirmar y Enviar a Dpto. Alumnos
+</button>
             </form>
             
             <a href="{% url 'solicitud_detalle' solicitud.pk %}" class="btn btn-secondary">

@@ -653,7 +653,7 @@ def generar_y_enviar_acta_view(request, pk):
             subject=f'Acta de Equivalencias - {solicitud.id_estudiante.nombre_completo}',
             body=email_html,
             from_email=settings.DEFAULT_FROM_EMAIL,
-            to=[solicitud.id_estudiante.email],
+            to=["magui@frlp.utn.edu.ar"],
             # cc para el departamento si querés
         )
         email.content_subtype = 'html'

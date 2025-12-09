@@ -42,7 +42,7 @@
                 <i class="bi bi-check-circle-fill"></i> 
                 <strong>Solicitud completada el {{ solicitud.fecha_completada|date:"d/m/Y H:i" }}</strong>
             </div>
-            <p>El acta fue generada y enviada automáticamente a <strong>{{ solicitud.id_estudiante.email }}</strong></p>
+            <p>El acta fue generada y enviada automáticamente al <strong>Departamento de Alumnos</strong></p>
             
             <div class="d-flex gap-2">
                 <a href="{{ solicitud.acta_firmada.url }}" class="btn btn-primary" target="_blank">
