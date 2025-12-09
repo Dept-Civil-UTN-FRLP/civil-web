@@ -51,18 +51,8 @@ def _enviar_email_catedra(detalle_solicitud):
     # --- 2. OBTÉN Y FORMATEA LA FECHA ACTUAL ---
     hoy = date.today()
     meses = (
-        "Enero",
-        "Febrero",
-        "Marzo",
-        "Abril",
-        "Mayo",
-        "Junio",
-        "Julio",
-        "Agosto",
-        "Septiembre",
-        "Octubre",
-        "Noviembre",
-        "Diciembre",
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
     )
     fecha_actual_texto = f"{hoy.day} de {meses[hoy.month - 1]} de {hoy.year}"
 
@@ -74,9 +64,9 @@ def _enviar_email_catedra(detalle_solicitud):
         if "[alumno]" in p.text:
             p.text = p.text.replace("[alumno]", estudiante.nombre_completo)
         if "[asignatura]" in p.text:
-            p.text = p.text.replace("[asignatura]", asignatura.asignatura.nombre)
+            p.text = p.text.replace(
+                "[asignatura]", asignatura.asignatura.nombre)
 
-    # ... (Si tienes más reemplazos en tablas, también irían aquí)
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
@@ -85,45 +75,32 @@ def _enviar_email_catedra(detalle_solicitud):
                         p.text = p.text.replace("[fecha]", fecha_actual_texto)
                     if "[asignatura]" in p.text:
                         p.text = p.text.replace(
-                            "[asignatura]", asignatura.asignatura.nombre
-                        )
+                            "[asignatura]", asignatura.asignatura.nombre)
 
     buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
 
+    # Preparar contexto para el template
+    email_context = {
+        'solicitud': solicitud,
+        'detalle': detalle_solicitud,
+    }
+
+    # Renderizar template de email
+    email_html = render_to_string(
+        'emails/equivalencias_pendiente.html', email_context)
+
     # Preparar y enviar el correo
     email = EmailMessage(
-        # Cambiamos el asunto para que sirva en ambos casos
-        subject=f"Solicitud de Equivalencia de {estudiante.nombre_completo}",
-        # Cambiamos el cuerpo del correo
-        body=f"""
-        <p>Hola profe, le envío la documentación para dar, si corresponde, la equivalencia de <strong>{asignatura.asignatura.nombre}</strong>, al futuro estudiante <strong>{estudiante.nombre_completo}</strong>.</p>
-
-        <p>Agradeceré que responda a este mismo correo con su dictamen. No es necesario reenviar el archivo.</p>
-        
-        <p>Sin otro particular.</p>
-        <p><br></p>
-
-        <p style='font-size:15px;font-family:"Calibri",sans-serif; color:#174E86;'>
-            <strong>Ing. Jorge RONCONI</strong><br>
-            Secretario de Departamento
-        </p>
-        <p style='font-size:15px;font-family:"Calibri",sans-serif;color:#174E86;'>
-            <strong>
-                Departamento Ingeniería Civil<br>
-                Universidad Tecnológica Nacional<br>
-                Facultad Regional La Plata
-            </strong>
-        </p>
-        <p style='font-size:15px;font-family:"Calibri",sans-serif;text-align:center;color:#70AD47;'>
-            Universidad Publica, Gratuita y de Calidad.
-        </p>
-        """,
-        from_email=None,
+        subject=f"Solicitud de Equivalencia - {asignatura.asignatura.nombre}",
+        body=email_html,
+        from_email=settings.DEFAULT_FROM_EMAIL,
         to=[correo_principal.email],
     )
+    email.content_subtype = 'html'
 
+    # Adjuntar documentos de la solicitud
     for documento_adjunto in solicitud.documentoadjunto_set.all():
         content_type = (
             mimetypes.guess_type(documento_adjunto.archivo.name)[0]
@@ -135,12 +112,13 @@ def _enviar_email_catedra(detalle_solicitud):
             content_type,
         )
 
+    # Adjuntar planilla Word personalizada
     email.attach(
         f"Planilla_{estudiante.dni_pasaporte}_{asignatura.asignatura.nombre}.docx",
         buffer.getvalue(),
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     )
-    email.content_subtype = "html"  # Para enviar el cuerpo como HTML
+
     email.send()
 
 

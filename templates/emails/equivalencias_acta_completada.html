@@ -1,29 +1,24 @@
 {% extends 'emails/base_email.html' %}
 
-{% block email_title %}Nueva Acta de Equivalencias{% endblock %}
+{% block email_title %}Acta de Equivalencias - {{ solicitud.id_estudiante.nombre_completo }}{% endblock %}
 
 {% block email_content %}
-<h3>Acta de Equivalencias Completada</h3>
+<p>Hola,</p>
 
-<p><strong>Estudiante:</strong> {{ solicitud.id_estudiante.nombre_completo }}</p>
-<p><strong>DNI:</strong> {{ solicitud.id_estudiante.dni_pasaporte }}</p>
+<p>
+  Se adjunta el acta de equivalencias del estudiante 
+  <strong>{{ solicitud.id_estudiante.nombre_completo|upper }}</strong> 
+  (DNI: {{ solicitud.id_estudiante.dni_pasaporte }}) 
+  para su registro en el legajo.
+</p>
+
 <p><strong>Fecha de procesamiento:</strong> {{ solicitud.fecha_completada|date:"d/m/Y H:i" }}</p>
 
-<p style="margin-top: 20px;">
-  Se adjunta el acta final de equivalencias para su registro en el legajo del estudiante..
-</p>
+<p>Sin otro particular.</p>
 
-{% comment %}
-<p>
-  Podés acceder a los detalles completos de la solicitud en el siguiente enlace:
+<p style="margin-top: 30px;">
+  Saludos cordiales,<br>
+  Departamento de Equivalencias<br>
+  UTN FRLP
 </p>
-
-<p style="margin-top: 20px;">
-  <a href="{{ detalle_url }}" class="btn">Ver Solicitud Completa</a>
-</p>
-
-<p style="margin-top: 30px; font-size: 14px; color: #666;">
-  <strong>Nota:</strong> Este correo fue generado automáticamente por el sistema de gestión de equivalencias.
-</p>
-{% endcomment %}
 {% endblock %}
