@@ -20,11 +20,6 @@ urlpatterns = [
     path('solicitud/<int:pk>/generar-enviar-acta/',
          views.generar_y_enviar_acta_view, name='generar_y_enviar_acta'),
     path(
-        "solicitud/<int:pk>/finalizar/",
-        views.finalizar_solicitud_view,
-        name="finalizar_solicitud",
-    ),
-    path(
         "solicitud/<int:pk>/reenviar/<int:detalle_pk>/",
         views.reenviar_email_asignatura_view,
         name="reenviar_email_asignatura",

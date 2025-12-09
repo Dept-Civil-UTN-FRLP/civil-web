@@ -648,38 +648,6 @@ def generar_y_enviar_acta_view(request, pk):
         messages.error(request, f"Error al generar/enviar acta: {str(e)}")
         return redirect('solicitud_detalle', pk=pk)
 
-@login_required
-def finalizar_solicitud_view(request, pk):
-    solicitud = get_object_or_404(SolicitudEquivalencia, pk=pk)
-    if request.method == "POST":
-        acta_firmada_file = request.FILES.get("acta_firmada")
-        if acta_firmada_file:
-            solicitud.acta_firmada = acta_firmada_file
-            solicitud.save()
-
-            # Enviar correo al Dpto. de Alumnos
-            email = EmailMessage(
-                subject=f"Resolución de Equivalencias - {solicitud.id_estudiante.nombre_completo}",
-                body="Se adjunta el acta final de equivalencias para su registro en el legajo del estudiante.",
-                from_email=None,
-                to=["magui@frlp.utn.edu.ar"],  # <-- CAMBIA ESTE EMAIL
-            )
-            email.attach_file(solicitud.acta_firmada.path)
-            email.send()
-
-            # Cambiar estado y archivar
-            solicitud.estado_general = "Completada"
-            solicitud.fecha_completada = timezone.now()
-            solicitud.save()
-
-            # <-- Mensaje mejorado
-            messages.success(
-                request, "Solicitud finalizada, notificada y archivada correctamente."
-            )
-            return redirect("dashboard")
-
-    return redirect("solicitud_detalle", pk=pk)  # Redirigir si no es POST
-
 
 @login_required
 def reenviar_email_asignatura_view(request, pk, detalle_pk):
