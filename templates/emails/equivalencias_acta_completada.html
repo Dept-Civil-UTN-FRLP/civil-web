@@ -1,0 +1,24 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_title %}Acta de Equivalencias - {{ solicitud.id_estudiante.nombre_completo }}{% endblock %}
+
+{% block email_content %}
+<p>Hola,</p>
+
+<p>
+  Se adjunta el acta de equivalencias del estudiante 
+  <strong>{{ solicitud.id_estudiante.nombre_completo|upper }}</strong> 
+  (DNI: {{ solicitud.id_estudiante.dni_pasaporte }}) 
+  para su registro en el legajo.
+</p>
+
+<p><strong>Fecha de procesamiento:</strong> {{ solicitud.fecha_completada|date:"d/m/Y H:i" }}</p>
+
+<p>Sin otro particular.</p>
+
+<p style="margin-top: 30px;">
+  Saludos cordiales,<br>
+  Departamento de Equivalencias<br>
+  UTN FRLP
+</p>
+{% endblock %}

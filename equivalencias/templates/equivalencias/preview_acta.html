@@ -1,0 +1,89 @@
+{% extends 'equivalencias/base_equivalencias.html' %}
+
+{% block equiv_content %}
+<div class="container">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">
+            <i class="bi bi-file-earmark-pdf"></i>
+            Preview del Acta - {{ solicitud.id_estudiante.nombre_completo }}
+          </h5>
+        </div>
+        <div class="card-body">
+          
+          <!-- Información de la solicitud -->
+          <div class="alert alert-info">
+            <strong>Estudiante:</strong> {{ solicitud.id_estudiante.nombre_completo }}<br>
+            <strong>DNI:</strong> {{ solicitud.id_estudiante.dni_pasaporte }}<br>
+            <strong>Email:</strong> {{ solicitud.id_estudiante.email }}<br>
+            <strong>Asignaturas:</strong> {{ detalles.count }}
+          </div>
+
+          <!-- Estado de asignaturas -->
+          <h6>Resumen de Estados:</h6>
+          <ul>
+            {% with aprobadas=detalles|dictsort:"estado_asignatura" %}
+              <li><strong>Aprobadas:</strong> {{ detalles|length|add:"-1" }}</li>
+            {% endwith %}
+          </ul>
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Asignatura</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for detalle in detalles %}
+              <tr>
+                <td>{{ detalle.id_asignatura.asignatura.nombre|title }}</td>
+                <td>
+                  {% if detalle.estado_asignatura == 'Aprobada' %}
+                    <span class="badge bg-success">Aprobada (SI)</span>
+                  {% elif detalle.estado_asignatura == 'Denegada' %}
+                    <span class="badge bg-danger">Denegada (NO)</span>
+                  {% elif detalle.estado_asignatura == 'Requiere PC' %}
+                    <span class="badge bg-warning text-dark">Requiere PC</span>
+                  {% else %}
+                    <span class="badge bg-secondary">{{ detalle.estado_asignatura }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <!-- Embed del PDF -->
+          <div class="mt-4">
+            <h6>Vista Previa del Acta:</h6>
+            <embed 
+              src="data:application/pdf;base64,{{ pdf_base64 }}" 
+              type="application/pdf" 
+              width="100%" 
+              height="800px"
+              style="border: 1px solid #ddd;"
+            />
+          </div>
+
+          <!-- Botones de acción -->
+          <div class="mt-4 d-flex gap-2">
+            <form method="post" action="{% url 'generar_y_enviar_acta' solicitud.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-success" onclick="return confirm('¿Confirmar generación y envío del acta al Departamento de Alumnos?')">
+  <i class="bi bi-check-circle"></i> Confirmar y Enviar a Dpto. Alumnos
+</button>
+            </form>
+            
+            <a href="{% url 'solicitud_detalle' solicitud.pk %}" class="btn btn-secondary">
+              <i class="bi bi-x-circle"></i> Cancelar
+            </a>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

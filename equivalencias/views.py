@@ -10,15 +10,18 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.mail import EmailMessage
-from django.db.models import Avg, Case, Count, DurationField, F, Value, When
+from django.db.models import Avg, Case, Count, F, Value, When
 from django.db.models.functions import ExtractMonth, Trim, TruncMonth
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils import timezone
 from docx import Document
 from django.db.models import Q
 from weasyprint import HTML
+from django.core.files.base import ContentFile
+from django.core.mail import EmailMessage
 
 from config.pagination import paginate_queryset
 
@@ -51,18 +54,8 @@ def _enviar_email_catedra(detalle_solicitud):
     # --- 2. OBTÉN Y FORMATEA LA FECHA ACTUAL ---
     hoy = date.today()
     meses = (
-        "Enero",
-        "Febrero",
-        "Marzo",
-        "Abril",
-        "Mayo",
-        "Junio",
-        "Julio",
-        "Agosto",
-        "Septiembre",
-        "Octubre",
-        "Noviembre",
-        "Diciembre",
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
     )
     fecha_actual_texto = f"{hoy.day} de {meses[hoy.month - 1]} de {hoy.year}"
 
@@ -74,9 +67,9 @@ def _enviar_email_catedra(detalle_solicitud):
         if "[alumno]" in p.text:
             p.text = p.text.replace("[alumno]", estudiante.nombre_completo)
         if "[asignatura]" in p.text:
-            p.text = p.text.replace("[asignatura]", asignatura.asignatura.nombre)
+            p.text = p.text.replace(
+                "[asignatura]", asignatura.asignatura.nombre)
 
-    # ... (Si tienes más reemplazos en tablas, también irían aquí)
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
@@ -85,45 +78,33 @@ def _enviar_email_catedra(detalle_solicitud):
                         p.text = p.text.replace("[fecha]", fecha_actual_texto)
                     if "[asignatura]" in p.text:
                         p.text = p.text.replace(
-                            "[asignatura]", asignatura.asignatura.nombre
-                        )
+                            "[asignatura]", asignatura.asignatura.nombre)
 
     buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
 
+    # Preparar contexto para el template
+    email_context = {
+        'solicitud': solicitud,
+        'detalle': detalle_solicitud,
+        'estudiante': estudiante,
+    }
+
+    # Renderizar template de email
+    email_html = render_to_string(
+        'emails/equivalencias_pendiente.html', email_context)
+
     # Preparar y enviar el correo
     email = EmailMessage(
-        # Cambiamos el asunto para que sirva en ambos casos
-        subject=f"Solicitud de Equivalencia de {estudiante.nombre_completo}",
-        # Cambiamos el cuerpo del correo
-        body=f"""
-        <p>Hola profe, le envío la documentación para dar, si corresponde, la equivalencia de <strong>{asignatura.asignatura.nombre}</strong>, al futuro estudiante <strong>{estudiante.nombre_completo}</strong>.</p>
-
-        <p>Agradeceré que responda a este mismo correo con su dictamen. No es necesario reenviar el archivo.</p>
-        
-        <p>Sin otro particular.</p>
-        <p><br></p>
-
-        <p style='font-size:15px;font-family:"Calibri",sans-serif; color:#174E86;'>
-            <strong>Ing. Jorge RONCONI</strong><br>
-            Secretario de Departamento
-        </p>
-        <p style='font-size:15px;font-family:"Calibri",sans-serif;color:#174E86;'>
-            <strong>
-                Departamento Ingeniería Civil<br>
-                Universidad Tecnológica Nacional<br>
-                Facultad Regional La Plata
-            </strong>
-        </p>
-        <p style='font-size:15px;font-family:"Calibri",sans-serif;text-align:center;color:#70AD47;'>
-            Universidad Publica, Gratuita y de Calidad.
-        </p>
-        """,
-        from_email=None,
+        subject=f"Solicitud de Equivalencia - {estudiante.nombre_completo.title()}",
+        body=email_html,
+        from_email=settings.DEFAULT_FROM_EMAIL,
         to=[correo_principal.email],
     )
+    email.content_subtype = 'html'
 
+    # Adjuntar documentos de la solicitud
     for documento_adjunto in solicitud.documentoadjunto_set.all():
         content_type = (
             mimetypes.guess_type(documento_adjunto.archivo.name)[0]
@@ -135,12 +116,13 @@ def _enviar_email_catedra(detalle_solicitud):
             content_type,
         )
 
+    # Adjuntar planilla Word personalizada
     email.attach(
         f"Planilla_{estudiante.dni_pasaporte}_{asignatura.asignatura.nombre}.docx",
         buffer.getvalue(),
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     )
-    email.content_subtype = "html"  # Para enviar el cuerpo como HTML
+
     email.send()
 
 
@@ -558,36 +540,117 @@ def generar_acta_pdf_view(request, pk):
 
 
 @login_required
-def finalizar_solicitud_view(request, pk):
+def preview_acta_view(request, pk):
+    """
+    Muestra preview del acta antes de confirmar envío automático
+    """
     solicitud = get_object_or_404(SolicitudEquivalencia, pk=pk)
-    if request.method == "POST":
-        acta_firmada_file = request.FILES.get("acta_firmada")
-        if acta_firmada_file:
-            solicitud.acta_firmada = acta_firmada_file
-            solicitud.save()
+    detalles = solicitud.detallesolicitud_set.all()
 
-            # Enviar correo al Dpto. de Alumnos
-            email = EmailMessage(
-                subject=f"Resolución de Equivalencias - {solicitud.id_estudiante.nombre_completo}",
-                body="Se adjunta el acta final de equivalencias para su registro en el legajo del estudiante.",
-                from_email=None,
-                to=["magui@frlp.utn.edu.ar"],  # <-- CAMBIA ESTE EMAIL
+    # Verificar que todos los detalles tengan estado definido
+    sin_estado = detalles.filter(estado_asignatura='Pendiente').count()
+    if sin_estado > 0:
+        messages.warning(
+            request, f"Hay {sin_estado} asignatura(s) sin estado definido.")
+
+    # Preparar contexto para preview
+    context = {
+        'solicitud': solicitud,
+        'detalles': detalles,
+        'signature_image_path': '/static/images/firma_holografica.png',
+    }
+
+    # Renderizar HTML
+    html_string = render_to_string('equivalencias/acta_template.html', context)
+
+    # Generar PDF temporal para preview
+    base_url = request.build_absolute_uri('/')
+    pdf_file = HTML(string=html_string, base_url=base_url).write_pdf()
+
+    # Convertir a base64 para embed en modal
+    import base64
+    pdf_base64 = base64.b64encode(pdf_file).decode('utf-8')
+
+    return render(request, 'equivalencias/preview_acta.html', {
+        'solicitud': solicitud,
+        'pdf_base64': pdf_base64,
+        'detalles': detalles,
+    })
+
+
+@login_required
+def generar_y_enviar_acta_view(request, pk):
+    """
+    Genera el acta, la guarda en el modelo, y la envía por email
+    """
+    if request.method != 'POST':
+        return redirect('solicitud_detalle', pk=pk)
+
+    solicitud = get_object_or_404(SolicitudEquivalencia, pk=pk)
+    detalles = solicitud.detallesolicitud_set.all()
+
+    # Verificar que todos tengan estado
+    sin_estado = detalles.filter(estado_asignatura='Pendiente')
+    if sin_estado.exists():
+        messages.error(
+            request, "Todas las asignaturas deben tener un estado definido.")
+        return redirect('solicitud_detalle', pk=pk)
+
+    try:
+        # 1. Generar PDF
+        image_path = os.path.join(
+            settings.STATICFILES_DIRS[0], 'images', 'firma_holografica.png')
+        context = {
+            'solicitud': solicitud,
+            'detalles': detalles,
+            'signature_image_path': '/static/images/firma_holografica.png',
+        }
+
+        html_string = render_to_string(
+            'equivalencias/acta_template.html', context)
+        base_url = request.build_absolute_uri('/')
+        pdf_bytes = HTML(string=html_string, base_url=base_url).write_pdf()
+
+        # 2. Guardar en modelo
+        filename = f"acta_{solicitud.id_estudiante.dni_pasaporte}_{solicitud.pk}.pdf"
+        solicitud.acta_firmada.save(
+            filename, ContentFile(pdf_bytes), save=False)
+
+        # 3. Actualizar estado
+        solicitud.estado_general = 'Completada'
+        solicitud.fecha_completada = timezone.now()
+        solicitud.save()
+
+        # 4. Enviar email
+        email_context = {
+            'solicitud': solicitud,
+            'detalle_url': request.build_absolute_uri(
+                reverse('solicitud_detalle', args=[solicitud.pk])
             )
-            email.attach_file(solicitud.acta_firmada.path)
-            email.send()
+        }
+        email_html = render_to_string(
+            'emails/equivalencias_acta_completada.html', email_context)
 
-            # Cambiar estado y archivar
-            solicitud.estado_general = "Completada"
-            solicitud.fecha_completada = timezone.now()
-            solicitud.save()
+        email = EmailMessage(
+            subject=f'Acta de Equivalencias - {solicitud.id_estudiante.nombre_completo}',
+            body=email_html,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=["magui@frlp.utn.edu.ar"],
+            # cc para el departamento si querés
+        )
+        email.content_subtype = 'html'
 
-            # <-- Mensaje mejorado
-            messages.success(
-                request, "Solicitud finalizada, notificada y archivada correctamente."
-            )
-            return redirect("dashboard")
+        # Adjuntar PDF
+        email.attach(filename, pdf_bytes, 'application/pdf')
+        email.send()
 
-    return redirect("solicitud_detalle", pk=pk)  # Redirigir si no es POST
+        messages.success(
+            request, f"Acta generada y enviada a {solicitud.id_estudiante.email}")
+        return redirect('solicitud_detalle', pk=pk)
+
+    except Exception as e:
+        messages.error(request, f"Error al generar/enviar acta: {str(e)}")
+        return redirect('solicitud_detalle', pk=pk)
 
 
 @login_required
@@ -598,7 +661,7 @@ def reenviar_email_asignatura_view(request, pk, detalle_pk):
         _enviar_email_catedra(detalle)
         messages.success(
             request,
-            f"Correo reenviado exitosamente a {detalle.id_asignatura.email_responsable}.",
+            f"Correo reenviado exitosamente a {detalle.id_asignatura.asignatura}.",
         )
     except Exception as e:
         messages.error(request, f"Error al reenviar el correo: {e}")

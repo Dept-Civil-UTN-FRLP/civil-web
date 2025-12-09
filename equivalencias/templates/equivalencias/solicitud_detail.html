@@ -36,35 +36,40 @@
         <i class="bi bi-check-circle"></i> Proceso de Dictamen Finalizado
     </div>
     <div class="card-body">
-        <p>Todas las asignaturas han sido dictaminadas. El siguiente paso es generar el acta, firmarla y enviarla al Departamento de Alumnos.</p>
-        
-        <div class="mb-3">
-            <a href="{% url 'generar_acta_pdf' pk=solicitud.pk %}" class="btn btn-primary">
-                <i class="bi bi-file-pdf"></i> 1. Descargar Acta para Firmar (PDF)
-            </a>
-        </div>
-        
-        <hr>
-        
-        <h5><i class="bi bi-upload"></i> 2. Subir y Enviar Acta Firmada</h5>
-        <form action="{% url 'finalizar_solicitud' pk=solicitud.pk %}" method="POST" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="input-group">
-                <input type="file" class="form-control" name="acta_firmada" accept=".pdf" required>
-                <button class="btn btn-danger" type="submit">
-                    <i class="bi bi-send-check"></i> Enviar a Dpto. de Alumnos y Archivar
-                </button>
+        {% if solicitud.estado_general == 'Completada' and solicitud.acta_firmada %}
+            <!-- Solicitud ya completada -->
+            <div class="alert alert-success">
+                <i class="bi bi-check-circle-fill"></i> 
+                <strong>Solicitud completada el {{ solicitud.fecha_completada|date:"d/m/Y H:i" }}</strong>
             </div>
-            {% if solicitud.acta_firmada %}
-                <p class="mt-2 text-success">
-                    <i class="bi bi-check-circle-fill"></i> Ya hay un acta firmada subida: 
-                    <a href="{{ solicitud.acta_firmada.url }}" target="_blank" class="text-decoration-none">
-                        <i class="bi bi-file-pdf"></i> Ver acta
-                    </a>. 
-                    Puedes reemplazarla subiendo una nueva.
-                </p>
-            {% endif %}
-        </form>
+            <p>El acta fue generada y enviada automáticamente al <strong>Departamento de Alumnos</strong></p>
+            
+            <div class="d-flex gap-2">
+                <a href="{{ solicitud.acta_firmada.url }}" class="btn btn-primary" target="_blank">
+                    <i class="bi bi-download"></i> Descargar Acta Firmada
+                </a>
+                <a href="{% url 'preview_acta' solicitud.pk %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-eye"></i> Ver Preview
+                </a>
+            </div>
+        {% else %}
+            <!-- Solicitud pendiente de completar -->
+            <p>Todas las asignaturas han sido dictaminadas. El siguiente paso es revisar el acta y enviarla automáticamente al estudiante.</p>
+            
+            <div class="d-flex gap-2">
+                <a href="{% url 'preview_acta' solicitud.pk %}" class="btn btn-primary">
+                    <i class="bi bi-file-earmark-pdf"></i> Preview y Enviar Acta Automáticamente
+                </a>
+                <a href="{% url 'generar_acta_pdf' pk=solicitud.pk %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-download"></i> Solo Descargar PDF
+                </a>
+            </div>
+            
+            <div class="alert alert-info mt-3 mb-0">
+                <i class="bi bi-info-circle"></i> 
+                <strong>Nuevo flujo automático:</strong> El acta se generará, guardará y enviará por email al estudiante en un solo paso.
+            </div>
+        {% endif %}
     </div>
 </div>
 {% endif %}
