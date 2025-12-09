@@ -10,15 +10,18 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.mail import EmailMessage
-from django.db.models import Avg, Case, Count, DurationField, F, Value, When
+from django.db.models import Avg, Case, Count, F, Value, When
 from django.db.models.functions import ExtractMonth, Trim, TruncMonth
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils import timezone
 from docx import Document
 from django.db.models import Q
 from weasyprint import HTML
+from django.core.files.base import ContentFile
+from django.core.mail import EmailMessage
 
 from config.pagination import paginate_queryset
 
@@ -85,6 +88,7 @@ def _enviar_email_catedra(detalle_solicitud):
     email_context = {
         'solicitud': solicitud,
         'detalle': detalle_solicitud,
+        'estudiante': estudiante,
     }
 
     # Renderizar template de email
@@ -93,7 +97,7 @@ def _enviar_email_catedra(detalle_solicitud):
 
     # Preparar y enviar el correo
     email = EmailMessage(
-        subject=f"Solicitud de Equivalencia - {asignatura.asignatura.nombre}",
+        subject=f"Solicitud de Equivalencia - {estudiante.nombre_completo.title()}",
         body=email_html,
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=[correo_principal.email],
@@ -657,7 +661,7 @@ def reenviar_email_asignatura_view(request, pk, detalle_pk):
         _enviar_email_catedra(detalle)
         messages.success(
             request,
-            f"Correo reenviado exitosamente a {detalle.id_asignatura.email_responsable}.",
+            f"Correo reenviado exitosamente a {detalle.id_asignatura.asignatura}.",
         )
     except Exception as e:
         messages.error(request, f"Error al reenviar el correo: {e}")

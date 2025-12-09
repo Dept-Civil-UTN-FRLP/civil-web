@@ -1,6 +1,6 @@
 {% extends 'emails/base_email.html' %}
 
-{% block email_title %}Solicitud de Equivalencia - {{ detalle.id_estudiante.nombre_completo|upper}}{% endblock %}
+{% block email_title %}Solicitud de Equivalencia - {{ estudiante.nombre_completo|upper}}{% endblock %}
 
 {% block email_content %}
 <p>Hola,</p>
