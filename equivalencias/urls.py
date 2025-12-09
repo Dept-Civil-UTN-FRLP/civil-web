@@ -15,6 +15,10 @@ urlpatterns = [
         views.generar_acta_pdf_view,
         name="generar_acta_pdf",
     ),
+    path('solicitud/<int:pk>/preview-acta/',
+         views.preview_acta_view, name='preview_acta'),
+    path('solicitud/<int:pk>/generar-enviar-acta/',
+         views.generar_y_enviar_acta_view, name='generar_y_enviar_acta'),
     path(
         "solicitud/<int:pk>/finalizar/",
         views.finalizar_solicitud_view,

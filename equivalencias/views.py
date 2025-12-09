@@ -558,6 +558,119 @@ def generar_acta_pdf_view(request, pk):
 
 
 @login_required
+def preview_acta_view(request, pk):
+    """
+    Muestra preview del acta antes de confirmar envío automático
+    """
+    solicitud = get_object_or_404(SolicitudEquivalencia, pk=pk)
+    detalles = solicitud.detallesolicitud_set.all()
+
+    # Verificar que todos los detalles tengan estado definido
+    sin_estado = detalles.filter(estado_asignatura='Pendiente').count()
+    if sin_estado > 0:
+        messages.warning(
+            request, f"Hay {sin_estado} asignatura(s) sin estado definido.")
+
+    # Preparar contexto para preview
+    context = {
+        'solicitud': solicitud,
+        'detalles': detalles,
+        'signature_image_path': '/static/images/firma_holografica.png',
+    }
+
+    # Renderizar HTML
+    html_string = render_to_string('equivalencias/acta_template.html', context)
+
+    # Generar PDF temporal para preview
+    base_url = request.build_absolute_uri('/')
+    pdf_file = HTML(string=html_string, base_url=base_url).write_pdf()
+
+    # Convertir a base64 para embed en modal
+    import base64
+    pdf_base64 = base64.b64encode(pdf_file).decode('utf-8')
+
+    return render(request, 'equivalencias/preview_acta.html', {
+        'solicitud': solicitud,
+        'pdf_base64': pdf_base64,
+        'detalles': detalles,
+    })
+
+
+@login_required
+def generar_y_enviar_acta_view(request, pk):
+    """
+    Genera el acta, la guarda en el modelo, y la envía por email
+    """
+    if request.method != 'POST':
+        return redirect('solicitud_detalle', pk=pk)
+
+    solicitud = get_object_or_404(SolicitudEquivalencia, pk=pk)
+    detalles = solicitud.detallesolicitud_set.all()
+
+    # Verificar que todos tengan estado
+    sin_estado = detalles.filter(estado_asignatura='Pendiente')
+    if sin_estado.exists():
+        messages.error(
+            request, "Todas las asignaturas deben tener un estado definido.")
+        return redirect('solicitud_detalle', pk=pk)
+
+    try:
+        # 1. Generar PDF
+        image_path = os.path.join(
+            settings.STATICFILES_DIRS[0], 'images', 'firma_holografica.png')
+        context = {
+            'solicitud': solicitud,
+            'detalles': detalles,
+            'signature_image_path': '/static/images/firma_holografica.png',
+        }
+
+        html_string = render_to_string(
+            'equivalencias/acta_template.html', context)
+        base_url = request.build_absolute_uri('/')
+        pdf_bytes = HTML(string=html_string, base_url=base_url).write_pdf()
+
+        # 2. Guardar en modelo
+        filename = f"acta_{solicitud.id_estudiante.dni_pasaporte}_{solicitud.pk}.pdf"
+        solicitud.acta_firmada.save(
+            filename, ContentFile(pdf_bytes), save=False)
+
+        # 3. Actualizar estado
+        solicitud.estado_general = 'Completada'
+        solicitud.fecha_completada = timezone.now()
+        solicitud.save()
+
+        # 4. Enviar email
+        email_context = {
+            'solicitud': solicitud,
+            'detalle_url': request.build_absolute_uri(
+                reverse('solicitud_detalle', args=[solicitud.pk])
+            )
+        }
+        email_html = render_to_string(
+            'emails/equivalencias_acta_completada.html', email_context)
+
+        email = EmailMessage(
+            subject=f'Acta de Equivalencias - {solicitud.id_estudiante.nombre_completo}',
+            body=email_html,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[solicitud.id_estudiante.email],
+            # cc para el departamento si querés
+        )
+        email.content_subtype = 'html'
+
+        # Adjuntar PDF
+        email.attach(filename, pdf_bytes, 'application/pdf')
+        email.send()
+
+        messages.success(
+            request, f"Acta generada y enviada a {solicitud.id_estudiante.email}")
+        return redirect('solicitud_detalle', pk=pk)
+
+    except Exception as e:
+        messages.error(request, f"Error al generar/enviar acta: {str(e)}")
+        return redirect('solicitud_detalle', pk=pk)
+
+@login_required
 def finalizar_solicitud_view(request, pk):
     solicitud = get_object_or_404(SolicitudEquivalencia, pk=pk)
     if request.method == "POST":

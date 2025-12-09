@@ -1,0 +1,27 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_title %}Acta de Equivalencias Completada{% endblock %}
+
+{% block email_content %}
+<h3>Tu solicitud de equivalencias ha sido procesada</h3>
+
+<p><strong>Estudiante:</strong> {{ solicitud.id_estudiante.nombre_completo }}</p>
+<p><strong>DNI:</strong> {{ solicitud.id_estudiante.dni_pasaporte }}</p>
+<p><strong>Fecha:</strong> {{ solicitud.fecha_completada|date:"d/m/Y H:i" }}</p>
+
+<p style="margin-top: 20px;">
+  El acta con los resultados de tu solicitud de equivalencias se encuentra adjunta a este correo en formato PDF.
+</p>
+
+<p>
+  También podés acceder a los detalles completos de tu solicitud en el siguiente enlace:
+</p>
+
+<p style="margin-top: 20px;">
+  <a href="{{ detalle_url }}" class="btn">Ver Solicitud</a>
+</p>
+
+<p style="margin-top: 30px; font-size: 14px; color: #666;">
+  <strong>Nota:</strong> Recordá que debés presentarte en el Departamento de Alumnos con la documentación original para completar el trámite.
+</p>
+{% endblock %}
