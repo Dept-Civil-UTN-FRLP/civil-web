@@ -126,12 +126,12 @@ class CargoQuerySet(models.QuerySet):
     def vencidos(self):
         """
         Filtra cargos cuya fecha de vencimiento ya pasó.
-
-        Returns:
-            QuerySet: Cargos vencidos
+        EXCLUYE cargos en licencia por mayor jerarquía (tienen vencimiento suspendido).
         """
         return self.filter(
-            fecha_vencimiento__isnull=False, fecha_vencimiento__lt=timezone.now().date()
+            fecha_vencimiento__isnull=False,
+            fecha_vencimiento__lt=timezone.now().date(),
+            en_licencia_mayor_jerarquia=False 
         )
 
     def por_departamento(self, departamento):
