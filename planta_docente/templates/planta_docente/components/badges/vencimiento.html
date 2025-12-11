@@ -3,25 +3,53 @@ Component: Badge Vencimiento
 Muestra estado de vencimiento de contrato con color según urgencia
 
 Parámetros requeridos:
-- cargo: Objeto Cargo
+- estado_venc: Dict con información del estado de vencimiento
 
 Uso:
-{% include 'planta_docente/components/badges/vencimiento.html' with cargo=cargo %}
+{% include 'planta_docente/components/badges/vencimiento.html' with estado_venc=cargo.estado_venc %}
 {% endcomment %}
 
 <!-- Badge de estado de vencimiento con tooltip -->
-<span class="badge {{ estado_venc.badge_class }}" 
-      data-bs-toggle="tooltip" 
-      title="{{ estado_venc.mensaje }}">
-    {% if estado_venc.tipo == 'vencido' %}
-        <i class="bi bi-x-circle"></i> Vencido
-    {% elif estado_venc.tipo == 'critico' %}
-        <i class="bi bi-exclamation-triangle"></i> {{ estado_venc.dias }}d
-    {% elif estado_venc.tipo == 'proximo' %}
-        <i class="bi bi-clock"></i> {{ estado_venc.dias }}d
-    {% elif estado_venc.tipo == 'vigente' %}
-        <i class="bi bi-check-circle"></i> Vigente
-    {% else %}
-        <i class="bi bi-dash-circle"></i> S/V
-    {% endif %}
-</span>
+{% if estado_venc.tipo == 'pausado' %}
+    <span class="badge {{ estado_venc.clase_badge }}" 
+          data-bs-toggle="tooltip" 
+          title="{{ estado_venc.mensaje }}">
+        <i class="{{ estado_venc.icono }}"></i> LICENCIA M.J.
+    </span>
+{% elif estado_venc.tipo == 'vencido' %}
+    <span class="badge {{ estado_venc.clase_badge }}" 
+          data-bs-toggle="tooltip" 
+          title="{{ estado_venc.mensaje }}">
+        <i class="{{ estado_venc.icono }}"></i> VENCIDO
+    </span>
+{% elif estado_venc.tipo == 'critico' %}
+    <span class="badge {{ estado_venc.clase_badge }}" 
+          data-bs-toggle="tooltip" 
+          title="{{ estado_venc.mensaje }}">
+        <i class="{{ estado_venc.icono }}"></i> {{ estado_venc.dias_restantes }}d
+    </span>
+{% elif estado_venc.tipo == 'proximo' %}
+    <span class="badge {{ estado_venc.clase_badge }}" 
+          data-bs-toggle="tooltip" 
+          title="{{ estado_venc.mensaje }}">
+        <i class="{{ estado_venc.icono }}"></i> {{ estado_venc.dias_restantes }}d
+    </span>
+{% elif estado_venc.tipo == 'vigente' %}
+    <span class="badge {{ estado_venc.clase_badge }}" 
+          data-bs-toggle="tooltip" 
+          title="{{ estado_venc.mensaje }}">
+        <i class="{{ estado_venc.icono }}"></i> Vigente
+    </span>
+{% elif estado_venc.tipo == 'sin_vencimiento' %}
+    <span class="badge {{ estado_venc.clase_badge }}" 
+          data-bs-toggle="tooltip" 
+          title="{{ estado_venc.mensaje }}">
+        <i class="{{ estado_venc.icono }}"></i> S/V
+    </span>
+{% else %}
+    <span class="badge bg-secondary" 
+          data-bs-toggle="tooltip" 
+          title="Estado desconocido">
+        <i class="bi bi-question-circle"></i> N/D
+    </span>
+{% endif %}
