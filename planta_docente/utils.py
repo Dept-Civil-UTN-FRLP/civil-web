@@ -245,84 +245,94 @@ def dias_hasta_fecha(fecha_objetivo: date) -> Optional[int]:
     return (fecha_objetivo - timezone.now().date()).days
 
 
-def obtener_estado_vencimiento(cargo) -> Dict[str, any]:
+def obtener_estado_vencimiento(cargo):
     """
-    Determina el estado del vencimiento de un cargo con información detallada.
-
-    Clasifica el vencimiento en categorías según la urgencia y proporciona
-    información útil para alertas y reportes.
-
-    Args:
-        cargo (Cargo): Instancia del modelo Cargo
-
+    Determina el estado de vencimiento de un cargo.
+    
+    Considera:
+    - Licencia por mayor jerarquía (vencimiento suspendido)
+    - Días restantes hasta vencimiento
+    - Umbrales de alerta (60 días crítico, 180 días próximo)
+    
     Returns:
-        dict: Diccionario con las siguientes claves:
-            - tipo (str): Categoría del vencimiento
-                * 'sin_vencimiento': El cargo no tiene fecha de vencimiento
-                * 'vencido': Ya pasó la fecha de vencimiento
-                * 'critico': Vence en menos de 60 días
-                * 'proximo': Vence entre 60 y 180 días
-                * 'vigente': Vence en más de 180 días
-            - dias (int): Días hasta/desde el vencimiento (negativo si venció)
-            - urgente (bool): Si requiere atención inmediata
-            - badge_class (str): Clase CSS para el badge (para templates)
-            - mensaje (str): Mensaje descriptivo para mostrar al usuario
-
-    Example:
-        >>> cargo = Cargo.objects.get(pk=1)
-        >>> estado = obtener_estado_vencimiento(cargo)
-        >>> print(estado)
-        {
-            'tipo': 'critico',
-            'dias': 45,
-            'urgente': True,
-            'badge_class': 'bg-danger',
-            'mensaje': 'Vence en 45 días'
-        }
+        dict: Información del estado de vencimiento
     """
+    hoy = timezone.now().date()
+
+    # ✅ NUEVO: Verificar licencia MJ PRIMERO
+    if cargo.en_licencia_mayor_jerarquia:
+        dias_licencia = (
+            hoy - cargo.fecha_inicio_licencia_mj).days if cargo.fecha_inicio_licencia_mj else 0
+
+        return {
+            "tipo": "pausado",
+            "mensaje": f"Vencimiento suspendido (Licencia M.J. desde {cargo.fecha_inicio_licencia_mj.strftime('%d/%m/%Y') if cargo.fecha_inicio_licencia_mj else 'N/A'})",
+            "clase_badge": "bg-warning text-dark",
+            "icono": "bi-pause-circle",
+            "dias_licencia": dias_licencia,
+            "fecha_vencimiento_original": cargo.fecha_vencimiento_original_pre_licencia,
+            "urgente": False,
+        }
+
+    # Si no tiene fecha de vencimiento, no aplica
     if not cargo.fecha_vencimiento:
         return {
             "tipo": "sin_vencimiento",
-            "dias": None,
+            "mensaje": "Sin fecha de vencimiento",
+            "clase_badge": "bg-secondary",
+            "icono": "bi-infinity",
             "urgente": False,
-            "badge_class": "bg-secondary",
-            "mensaje": "Sin vencimiento",
         }
 
-    dias = dias_hasta_fecha(cargo.fecha_vencimiento)
+    # Calcular días restantes
+    dias_restantes = (cargo.fecha_vencimiento - hoy).days
 
-    if dias < 0:
+    # Cargo vencido (solo si NO está en licencia MJ)
+    if dias_restantes < 0:
+        dias_vencido = abs(dias_restantes)
         return {
             "tipo": "vencido",
-            "dias": abs(dias),
-            "urgente": True,
-            "badge_class": "bg-danger",
-            "mensaje": f"Vencido hace {abs(dias)} días",
+            "dias_vencido": dias_vencido,
+            "mensaje": f"Vencido hace {dias_vencido} día{'s' if dias_vencido != 1 else ''}",
+            "clase_badge": "bg-danger",
+            "icono": "bi-exclamation-triangle-fill",
+            "urgente": True
         }
-    elif dias <= 60:
+
+    # Vencimiento crítico (menos de 60 días)
+    if dias_restantes <= 60:
         return {
             "tipo": "critico",
-            "dias": dias,
-            "urgente": True,
-            "badge_class": "bg-danger",
-            "mensaje": f"Vence en {dias} días",
+            "dias_restantes": dias_restantes,
+            "fecha_vencimiento": cargo.fecha_vencimiento,
+            "mensaje": f"Vence en {dias_restantes} día{'s' if dias_restantes != 1 else ''}",
+            "clase_badge": "bg-danger",
+            "icono": "bi-clock-fill",
+            "urgente": True
         }
-    elif dias <= 180:
+
+    # Vencimiento próximo (60-180 días)
+    if dias_restantes <= 180:
         return {
             "tipo": "proximo",
-            "dias": dias,
-            "urgente": False,
-            "badge_class": "bg-warning",
-            "mensaje": f"Vence en {dias} días",
+            "dias_restantes": dias_restantes,
+            "fecha_vencimiento": cargo.fecha_vencimiento,
+            "mensaje": f"Vence en {dias_restantes} días",
+            "clase_badge": "bg-warning text-dark",
+            "icono": "bi-clock",
+            "urgente": False, 
         }
-    else:
-        return {
-            "tipo": "vigente",
-            "dias": dias,
-            "urgente": False,
-            "badge_class": "bg-success",
-            "mensaje": f"Vigente ({dias} días)",
-        }
+
+    # Vencimiento lejano (más de 180 días)
+    return {
+        "tipo": "vigente",
+        "dias_restantes": dias_restantes,
+        "fecha_vencimiento": cargo.fecha_vencimiento,
+        "mensaje": f"Vigente ({dias_restantes} días)",
+        "clase_badge": "bg-success",
+        "icono": "bi-check-circle",
+        "urgente": False,
+    }
 
 
 def obtener_estado_jubilacion(docente) -> Dict[str, any]:
@@ -620,49 +630,110 @@ def obtener_cargo_efectivo(cargo) -> Dict[str, any]:
         cargo (Cargo): Instancia del modelo Cargo
         
     Returns:
-        dict: Diccionario con información del cargo efectivo:
-            - tipo (str): Tipo de situación
-                * 'normal': Cargo activo sin licencia
-                * 'licencia_mj_docente': En licencia M.J. con cargo docente temporal
-                * 'licencia_mj_gestion': En licencia M.J. por cargo de gestión
-                * 'licencia_normal': En licencia normal
-                * 'inactivo': Cargo dado de baja, vencido o docente jubilado
-            - cargo_efectivo_display (str): Categoría del cargo efectivo
-            - asignatura_efectiva_display (str): Asignatura donde trabaja ahora
-            - observacion (str|None): Información adicional (cargo base, tipo licencia, etc.)
-            - badge_class (str): Clase CSS para el badge
-            - es_cargo_temporal (bool): Si es un cargo temporal por M.J.
-            - cargo_base_info (dict|None): Info del cargo base si está en licencia M.J.
-            
-    Example:
-        >>> cargo = Cargo.objects.get(pk=1)
-        >>> info = obtener_cargo_efectivo(cargo)
-        >>> print(info)
-        {
-            'tipo': 'licencia_mj_docente',
-            'cargo_efectivo_display': 'Profesor Adjunto',
-            'asignatura_efectiva_display': 'Álgebra',
-            'observacion': 'Base: JTP - Física',
-            'badge_class': 'bg-warning',
-            'es_cargo_temporal': True,
-            'cargo_base_info': {...}
-        }
+        dict: Diccionario con información del cargo efectivo
     """
     from django.utils import timezone
 
-    # CASO 5: Cargo inactivo (baja, vencido, o docente jubilado)
-    if cargo.estado == 'baja' or cargo.docente.jubilado:
+    # PRIORIDAD 1: Verificar licencias MJ PRIMERO (vencimiento suspendido)
+
+    # CASO 1: Licencia M.J. con cargo docente vinculado
+    if cargo.en_licencia_mayor_jerarquia:
+
+        # Subcaso A: Buscar si tiene cargo docente temporal vinculado
+        cargo_temporal = None
+        if hasattr(cargo, 'cargo_temporal_mj'):
+            cargo_temporal = cargo.cargo_temporal_mj.filter(
+                es_cargo_mayor_jerarquia=True,
+                estado='activo'
+            ).first()
+    
+        if cargo_temporal:
+            # Tiene cargo temporal docente
+            observacion = f"Base: {cargo.get_categoria_display()} - {cargo.asignatura.nombre if cargo.asignatura else 'Sin asignatura'}"
+    
+            return {
+                'tipo': 'licencia_mj_docente',
+                'cargo_efectivo_display': cargo_temporal.get_categoria_display(),
+                'asignatura_efectiva_display': cargo_temporal.asignatura.nombre if cargo_temporal.asignatura else '-',
+                'observacion': observacion,
+                'badge_class': 'bg-warning text-dark',
+                'es_cargo_temporal': True,
+                'cargo_base_info': {
+                    'categoria': cargo.get_categoria_display(),
+                    'asignatura': cargo.asignatura.nombre if cargo.asignatura else '-',
+                },
+            }
+    
+        else:
+            # Licencia MJ sin cargo temporal (gestión, externa, u otra)
+            # Intentar construir descripción del cargo
+            cargo_mj_display = "Licencia por Mayor Jerarquía"
+    
+            if cargo.descripcion_cargo_mj:
+                cargo_mj_display = cargo.descripcion_cargo_mj
+            elif cargo.tipo_cargo_mj:
+                cargo_mj_display = cargo.get_tipo_cargo_mj_display()
+    
+            if cargo.institucion_cargo_mj:
+                cargo_mj_display += f" ({cargo.institucion_cargo_mj})"
+    
+            observacion = f"Base: {cargo.get_categoria_display()} - {cargo.asignatura.nombre if cargo.asignatura else 'Sin asignatura'}"
+    
+            return {
+                'tipo': 'licencia_mj_gestion',
+                'cargo_efectivo_display': cargo_mj_display,
+                'asignatura_efectiva_display': '-',
+                'observacion': observacion,
+                'badge_class': 'bg-warning text-dark',
+                'es_cargo_temporal': False,
+                'cargo_base_info': {
+                    'categoria': cargo.get_categoria_display(),
+                    'asignatura': cargo.asignatura.nombre if cargo.asignatura else '-',
+                },
+            }
+
+    # CASO 3: Licencia normal (NO M.J.)
+    if cargo.en_licencia_normal:
+        fecha_fin_str = cargo.fecha_fin_licencia_normal.strftime(
+            '%d/%m/%Y') if cargo.fecha_fin_licencia_normal else 'Sin fecha'
+
+        return {
+            'tipo': 'licencia_normal',
+            'cargo_efectivo_display': cargo.get_categoria_display(),
+            'asignatura_efectiva_display': cargo.asignatura.nombre if cargo.asignatura else '-',
+            'observacion': f'En Licencia hasta {fecha_fin_str}',
+            'badge_class': 'bg-info',
+            'es_cargo_temporal': False,
+            'cargo_base_info': None,
+        }
+
+    # ✅ PRIORIDAD 2: Después de verificar licencias, verificar estados inactivos
+
+    # CASO 4: Cargo dado de baja
+    if cargo.estado == 'baja':
         return {
             'tipo': 'inactivo',
             'cargo_efectivo_display': cargo.get_categoria_display(),
             'asignatura_efectiva_display': cargo.asignatura.nombre if cargo.asignatura else '-',
-            'observacion': 'Dado de baja' if cargo.estado == 'baja' else 'Docente jubilado',
+            'observacion': 'Dado de baja',
             'badge_class': 'bg-secondary',
             'es_cargo_temporal': False,
             'cargo_base_info': None,
         }
 
-    # Verificar si está vencido
+    # CASO 5: Docente jubilado
+    if cargo.docente.jubilado:
+        return {
+            'tipo': 'inactivo',
+            'cargo_efectivo_display': cargo.get_categoria_display(),
+            'asignatura_efectiva_display': cargo.asignatura.nombre if cargo.asignatura else '-',
+            'observacion': 'Docente jubilado',
+            'badge_class': 'bg-secondary',
+            'es_cargo_temporal': False,
+            'cargo_base_info': None,
+        }
+
+    # CASO 6: Cargo vencido (solo si NO está en licencia MJ - ya verificado arriba)
     if cargo.fecha_vencimiento and cargo.fecha_vencimiento < timezone.now().date():
         return {
             'tipo': 'inactivo',
@@ -674,87 +745,13 @@ def obtener_cargo_efectivo(cargo) -> Dict[str, any]:
             'cargo_base_info': None,
         }
 
-    # CASO 1: Activo sin licencia M.J.
-    if cargo.estado == 'activo' and not cargo.en_licencia_mayor_jerarquia:
-        return {
-            'tipo': 'normal',
-            'cargo_efectivo_display': cargo.get_categoria_display(),
-            'asignatura_efectiva_display': cargo.asignatura.nombre if cargo.asignatura else '-',
-            'observacion': None,
-            'badge_class': 'bg-success',
-            'es_cargo_temporal': False,
-            'cargo_base_info': None,
-        }
-
-    # CASO 2: Licencia M.J. con cargo docente vinculado
-    if cargo.en_licencia_mayor_jerarquia and cargo.tipo_cargo_mj == 'docente':
-        # Buscar el cargo temporal vinculado
-        cargo_temporal = None
-        if hasattr(cargo, 'cargo_temporal_mj'):
-            cargo_temporal = cargo.cargo_temporal_mj.filter(
-                es_cargo_mayor_jerarquia=True,
-                estado='activo'
-            ).first()
-
-        if cargo_temporal:
-            observacion = f"Base: {cargo.get_categoria_display()} - {cargo.asignatura.nombre if cargo.asignatura else 'Sin asignatura'}"
-
-            return {
-                'tipo': 'licencia_mj_docente',
-                'cargo_efectivo_display': cargo_temporal.get_categoria_display(),
-                'asignatura_efectiva_display': cargo_temporal.asignatura.nombre if cargo_temporal.asignatura else '-',
-                'observacion': observacion,
-                'badge_class': 'bg-warning',
-                'es_cargo_temporal': True,
-                'cargo_base_info': {
-                    'categoria': cargo.get_categoria_display(),
-                    'asignatura': cargo.asignatura.nombre if cargo.asignatura else '-',
-                },
-            }
-
-    # CASO 3: Licencia M.J. por cargo de gestión
-    if cargo.en_licencia_mayor_jerarquia and cargo.tipo_cargo_mj and cargo.tipo_cargo_mj != 'docente':
-        cargo_gestion_display = cargo.descripcion_cargo_mj or cargo.get_tipo_cargo_mj_display()
-        if cargo.institucion_cargo_mj:
-            cargo_gestion_display += f" ({cargo.institucion_cargo_mj})"
-
-        observacion = f"Base: {cargo.get_categoria_display()} - {cargo.asignatura.nombre if cargo.asignatura else 'Sin asignatura'}"
-
-        return {
-            'tipo': 'licencia_mj_gestion',
-            'cargo_efectivo_display': cargo_gestion_display,
-            'asignatura_efectiva_display': '-',
-            'observacion': observacion,
-            'badge_class': 'bg-info',
-            'es_cargo_temporal': False,
-            'cargo_base_info': {
-                'categoria': cargo.get_categoria_display(),
-                'asignatura': cargo.asignatura.nombre if cargo.asignatura else '-',
-            },
-        }
-
-    # CASO 4: Licencia normal (NO M.J.)
-    if cargo.en_licencia_normal:
-        fecha_fin_str = cargo.fecha_fin_licencia_normal.strftime(
-            '%d/%m/%Y') if cargo.fecha_fin_licencia_normal else 'Sin fecha'
-
-        return {
-            'tipo': 'licencia_normal',
-            'cargo_efectivo_display': cargo.get_categoria_display(),
-            'asignatura_efectiva_display': cargo.asignatura.nombre if cargo.asignatura else '-',
-            'observacion': f'En Licencia hasta {fecha_fin_str}',
-            'badge_class': 'bg-primary',
-            'es_cargo_temporal': False,
-            'cargo_base_info': None,
-        }
-
-    # Fallback: Si no matchea ningún caso (no debería pasar)
+    # CASO 7: Cargo activo normal (sin licencias)
     return {
-        'tipo': 'desconocido',
+        'tipo': 'normal',
         'cargo_efectivo_display': cargo.get_categoria_display(),
         'asignatura_efectiva_display': cargo.asignatura.nombre if cargo.asignatura else '-',
-        'observacion': 'Estado desconocido',
-        'badge_class': 'bg-secondary',
+        'observacion': None,
+        'badge_class': 'bg-success',
         'es_cargo_temporal': False,
         'cargo_base_info': None,
     }
