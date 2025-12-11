@@ -245,84 +245,94 @@ def dias_hasta_fecha(fecha_objetivo: date) -> Optional[int]:
     return (fecha_objetivo - timezone.now().date()).days
 
 
-def obtener_estado_vencimiento(cargo) -> Dict[str, any]:
+def obtener_estado_vencimiento(cargo):
     """
-    Determina el estado del vencimiento de un cargo con información detallada.
-
-    Clasifica el vencimiento en categorías según la urgencia y proporciona
-    información útil para alertas y reportes.
-
-    Args:
-        cargo (Cargo): Instancia del modelo Cargo
-
+    Determina el estado de vencimiento de un cargo.
+    
+    Considera:
+    - Licencia por mayor jerarquía (vencimiento suspendido)
+    - Días restantes hasta vencimiento
+    - Umbrales de alerta (60 días crítico, 180 días próximo)
+    
     Returns:
-        dict: Diccionario con las siguientes claves:
-            - tipo (str): Categoría del vencimiento
-                * 'sin_vencimiento': El cargo no tiene fecha de vencimiento
-                * 'vencido': Ya pasó la fecha de vencimiento
-                * 'critico': Vence en menos de 60 días
-                * 'proximo': Vence entre 60 y 180 días
-                * 'vigente': Vence en más de 180 días
-            - dias (int): Días hasta/desde el vencimiento (negativo si venció)
-            - urgente (bool): Si requiere atención inmediata
-            - badge_class (str): Clase CSS para el badge (para templates)
-            - mensaje (str): Mensaje descriptivo para mostrar al usuario
-
-    Example:
-        >>> cargo = Cargo.objects.get(pk=1)
-        >>> estado = obtener_estado_vencimiento(cargo)
-        >>> print(estado)
-        {
-            'tipo': 'critico',
-            'dias': 45,
-            'urgente': True,
-            'badge_class': 'bg-danger',
-            'mensaje': 'Vence en 45 días'
-        }
+        dict: Información del estado de vencimiento
     """
+    hoy = timezone.now().date()
+
+    # ✅ NUEVO: Verificar licencia MJ PRIMERO
+    if cargo.en_licencia_mayor_jerarquia:
+        dias_licencia = (
+            hoy - cargo.fecha_inicio_licencia_mj).days if cargo.fecha_inicio_licencia_mj else 0
+
+        return {
+            "tipo": "pausado",
+            "mensaje": f"Vencimiento suspendido (Licencia M.J. desde {cargo.fecha_inicio_licencia_mj.strftime('%d/%m/%Y') if cargo.fecha_inicio_licencia_mj else 'N/A'})",
+            "clase_badge": "bg-warning text-dark",
+            "icono": "bi-pause-circle",
+            "dias_licencia": dias_licencia,
+            "fecha_vencimiento_original": cargo.fecha_vencimiento_original_pre_licencia,
+            "urgente": False,
+        }
+
+    # Si no tiene fecha de vencimiento, no aplica
     if not cargo.fecha_vencimiento:
         return {
             "tipo": "sin_vencimiento",
-            "dias": None,
+            "mensaje": "Sin fecha de vencimiento",
+            "clase_badge": "bg-secondary",
+            "icono": "bi-infinity",
             "urgente": False,
-            "badge_class": "bg-secondary",
-            "mensaje": "Sin vencimiento",
         }
 
-    dias = dias_hasta_fecha(cargo.fecha_vencimiento)
+    # Calcular días restantes
+    dias_restantes = (cargo.fecha_vencimiento - hoy).days
 
-    if dias < 0:
+    # Cargo vencido (solo si NO está en licencia MJ)
+    if dias_restantes < 0:
+        dias_vencido = abs(dias_restantes)
         return {
             "tipo": "vencido",
-            "dias": abs(dias),
-            "urgente": True,
-            "badge_class": "bg-danger",
-            "mensaje": f"Vencido hace {abs(dias)} días",
+            "dias_vencido": dias_vencido,
+            "mensaje": f"Vencido hace {dias_vencido} día{'s' if dias_vencido != 1 else ''}",
+            "clase_badge": "bg-danger",
+            "icono": "bi-exclamation-triangle-fill",
+            "urgente": True
         }
-    elif dias <= 60:
+
+    # Vencimiento crítico (menos de 60 días)
+    if dias_restantes <= 60:
         return {
             "tipo": "critico",
-            "dias": dias,
-            "urgente": True,
-            "badge_class": "bg-danger",
-            "mensaje": f"Vence en {dias} días",
+            "dias_restantes": dias_restantes,
+            "fecha_vencimiento": cargo.fecha_vencimiento,
+            "mensaje": f"Vence en {dias_restantes} día{'s' if dias_restantes != 1 else ''}",
+            "clase_badge": "bg-danger",
+            "icono": "bi-clock-fill",
+            "urgente": True
         }
-    elif dias <= 180:
+
+    # Vencimiento próximo (60-180 días)
+    if dias_restantes <= 180:
         return {
             "tipo": "proximo",
-            "dias": dias,
-            "urgente": False,
-            "badge_class": "bg-warning",
-            "mensaje": f"Vence en {dias} días",
+            "dias_restantes": dias_restantes,
+            "fecha_vencimiento": cargo.fecha_vencimiento,
+            "mensaje": f"Vence en {dias_restantes} días",
+            "clase_badge": "bg-warning text-dark",
+            "icono": "bi-clock",
+            "urgente": False, 
         }
-    else:
-        return {
-            "tipo": "vigente",
-            "dias": dias,
-            "urgente": False,
-            "badge_class": "bg-success",
-            "mensaje": f"Vigente ({dias} días)",
-        }
+
+    # Vencimiento lejano (más de 180 días)
+    return {
+        "tipo": "vigente",
+        "dias_restantes": dias_restantes,
+        "fecha_vencimiento": cargo.fecha_vencimiento,
+        "mensaje": f"Vigente ({dias_restantes} días)",
+        "clase_badge": "bg-success",
+        "icono": "bi-check-circle",
+        "urgente": False,
+    }
 
 
 def obtener_estado_jubilacion(docente) -> Dict[str, any]:
