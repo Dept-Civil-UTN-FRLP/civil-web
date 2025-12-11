@@ -634,21 +634,23 @@ def obtener_cargo_efectivo(cargo) -> Dict[str, any]:
     """
     from django.utils import timezone
 
-    # ✅ PRIORIDAD 1: Verificar licencias MJ PRIMERO (vencimiento suspendido)
+    # PRIORIDAD 1: Verificar licencias MJ PRIMERO (vencimiento suspendido)
 
     # CASO 1: Licencia M.J. con cargo docente vinculado
-    if cargo.en_licencia_mayor_jerarquia and cargo.tipo_cargo_mj == 'docente':
-        # Buscar el cargo temporal vinculado
+    if cargo.en_licencia_mayor_jerarquia:
+
+        # Subcaso A: Buscar si tiene cargo docente temporal vinculado
         cargo_temporal = None
         if hasattr(cargo, 'cargo_temporal_mj'):
             cargo_temporal = cargo.cargo_temporal_mj.filter(
                 es_cargo_mayor_jerarquia=True,
                 estado='activo'
             ).first()
-
+    
         if cargo_temporal:
+            # Tiene cargo temporal docente
             observacion = f"Base: {cargo.get_categoria_display()} - {cargo.asignatura.nombre if cargo.asignatura else 'Sin asignatura'}"
-
+    
             return {
                 'tipo': 'licencia_mj_docente',
                 'cargo_efectivo_display': cargo_temporal.get_categoria_display(),
@@ -661,27 +663,34 @@ def obtener_cargo_efectivo(cargo) -> Dict[str, any]:
                     'asignatura': cargo.asignatura.nombre if cargo.asignatura else '-',
                 },
             }
-
-    # CASO 2: Licencia M.J. por cargo de gestión
-    if cargo.en_licencia_mayor_jerarquia and cargo.tipo_cargo_mj and cargo.tipo_cargo_mj != 'docente':
-        cargo_gestion_display = cargo.descripcion_cargo_mj or cargo.get_tipo_cargo_mj_display()
-        if cargo.institucion_cargo_mj:
-            cargo_gestion_display += f" ({cargo.institucion_cargo_mj})"
-
-        observacion = f"Base: {cargo.get_categoria_display()} - {cargo.asignatura.nombre if cargo.asignatura else 'Sin asignatura'}"
-
-        return {
-            'tipo': 'licencia_mj_gestion',
-            'cargo_efectivo_display': cargo_gestion_display,
-            'asignatura_efectiva_display': '-',
-            'observacion': observacion,
-            'badge_class': 'bg-warning text-dark',
-            'es_cargo_temporal': False,
-            'cargo_base_info': {
-                'categoria': cargo.get_categoria_display(),
-                'asignatura': cargo.asignatura.nombre if cargo.asignatura else '-',
-            },
-        }
+    
+        else:
+            # Licencia MJ sin cargo temporal (gestión, externa, u otra)
+            # Intentar construir descripción del cargo
+            cargo_mj_display = "Licencia por Mayor Jerarquía"
+    
+            if cargo.descripcion_cargo_mj:
+                cargo_mj_display = cargo.descripcion_cargo_mj
+            elif cargo.tipo_cargo_mj:
+                cargo_mj_display = cargo.get_tipo_cargo_mj_display()
+    
+            if cargo.institucion_cargo_mj:
+                cargo_mj_display += f" ({cargo.institucion_cargo_mj})"
+    
+            observacion = f"Base: {cargo.get_categoria_display()} - {cargo.asignatura.nombre if cargo.asignatura else 'Sin asignatura'}"
+    
+            return {
+                'tipo': 'licencia_mj_gestion',
+                'cargo_efectivo_display': cargo_mj_display,
+                'asignatura_efectiva_display': '-',
+                'observacion': observacion,
+                'badge_class': 'bg-warning text-dark',
+                'es_cargo_temporal': False,
+                'cargo_base_info': {
+                    'categoria': cargo.get_categoria_display(),
+                    'asignatura': cargo.asignatura.nombre if cargo.asignatura else '-',
+                },
+            }
 
     # CASO 3: Licencia normal (NO M.J.)
     if cargo.en_licencia_normal:

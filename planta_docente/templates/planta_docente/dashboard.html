@@ -234,20 +234,20 @@
                             {% if cargo.cargo_efectivo.observacion %}
                                 <span class="badge {{ cargo.cargo_efectivo.badge_class }}">
                                     {% if cargo.cargo_efectivo.tipo == 'licencia_mj_docente' %}
-                                        <i class="bi bi-arrow-up-circle"></i>
+                                        <i class="bi bi-arrow-up-circle">MJ-Docente</i>
                                     {% elif cargo.cargo_efectivo.tipo == 'licencia_mj_gestion' %}
-                                        <i class="bi bi-briefcase"></i>
+                                        <i class="bi bi-briefcase">MJ-Gestion</i>
                                     {% elif cargo.cargo_efectivo.tipo == 'licencia_normal' %}
-                                        <i class="bi bi-calendar-event"></i>
+                                        <i class="bi bi-calendar-event">Licencia</i>
                                     {% elif cargo.cargo_efectivo.tipo == 'inactivo' %}
-                                        <i class="bi bi-x-circle"></i>
+                                        <i class="bi bi-x-circle">Inactivo</i>
                                     {% endif %}
                                 </span>
                                 <br>
                                 <small class="text-muted">{{ cargo.cargo_efectivo.observacion }}</small>
                             {% else %}
                                 <span class="badge {{ cargo.cargo_efectivo.badge_class }}">
-                                    <i class="bi bi-check-circle"></i> Normal
+                                    <i class="bi bi-check-circle"></i> Normal 
                                 </span>
                             {% endif %}
                         </td>
