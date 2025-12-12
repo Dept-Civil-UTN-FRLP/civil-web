@@ -288,12 +288,21 @@ def ver_ficha_asignatura(request, asignatura_id):
             for obj in asignatura.objetivos.split('\n')
             if obj.strip()
         ]
+        
+    competencias_lista = []
+    if asignatura.competencias:
+        competencias_lista = [
+            comp.strip()
+            for comp in asignatura.competencias.split('-')
+            if comp.strip()
+        ]
 
     context = {
         'asignatura': asignatura,
         'areas': areas,
         'bloques': bloques,
         'objetivos_lista': objetivos_lista,
+        'competencias_lista': competencias_lista,
     }
 
     return render(request, 'planta_docente/asignatura/ver_ficha.html', context)

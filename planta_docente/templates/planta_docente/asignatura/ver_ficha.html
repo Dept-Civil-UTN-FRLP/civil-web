@@ -245,24 +245,22 @@
     </div>
 
     <!-- Competencias -->
-    {% if asignatura.competencias %}
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="ficha-section">
-                <h5 class="mb-3">
-                    <i class="bi bi-trophy text-warning"></i> Competencias Específicas
-                </h5>
-                <p class="mb-0">
-                    {% for comp in asignatura.competencias.split '-' %}
-                        {% if comp %}
-                        <span class="badge bg-warning text-dark me-1 mb-1">{{ comp }}</span>
-                        {% endif %}
-                    {% endfor %}
-                </p>
-            </div>
+    {% if competencias_lista %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="ficha-section">
+            <h5 class="mb-3">
+                <i class="bi bi-trophy text-warning"></i> Competencias Específicas
+            </h5>
+            <p class="mb-0">
+                {% for comp in competencias_lista %}
+                <span class="badge bg-warning text-dark me-1 mb-1">{{ comp }}</span>
+                {% endfor %}
+            </p>
         </div>
     </div>
-    {% endif %}
+</div>
+{% endif %}
 
     <!-- Objetivos -->
     {% if objetivos_lista %}
