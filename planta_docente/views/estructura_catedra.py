@@ -232,3 +232,65 @@ def generar_pdf_estructura(request, asignatura_id):
     response["Content-Disposition"] = f'inline; filename="{filename}"'
 
     return response
+
+
+@login_required
+@staff_member_required
+def editar_ficha_asignatura(request, asignatura_id):
+    """
+    Vista para editar la ficha completa de una asignatura.
+    """
+    asignatura = get_object_or_404(Asignatura, pk=asignatura_id)
+
+    if request.method == 'POST':
+        form = AsignaturaFichaForm(request.POST, instance=asignatura)
+
+        if form.is_valid():
+            form.save()
+            messages.success(
+                request,
+                f'✓ Ficha de "{asignatura.nombre}" actualizada correctamente.'
+            )
+            return redirect('planta_docente:ver_ficha_asignatura', asignatura_id=asignatura.pk)
+        else:
+            messages.error(
+                request, 'Por favor corrige los errores del formulario.')
+    else:
+        form = AsignaturaFichaForm(instance=asignatura)
+
+    context = {
+        'form': form,
+        'asignatura': asignatura,
+    }
+
+    return render(request, 'planta_docente/asignatura/editar_ficha.html', context)
+
+
+@login_required
+def ver_ficha_asignatura(request, asignatura_id):
+    """
+    Vista para ver la ficha completa de una asignatura.
+    """
+    asignatura = get_object_or_404(Asignatura, pk=asignatura_id)
+
+    # Obtener áreas y bloques
+    areas = asignatura.area.all()
+    bloques = asignatura.bloque.all()
+
+    # Parsear objetivos (uno por línea)
+    objetivos_lista = []
+    if asignatura.objetivos:
+        objetivos_lista = [
+            obj.strip().lstrip('•').lstrip('-').strip()
+            for obj in asignatura.objetivos.split('\n')
+            if obj.strip()
+        ]
+
+    context = {
+        'asignatura': asignatura,
+        'areas': areas,
+        'bloques': bloques,
+        'objetivos_lista': objetivos_lista,
+    }
+
+    return render(request, 'planta_docente/asignatura/ver_ficha.html', context)

@@ -32,6 +32,8 @@ __all__ = [
     'dashboard_asignaturas',
     'formulario_estructura',
     'generar_pdf_estructura',
+    'ver_ficha_asignatura',
+    'editar_ficha_asignatura',
     # Vistas de funciones sustantivas
     'gestionar_funciones_sustantivas',
     'crear_funcion_sustantiva',
