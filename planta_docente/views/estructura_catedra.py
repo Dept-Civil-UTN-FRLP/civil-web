@@ -284,9 +284,9 @@ def ver_ficha_asignatura(request, asignatura_id):
     from planta_docente.models import Cargo
 
     cargos = Cargo.objects.filter(
-        estructura_catedra__asignatura=asignatura,
-        baja=False
-    ).select_related('docente', 'tipo_cargo').order_by('tipo_cargo__orden', 'docente__apellido')
+        asignatura=asignatura,  # ✅ Relación directa según tu modelo
+        estado='activo'  # ✅ CAMBIO: usar estado en lugar de baja
+    ).select_related('docente').order_by('categoria', 'docente__apellido')
 
     # Agrupar cargos por categoría según tipo
     profesores = []  # Titular, Asociado, Adjunto
