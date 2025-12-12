@@ -10,7 +10,7 @@
             <h1 class="h3 mb-3">
                 <i class="bi bi-diagram-3"></i> Estructura de Cátedra
             </h1>
-            <p class="text-muted">Generá reportes de estructura docente por asignatura</p>
+            <p class="text-muted">Gestión de asignaturas y estructura docente</p>
         </div>
     </div>
 
@@ -81,21 +81,36 @@
                             <th>Especialidad</th>
                             <th class="text-center">Dictado</th>
                             <th class="text-center">Obligatoria</th>
+                            <th class="text-center">Estado Ficha</th>
                             <th class="text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for asignatura in page_obj %}
                         <tr>
+                            <!-- Nombre (clickeable a ficha) -->
                             <td>
-                                <strong>{{ asignatura.nombre|title }}</strong>
+                                <a href="{% url 'planta_docente:ver_ficha_asignatura' asignatura.pk %}" 
+                                   class="text-decoration-none fw-bold">
+                                    {{ asignatura.nombre|title }}
+                                </a>
                             </td>
+                            
+                            <!-- Nivel -->
                             <td class="text-center">
                                 <span class="badge bg-secondary">{{ asignatura.get_nivel_display }}</span>
                             </td>
+                            
+                            <!-- Departamento -->
                             <td>{{ asignatura.get_departamento_display }}</td>
+                            
+                            <!-- Especialidad -->
                             <td>{{ asignatura.get_especialidad_display }}</td>
+                            
+                            <!-- Dictado -->
                             <td class="text-center">{{ asignatura.get_dictado_display }}</td>
+                            
+                            <!-- Obligatoria -->
                             <td class="text-center">
                                 {% if asignatura.obligatoria %}
                                 <i class="bi bi-check-circle-fill text-success"></i>
@@ -103,16 +118,65 @@
                                 <i class="bi bi-dash-circle text-muted"></i>
                                 {% endif %}
                             </td>
+                            
+                            <!-- Estado de la Ficha -->
                             <td class="text-center">
-                                <a href="{% url 'planta_docente:formulario_estructura' asignatura.pk %}" 
-                                   class="btn btn-sm btn-primary">
-                                    <i class="bi bi-file-earmark-pdf"></i> Ver Estructura
-                                </a>
+                                {% if asignatura.objetivos and asignatura.contenidos_minimos and asignatura.competencias %}
+                                <span class="badge bg-success" 
+                                      data-bs-toggle="tooltip" 
+                                      title="Ficha completa: tiene objetivos, contenidos y competencias">
+                                    <i class="bi bi-check-circle"></i> Completa
+                                </span>
+                                {% elif asignatura.objetivos or asignatura.contenidos_minimos or asignatura.competencias %}
+                                <span class="badge bg-warning text-dark" 
+                                      data-bs-toggle="tooltip" 
+                                      title="Ficha parcial: faltan algunos datos académicos">
+                                    <i class="bi bi-dash-circle"></i> Parcial
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary" 
+                                      data-bs-toggle="tooltip" 
+                                      title="Sin información académica">
+                                    <i class="bi bi-x-circle"></i> Vacía
+                                </span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Acciones -->
+                            <td class="text-center">
+                                <div class="btn-group" role="group">
+                                    <!-- Ver Ficha Completa -->
+                                    <a href="{% url 'planta_docente:ver_ficha_asignatura' asignatura.pk %}" 
+                                       class="btn btn-sm btn-outline-info"
+                                       data-bs-toggle="tooltip" 
+                                       title="Ver ficha académica completa">
+                                        <i class="bi bi-file-text"></i>
+                                    </a>
+                                    
+                                    <!-- Estructura de Cátedra (PDF) -->
+                                    <a href="{% url 'planta_docente:formulario_estructura' asignatura.pk %}" 
+                                       class="btn btn-sm btn-outline-primary"
+                                       data-bs-toggle="tooltip" 
+                                       title="Generar PDF de estructura docente">
+                                        <i class="bi bi-people"></i>
+                                    </a>
+                                    
+                                    <!-- Editar Ficha (solo staff) -->
+                                    {% if perms.planta_docente.change_asignatura %}
+                                    <a href="{% url 'planta_docente:editar_ficha_asignatura' asignatura.pk %}" 
+                                       class="btn btn-sm btn-outline-secondary"
+                                       data-bs-toggle="tooltip" 
+                                       title="Editar información académica">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-4">
+                            <td colspan="8" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                 No se encontraron asignaturas con los filtros aplicados.
                             </td>
                         </tr>
@@ -164,4 +228,14 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Inicializar tooltips de Bootstrap
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+</script>
 {% endblock %}

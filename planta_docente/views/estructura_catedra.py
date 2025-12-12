@@ -4,12 +4,15 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Prefetch, Q
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, render
 from django.template.loader import render_to_string
 from django.utils import timezone
 from weasyprint import HTML
+from django.shortcuts import get_object_or_404, redirect, render
 
 from planta_docente.models import Asignatura, Cargo, ActividadSustantiva
+from planta_docente.forms import AsignaturaFichaForm
+from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib import messages
 
 
 @login_required
@@ -232,3 +235,111 @@ def generar_pdf_estructura(request, asignatura_id):
     response["Content-Disposition"] = f'inline; filename="{filename}"'
 
     return response
+
+
+@login_required
+@staff_member_required
+def editar_ficha_asignatura(request, asignatura_id):
+    """
+    Vista para editar la ficha completa de una asignatura.
+    """
+    asignatura = get_object_or_404(Asignatura, pk=asignatura_id)
+
+    if request.method == 'POST':
+        form = AsignaturaFichaForm(request.POST, instance=asignatura)
+
+        if form.is_valid():
+            form.save()
+            messages.success(
+                request,
+                f'✓ Ficha de "{asignatura.nombre}" actualizada correctamente.'
+            )
+            return redirect('planta_docente:ver_ficha_asignatura', asignatura_id=asignatura.pk)
+        else:
+            messages.error(
+                request, 'Por favor corrige los errores del formulario.')
+    else:
+        form = AsignaturaFichaForm(instance=asignatura)
+
+    context = {
+        'form': form,
+        'asignatura': asignatura,
+    }
+
+    return render(request, 'planta_docente/asignatura/editar_ficha.html', context)
+
+
+@login_required
+def ver_ficha_asignatura(request, asignatura_id):
+    """
+    Vista para ver la ficha completa de una asignatura.
+    """
+    asignatura = get_object_or_404(Asignatura, pk=asignatura_id)
+
+    # Obtener áreas y bloques
+    areas = asignatura.area.all()
+    bloques = asignatura.bloque.all()
+
+    # ✅ Obtener cargos asociados a través de estructura_catedra
+    from planta_docente.models import Cargo
+
+    cargos = Cargo.objects.filter(
+        asignatura=asignatura,  # ✅ Relación directa según tu modelo
+        estado='activo'  # ✅ CAMBIO: usar estado en lugar de baja
+    ).select_related('docente').order_by('categoria', 'docente__apellido')
+
+    # Agrupar cargos por categoría según tipo
+    profesores = []  # Titular, Asociado, Adjunto
+    auxiliares = []  # JTP, ATP1, ATP2
+
+    TIPOS_PROFESORES = ['tit', 'aso', 'adj']
+    TIPOS_AUXILIARES = ['jtp', 'atp1', 'atp2', 'ads']
+    
+    for cargo in cargos:
+        tipo_nombre = cargo.categoria
+
+        # Clasificar por tipo
+        if any(tipo in tipo_nombre for tipo in TIPOS_PROFESORES):
+            profesores.append(cargo)
+        elif any(tipo in tipo_nombre for tipo in TIPOS_AUXILIARES):
+            auxiliares.append(cargo)
+
+    # Parsear objetivos (uno por línea)
+    objetivos_lista = []
+    if asignatura.objetivos:
+        objetivos_lista = [
+            obj.strip().lstrip('•').lstrip('-').strip()
+            for obj in asignatura.objetivos.split('\n')
+            if obj.strip()
+        ]
+        
+    # Parsear contenidos (uno por línea)
+    contenidos_lista = []
+    if asignatura.contenidos_minimos:
+        contenidos_lista = [
+            obj.strip().lstrip('•').lstrip('-').strip()
+            for obj in asignatura.contenidos_minimos.split('\n')
+            if obj.strip()
+        ]
+
+    # Parsear competencias
+    competencias_lista = []
+    if asignatura.competencias:
+        competencias_lista = [
+            comp.strip()
+            for comp in asignatura.competencias.split('-')
+            if comp.strip()
+        ]
+
+    context = {
+        'asignatura': asignatura,
+        'areas': areas,
+        'bloques': bloques,
+        'objetivos_lista': objetivos_lista,
+        'competencias_lista': competencias_lista,
+        'contenidos_lista': contenidos_lista,
+        'profesores': profesores,  # ✅ NUEVO
+        'auxiliares': auxiliares,  # ✅ NUEVO
+    }
+
+    return render(request, 'planta_docente/asignatura/ver_ficha.html', context)

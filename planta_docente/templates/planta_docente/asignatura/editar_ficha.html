@@ -1,0 +1,361 @@
+{% extends 'planta_docente/base_planta.html' %}
+
+{% load static %}
+
+{% block title %}Editar Ficha - {{ asignatura.nombre }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-section-title {
+        color: #0d6efd;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #0d6efd;
+    }
+    
+    .required-field label:after {
+        content: " *";
+        color: #dc3545;
+    }
+    
+    .form-help {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'planta_docente:dashboard_asignaturas' %}">Asignaturas</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'planta_docente:ver_ficha_asignatura' asignatura.pk %}">
+                            {{ asignatura.nombre }}
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active">Editar Ficha</li>
+                </ol>
+            </nav>
+            <h1 class="h2">
+                <i class="bi bi-pencil-square text-primary"></i> 
+                Editar Ficha de Asignatura
+            </h1>
+            <p class="text-muted">{{ asignatura.nombre }}</p>
+        </div>
+    </div>
+
+    <!-- Formulario -->
+    <form method="post" id="fichaForm">
+        {% csrf_token %}
+        
+        <!-- Información Básica -->
+        <div class="form-section">
+            <h3 class="form-section-title">
+                <i class="bi bi-info-circle"></i> Información Básica
+            </h3>
+            
+            <div class="row">
+                <!-- Nombre -->
+                <div class="col-md-8 mb-3 required-field">
+                    <label for="{{ form.nombre.id_for_label }}" class="form-label">
+                        Nombre de la Asignatura
+                    </label>
+                    {{ form.nombre }}
+                    {% if form.nombre.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.nombre.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Número de Orden -->
+                <div class="col-md-4 mb-3">
+                    <label for="{{ form.numero_orden.id_for_label }}" class="form-label">
+                        Número de Orden
+                    </label>
+                    {{ form.numero_orden }}
+                    <div class="form-help">Número en el plan de estudios</div>
+                    {% if form.numero_orden.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.numero_orden.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row">
+                <!-- Nivel -->
+                <div class="col-md-3 mb-3 required-field">
+                    <label for="{{ form.nivel.id_for_label }}" class="form-label">
+                        Nivel
+                    </label>
+                    {{ form.nivel }}
+                    {% if form.nivel.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.nivel.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Departamento -->
+                <div class="col-md-4 mb-3 required-field">
+                    <label for="{{ form.departamento.id_for_label }}" class="form-label">
+                        Departamento
+                    </label>
+                    {{ form.departamento }}
+                    {% if form.departamento.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.departamento.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Especialidad -->
+                <div class="col-md-5 mb-3 required-field">
+                    <label for="{{ form.especialidad.id_for_label }}" class="form-label">
+                        Carrera
+                    </label>
+                    {{ form.especialidad }}
+                    {% if form.especialidad.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.especialidad.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Carga Horaria -->
+        <div class="form-section">
+            <h3 class="form-section-title">
+                <i class="bi bi-clock"></i> Carga Horaria
+            </h3>
+            
+            <div class="row">
+                <!-- Horas Cátedra Semanales -->
+                <div class="col-md-3 mb-3 required-field">
+                    <label for="{{ form.hora_semanal.id_for_label }}" class="form-label">
+                        Horas Cátedra Semanales
+                    </label>
+                    {{ form.hora_semanal }}
+                    {% if form.hora_semanal.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.hora_semanal.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Horas Reloj Total -->
+                <div class="col-md-3 mb-3 required-field">
+                    <label for="{{ form.hora_total.id_for_label }}" class="form-label">
+                        Horas Reloj Total
+                    </label>
+                    {{ form.hora_total }}
+                    {% if form.hora_total.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.hora_total.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Dictado -->
+                <div class="col-md-3 mb-3 required-field">
+                    <label for="{{ form.dictado.id_for_label }}" class="form-label">
+                        Dictado
+                    </label>
+                    {{ form.dictado }}
+                    {% if form.dictado.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.dictado.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Obligatoria -->
+                <div class="col-md-3 mb-3">
+                    <label class="form-label d-block">Tipo</label>
+                    <div class="form-check form-switch">
+                        {{ form.obligatoria }}
+                        <label class="form-check-label" for="{{ form.obligatoria.id_for_label }}">
+                            Asignatura Obligatoria
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estructura de Cátedra -->
+        <div class="form-section">
+            <h3 class="form-section-title">
+                <i class="bi bi-people"></i> Estructura de Cátedra
+            </h3>
+            
+            <div class="row">
+                <!-- Número de Comisiones -->
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.numero_comisiones.id_for_label }}" class="form-label">
+                        Cantidad de Comisiones
+                    </label>
+                    {{ form.numero_comisiones }}
+                    <div class="form-help">Comisiones en las que se divide la asignatura</div>
+                    {% if form.numero_comisiones.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.numero_comisiones.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Número de Estudiantes -->
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.numero_estudiantes.id_for_label }}" class="form-label">
+                        Cantidad Promedio de Estudiantes
+                    </label>
+                    {{ form.numero_estudiantes }}
+                    <div class="form-help">Promedio histórico de estudiantes</div>
+                    {% if form.numero_estudiantes.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.numero_estudiantes.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Competencias -->
+        <div class="form-section">
+            <h3 class="form-section-title">
+                <i class="bi bi-trophy"></i> Competencias
+            </h3>
+            
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <label for="{{ form.competencias.id_for_label }}" class="form-label">
+                        Competencias Específicas
+                    </label>
+                    {{ form.competencias }}
+                    <div class="form-help">
+                        Separar con guiones. Ejemplo: CE01-CE03-CE08-CE17-CE19
+                    </div>
+                    {% if form.competencias.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.competencias.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Objetivos -->
+        <div class="form-section">
+            <h3 class="form-section-title">
+                <i class="bi bi-bullseye"></i> Objetivos
+            </h3>
+            
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <label for="{{ form.objetivos.id_for_label }}" class="form-label">
+                        Objetivos de la Asignatura
+                    </label>
+                    {{ form.objetivos }}
+                    <div class="form-help">
+                        <i class="bi bi-info-circle"></i> 
+                        Escriba un objetivo por línea. Puede usar viñetas • o guiones -
+                    </div>
+                    {% if form.objetivos.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.objetivos.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenidos Mínimos -->
+        <div class="form-section">
+            <h3 class="form-section-title">
+                <i class="bi bi-journal-text"></i> Contenidos Mínimos
+            </h3>
+            
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <label for="{{ form.contenidos_minimos.id_for_label }}" class="form-label">
+                        Contenidos Mínimos
+                    </label>
+                    {{ form.contenidos_minimos }}
+                    <div class="form-help">
+                        Descripción detallada de los contenidos mínimos de la asignatura
+                    </div>
+                    {% if form.contenidos_minimos.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.contenidos_minimos.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-check-circle"></i> Guardar Cambios
+                </button>
+                <a href="{% url 'planta_docente:ver_ficha_asignatura' asignatura.pk %}" 
+                   class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Validación de formulario
+    document.getElementById('fichaForm').addEventListener('submit', function(e) {
+        let isValid = true;
+        
+        // Validar campos requeridos
+        const requiredFields = this.querySelectorAll('[required]');
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                isValid = false;
+                field.classList.add('is-invalid');
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('Por favor complete todos los campos obligatorios marcados con *');
+        }
+    });
+    
+    // Contador de caracteres para textareas
+    document.querySelectorAll('textarea').forEach(textarea => {
+        textarea.addEventListener('input', function() {
+            const length = this.value.length;
+            console.log(`${this.name}: ${length} caracteres`);
+        });
+    });
+</script>
+{% endblock %}

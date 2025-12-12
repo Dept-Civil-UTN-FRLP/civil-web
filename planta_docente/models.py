@@ -78,7 +78,28 @@ class Asignatura(models.Model):
     hora_semanal = models.PositiveIntegerField()
     hora_total = models.PositiveIntegerField()
     dictado = models.CharField(choices=DICTADO_CHOICES, max_length=2)
-    # Campos para estructura de cátedra
+    numero_orden = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Número de Orden",
+        help_text="Número de orden en el plan de estudios (ej: 16)"
+    )
+    competencias = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="Competencias",
+        help_text="Competencias específicas separadas por guiones (ej: CE01-CE03-CE08)"
+    )
+    objetivos = models.TextField(
+        blank=True,
+        verbose_name="Objetivos",
+        help_text="Objetivos de la asignatura (uno por línea)"
+    )
+    contenidos_minimos = models.TextField(
+        blank=True,
+        verbose_name="Contenidos Mínimos",
+        help_text="Contenidos mínimos de la asignatura"
+    )
     numero_comisiones = models.PositiveIntegerField(
         null=True,
         blank=True,
