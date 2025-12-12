@@ -124,3 +124,85 @@ class CargoForm(forms.ModelForm):
                                'La fecha de vencimiento debe ser posterior a la fecha de inicio')
 
         return cleaned_data
+
+
+class AsignaturaFichaForm(forms.ModelForm):
+    """
+    Formulario para editar la ficha completa de una asignatura.
+    Incluye datos académicos y administrativos.
+    """
+
+    class Meta:
+        model = Asignatura
+        fields = [
+            'nombre',
+            'numero_orden',
+            'nivel',
+            'departamento',
+            'especialidad',
+            'dictado',
+            'obligatoria',
+            'hora_semanal',
+            'hora_total',
+            'numero_comisiones',
+            'numero_estudiantes',
+            'competencias',
+            'objetivos',
+            'contenidos_minimos',
+        ]
+
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: Resistencia de Materiales'
+            }),
+            'numero_orden': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: 16'
+            }),
+            'nivel': forms.Select(attrs={'class': 'form-select'}),
+            'departamento': forms.Select(attrs={'class': 'form-select'}),
+            'especialidad': forms.Select(attrs={'class': 'form-select'}),
+            'dictado': forms.Select(attrs={'class': 'form-select'}),
+            'obligatoria': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'hora_semanal': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: 4'
+            }),
+            'hora_total': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: 96'
+            }),
+            'numero_comisiones': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: 2'
+            }),
+            'numero_estudiantes': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: 80'
+            }),
+            'competencias': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: CE01-CE03-CE08-CE17-CE19'
+            }),
+            'objetivos': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 8,
+                'placeholder': 'Un objetivo por línea:\n• Conocer los conceptos...\n• Calcular tensiones...'
+            }),
+            'contenidos_minimos': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 8,
+                'placeholder': 'Contenidos mínimos de la asignatura...'
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Labels personalizados
+        self.fields['numero_orden'].label = "Nº de Orden"
+        self.fields['hora_semanal'].label = "Horas Cátedra Semanales"
+        self.fields['hora_total'].label = "Horas Reloj Total"
+        self.fields['numero_comisiones'].label = "Cantidad de Comisiones"
+        self.fields['numero_estudiantes'].label = "Cantidad Promedio de Estudiantes"
