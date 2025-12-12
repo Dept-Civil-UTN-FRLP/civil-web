@@ -96,4 +96,10 @@ urlpatterns = [
     path('api/asignatura/<int:asignatura_id>/info/',
          views.asignatura_info_api,
          name='asignatura_info_api'),
+    path('asignatura/<int:asignatura_id>/ficha/',
+         views.ver_ficha_asignatura,
+         name='ver_ficha_asignatura'),
+    path('asignatura/<int:asignatura_id>/ficha/editar/',
+         views.editar_ficha_asignatura,
+         name='editar_ficha_asignatura'),
 ]
