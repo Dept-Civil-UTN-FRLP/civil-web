@@ -292,13 +292,11 @@ def ver_ficha_asignatura(request, asignatura_id):
     profesores = []  # Titular, Asociado, Adjunto
     auxiliares = []  # JTP, ATP1, ATP2
 
-    TIPOS_PROFESORES = ['Profesor Titular',
-                        'Profesor Asociado', 'Profesor Adjunto']
-    TIPOS_AUXILIARES = ['Jefe de Trabajos Prácticos', 'JTP',
-                        'Auxiliar de Primera', 'ATP1', 'Auxiliar de Segunda', 'ATP2']
-
+    TIPOS_PROFESORES = ['tit', 'aso', 'adj']
+    TIPOS_AUXILIARES = ['jtp', 'atp1', 'atp2', 'ads']
+    
     for cargo in cargos:
-        tipo_nombre = cargo.tipo_cargo.nombre
+        tipo_nombre = cargo.categoria
 
         # Clasificar por tipo
         if any(tipo in tipo_nombre for tipo in TIPOS_PROFESORES):
@@ -312,6 +310,15 @@ def ver_ficha_asignatura(request, asignatura_id):
         objetivos_lista = [
             obj.strip().lstrip('•').lstrip('-').strip()
             for obj in asignatura.objetivos.split('\n')
+            if obj.strip()
+        ]
+        
+    # Parsear contenidos (uno por línea)
+    contenidos_lista = []
+    if asignatura.contenidos_minimos:
+        contenidos_lista = [
+            obj.strip().lstrip('•').lstrip('-').strip()
+            for obj in asignatura.contenidos_minimos.split('\n')
             if obj.strip()
         ]
 
@@ -330,6 +337,7 @@ def ver_ficha_asignatura(request, asignatura_id):
         'bloques': bloques,
         'objetivos_lista': objetivos_lista,
         'competencias_lista': competencias_lista,
+        'contenidos_lista': contenidos_lista,
         'profesores': profesores,  # ✅ NUEVO
         'auxiliares': auxiliares,  # ✅ NUEVO
     }

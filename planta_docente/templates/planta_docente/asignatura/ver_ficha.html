@@ -211,15 +211,15 @@
                         <!-- Fila 1: Departamento, Carrera -->
                         <tr>
                             <td class="fw-bold bg-light" style="width: 20%;">Departamento:</td>
-                            <td style="width: 30%;">{{ asignatura.departamento.nombre }}</td>
+                            <td style="width: 30%;">{{ asignatura.get_departamento_display }}</td>
                             <td class="fw-bold bg-light" style="width: 20%;">Carrera</td>
-                            <td style="width: 30%;">{{ asignatura.especialidad.nombre|default:"No especificada" }}</td>
+                            <td style="width: 30%;">{{ asignatura.get_especialidad_display|default:"No especificada" }}</td>
                         </tr>
 
                         <!-- Fila 2: Asignatura (span completo) -->
                         <tr>
                             <td class="fw-bold bg-light">Asignatura:</td>
-                            <td colspan="3">{{ asignatura.nombre }}</td>
+                            <td colspan="3">{{ asignatura.nombre|title }}</td>
                         </tr>
 
                         <!-- Fila 3: Nivel, Duración -->
@@ -227,47 +227,48 @@
                             <td class="fw-bold bg-light">Nivel de la carrera</td>
                             <td>{{ asignatura.get_nivel_display }}</td>
                             <td class="fw-bold bg-light">Duración</td>
-                            <td>{{ asignatura.get_duracion_dictado_display|default:"Cuatrimestral" }}</td>
+                            <td>{{ asignatura.get_dictado_display|default:"Cuatrimestral" }}</td>
                         </tr>
 
                         <!-- Fila 4: Bloque curricular -->
                         <tr>
-                            <td class="fw-bold bg-light">Bloque curricular:</td>
-                            <td colspan="3">
+                            <td class="fw-bold bg-light">Bloque:</td>
+                            <td>
                                 {% if bloques %}
-                                    Bloque: 
                                     {% for bloque in bloques %}
-                                        {{ bloque.nombre }}{% if not forloop.last %}, {% endif %}
+                                        {{ bloque.nombre|title }}{% if not forloop.last %}, {% endif %}
                                     {% endfor %}
-                                    . Área: 
-                                    {% if areas %}
-                                        {% for area in areas %}
-                                            {{ area.nombre }}{% if not forloop.last %}, {% endif %}
-                                        {% endfor %}
-                                    {% else %}
-                                        No especificada
-                                    {% endif %}
                                 {% else %}
                                     No especificado
+                                {% endif %}
+                            </td>
+                            <td class="fw-bold bg-light">Area:</td>
+                            <td>
+                                {% if areas %}
+                                    {% for area in areas %}
+                                        {{ area.nombre|title }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    No especificada
                                 {% endif %}
                             </td>
                         </tr>
 
                         <!-- Fila 5: Cargas horarias -->
                         <tr>
-                            <td class="fw-bold bg-light">Carga horaria presencial semanal:</td>
-                            <td>{{ asignatura.hora_semanal|default:"0" }}hs</td>
+                            <td class="fw-bold bg-light">Carga horaria semanal:</td>
+                            <td>{{ asignatura.hora_semanal|default:"0" }}hs Catedras</td>
                             <td class="fw-bold bg-light">Carga Horaria total:</td>
-                            <td>{{ asignatura.hora_total|default:"0" }}Hs</td>
+                            <td>{{ asignatura.hora_total|default:"0" }}Hs Catedras</td>
                         </tr>
 
-                        <!-- Fila 6: Carga horaria no presencial -->
+{% comment %}                         <!-- Fila 6: Carga horaria no presencial -->
                         <tr>
                             <td class="fw-bold bg-light">Carga horaria no presencial semanal (si correspondiese)</td>
                             <td>{% if asignatura.hora_semanal_no_presencial %}{{ asignatura.hora_semanal_no_presencial }}hs{% else %}-{% endif %}</td>
                             <td class="fw-bold bg-light">% horas no presenciales (si correspondiese)</td>
                             <td>{% if asignatura.porcentaje_no_presencial %}{{ asignatura.porcentaje_no_presencial }}%{% else %}-{% endif %}</td>
-                        </tr>
+                        </tr> {% endcomment %}
 
                         <!-- Fila 7: Profesores -->
 <tr>
@@ -278,8 +279,8 @@
                 <tbody>
                     {% for cargo in profesores %}
                     <tr>
-                        <td style="width: 25%;">{{ cargo.tipo_cargo.nombre }}:</td>
-                        <td style="width: 45%;">{{ cargo.docente.apellido }}, {{ cargo.docente.nombre }}</td>
+                        <td style="width: 25%;">{{ cargo.get_categoria_display|upper }}:</td>
+                        <td style="width: 45%;">{{ cargo.docente.apellido|upper }}, {{ cargo.docente.nombre|title }}</td>
                         <td style="width: 30%;">Dedicación: {{ cargo.get_dedicacion_display }}</td>
                     </tr>
                     {% endfor %}
@@ -300,8 +301,8 @@
                 <tbody>
                     {% for cargo in auxiliares %}
                     <tr>
-                        <td style="width: 25%;">{{ cargo.tipo_cargo.nombre }}:</td>
-                        <td style="width: 45%;">{{ cargo.docente.apellido }}, {{ cargo.docente.nombre }}</td>
+                        <td style="width: 25%;">{{ cargo.get_categoria_display|upper }}:</td>
+                        <td style="width: 45%;">{{ cargo.docente.apellido|upper }}, {{ cargo.docente.nombre|title }}</td>
                         <td style="width: 30%;">Dedicación: {{ cargo.get_dedicacion_display }}</td>
                     </tr>
                     {% endfor %}
@@ -382,14 +383,16 @@
     {% endif %}
 
     <!-- Contenidos Mínimos -->
-    {% if asignatura.contenidos_minimos %}
+    {% if contenidos_lista %}
     <div class="row mb-4">
         <div class="col-12">
             <h4 class="mb-3">
-                <i class="bi bi-journal-text text-primary"></i> Contenidos Mínimos
+                <i class="bi bi-bullseye text-primary"></i> Contenidos Mínimos
             </h4>
-            <div class="contenidos-box">
-                {{ asignatura.contenidos_minimos }}
+            <div class="objetivos-list">
+                {% for objetivo in contenidos_lista %}
+                <li>{{ objetivo }}</li>
+                {% endfor %}
             </div>
         </div>
     </div>
