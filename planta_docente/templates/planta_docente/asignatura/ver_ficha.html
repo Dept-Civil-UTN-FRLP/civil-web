@@ -1,10 +1,67 @@
-{% extends 'base.html' %}
+{% extends 'planta_docente/base_planta.html' %}
+
 {% load static %}
 
 {% block title %}{{ asignatura.nombre }} - Ficha{% endblock %}
 
 {% block extra_css %}
 <style>
+    .ficha-table {
+        font-size: 0.95rem;
+    }
+    
+    .ficha-table td {
+        padding: 0.5rem 0.75rem;
+        vertical-align: middle;
+    }
+    
+    .ficha-table .bg-light {
+        background-color: #f8f9fa !important;
+    }
+    
+    .ficha-table .fw-bold {
+        font-weight: 600 !important;
+    }
+
+    .ficha-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 10px 10px 0 0;
+        margin-bottom: 0;
+    }
+
+    .ficha-section {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+    }
+
+    .objetivo-item {
+        padding-left: 2rem;
+        position: relative;
+        margin-bottom: 0.75rem;
+    }
+
+    .objetivo-item:before {
+        content: "✓";
+        position: absolute;
+        left: 0.5rem;
+        color: #28a745;
+        font-weight: bold;
+    }
+
+    @media print {
+        .btn, .breadcrumb {
+            display: none !important;
+        }
+        .ficha-section {
+            box-shadow: none;
+            page-break-inside: avoid;
+        }
+    }
     .ficha-section {
         background-color: #f8f9fa;
         border-left: 4px solid #0d6efd;
@@ -145,72 +202,118 @@
         </div>
     </div>
 
-    <!-- Información General -->
+    <!-- Información General - Estilo Tabla Oficial -->
     <div class="row mb-4">
         <div class="col-12">
-            <h4 class="mb-3">
-                <i class="bi bi-info-circle text-primary"></i> Información General
-            </h4>
-            <div class="info-grid">
-                <!-- Carrera -->
-                <div class="info-card">
-                    <div class="info-label">Carrera</div>
-                    <div class="info-value">{{ asignatura.get_especialidad_display }}</div>
-                </div>
-                
-                <!-- Número de Orden -->
-                {% if asignatura.numero_orden %}
-                <div class="info-card">
-                    <div class="info-label">Nº de Orden</div>
-                    <div class="info-value">{{ asignatura.numero_orden }}</div>
-                </div>
-                {% endif %}
-                
-                <!-- Nivel -->
-                <div class="info-card">
-                    <div class="info-label">Nivel</div>
-                    <div class="info-value">{{ asignatura.get_nivel_display }}</div>
-                </div>
-                
-                <!-- Departamento -->
-                <div class="info-card">
-                    <div class="info-label">Departamento</div>
-                    <div class="info-value">{{ asignatura.get_departamento_display }}</div>
-                </div>
-                
-                <!-- Horas Cátedra Semanales -->
-                <div class="info-card">
-                    <div class="info-label">Horas Cátedra Semanales</div>
-                    <div class="info-value">{{ asignatura.hora_semanal }}</div>
-                </div>
-                
-                <!-- Horas Reloj Total -->
-                <div class="info-card">
-                    <div class="info-label">Horas Reloj Total</div>
-                    <div class="info-value">{{ asignatura.hora_total }}</div>
-                </div>
-                
-                <!-- Dictado -->
-                <div class="info-card">
-                    <div class="info-label">Dictado</div>
-                    <div class="info-value">{{ asignatura.get_dictado_display }}</div>
-                </div>
-                
-                <!-- Comisiones -->
-                {% if asignatura.numero_comisiones %}
-                <div class="info-card">
-                    <div class="info-label">Comisiones</div>
-                    <div class="info-value">{{ asignatura.numero_comisiones }}</div>
-                </div>
-                {% endif %}
-                
-                <!-- Estudiantes -->
-                {% if asignatura.numero_estudiantes %}
-                <div class="info-card">
-                    <div class="info-label">Estudiantes Promedio</div>
-                    <div class="info-value">{{ asignatura.numero_estudiantes }}</div>
-                </div>
-                {% endif %}
+            <div class="ficha-section p-0">
+                <table class="table table-bordered mb-0 ficha-table">
+                    <tbody>
+                        <!-- Fila 1: Departamento, Carrera -->
+                        <tr>
+                            <td class="fw-bold bg-light" style="width: 20%;">Departamento:</td>
+                            <td style="width: 30%;">{{ asignatura.departamento.nombre }}</td>
+                            <td class="fw-bold bg-light" style="width: 20%;">Carrera</td>
+                            <td style="width: 30%;">{{ asignatura.especialidad.nombre|default:"No especificada" }}</td>
+                        </tr>
+
+                        <!-- Fila 2: Asignatura (span completo) -->
+                        <tr>
+                            <td class="fw-bold bg-light">Asignatura:</td>
+                            <td colspan="3">{{ asignatura.nombre }}</td>
+                        </tr>
+
+                        <!-- Fila 3: Nivel, Duración -->
+                        <tr>
+                            <td class="fw-bold bg-light">Nivel de la carrera</td>
+                            <td>{{ asignatura.get_nivel_display }}</td>
+                            <td class="fw-bold bg-light">Duración</td>
+                            <td>{{ asignatura.get_duracion_dictado_display|default:"Cuatrimestral" }}</td>
+                        </tr>
+
+                        <!-- Fila 4: Bloque curricular -->
+                        <tr>
+                            <td class="fw-bold bg-light">Bloque curricular:</td>
+                            <td colspan="3">
+                                {% if bloques %}
+                                    Bloque: 
+                                    {% for bloque in bloques %}
+                                        {{ bloque.nombre }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                    . Área: 
+                                    {% if areas %}
+                                        {% for area in areas %}
+                                            {{ area.nombre }}{% if not forloop.last %}, {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        No especificada
+                                    {% endif %}
+                                {% else %}
+                                    No especificado
+                                {% endif %}
+                            </td>
+                        </tr>
+
+                        <!-- Fila 5: Cargas horarias -->
+                        <tr>
+                            <td class="fw-bold bg-light">Carga horaria presencial semanal:</td>
+                            <td>{{ asignatura.hora_semanal|default:"0" }}hs</td>
+                            <td class="fw-bold bg-light">Carga Horaria total:</td>
+                            <td>{{ asignatura.hora_total|default:"0" }}Hs</td>
+                        </tr>
+
+                        <!-- Fila 6: Carga horaria no presencial -->
+                        <tr>
+                            <td class="fw-bold bg-light">Carga horaria no presencial semanal (si correspondiese)</td>
+                            <td>{% if asignatura.hora_semanal_no_presencial %}{{ asignatura.hora_semanal_no_presencial }}hs{% else %}-{% endif %}</td>
+                            <td class="fw-bold bg-light">% horas no presenciales (si correspondiese)</td>
+                            <td>{% if asignatura.porcentaje_no_presencial %}{{ asignatura.porcentaje_no_presencial }}%{% else %}-{% endif %}</td>
+                        </tr>
+
+                        <!-- Fila 7: Profesores -->
+<tr>
+    <td class="fw-bold bg-light">Profesores:</td>
+    <td colspan="3">
+        {% if profesores %}
+            <table class="table table-sm table-borderless mb-0">
+                <tbody>
+                    {% for cargo in profesores %}
+                    <tr>
+                        <td style="width: 25%;">{{ cargo.tipo_cargo.nombre }}:</td>
+                        <td style="width: 45%;">{{ cargo.docente.apellido }}, {{ cargo.docente.nombre }}</td>
+                        <td style="width: 30%;">Dedicación: {{ cargo.get_dedicacion_display }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            -
+        {% endif %}
+    </td>
+</tr>
+
+<!-- Fila 8: Auxiliares -->
+<tr>
+    <td class="fw-bold bg-light">Auxiliares:</td>
+    <td colspan="3">
+        {% if auxiliares %}
+            <table class="table table-sm table-borderless mb-0">
+                <tbody>
+                    {% for cargo in auxiliares %}
+                    <tr>
+                        <td style="width: 25%;">{{ cargo.tipo_cargo.nombre }}:</td>
+                        <td style="width: 45%;">{{ cargo.docente.apellido }}, {{ cargo.docente.nombre }}</td>
+                        <td style="width: 30%;">Dedicación: {{ cargo.get_dedicacion_display }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            -
+        {% endif %}
+    </td>
+</tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

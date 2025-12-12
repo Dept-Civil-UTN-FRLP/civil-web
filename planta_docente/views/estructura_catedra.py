@@ -280,6 +280,32 @@ def ver_ficha_asignatura(request, asignatura_id):
     areas = asignatura.area.all()
     bloques = asignatura.bloque.all()
 
+    # ✅ Obtener cargos asociados a través de estructura_catedra
+    from planta_docente.models import Cargo
+
+    cargos = Cargo.objects.filter(
+        estructura_catedra__asignatura=asignatura,
+        baja=False
+    ).select_related('docente', 'tipo_cargo').order_by('tipo_cargo__orden', 'docente__apellido')
+
+    # Agrupar cargos por categoría según tipo
+    profesores = []  # Titular, Asociado, Adjunto
+    auxiliares = []  # JTP, ATP1, ATP2
+
+    TIPOS_PROFESORES = ['Profesor Titular',
+                        'Profesor Asociado', 'Profesor Adjunto']
+    TIPOS_AUXILIARES = ['Jefe de Trabajos Prácticos', 'JTP',
+                        'Auxiliar de Primera', 'ATP1', 'Auxiliar de Segunda', 'ATP2']
+
+    for cargo in cargos:
+        tipo_nombre = cargo.tipo_cargo.nombre
+
+        # Clasificar por tipo
+        if any(tipo in tipo_nombre for tipo in TIPOS_PROFESORES):
+            profesores.append(cargo)
+        elif any(tipo in tipo_nombre for tipo in TIPOS_AUXILIARES):
+            auxiliares.append(cargo)
+
     # Parsear objetivos (uno por línea)
     objetivos_lista = []
     if asignatura.objetivos:
@@ -288,7 +314,8 @@ def ver_ficha_asignatura(request, asignatura_id):
             for obj in asignatura.objetivos.split('\n')
             if obj.strip()
         ]
-        
+
+    # Parsear competencias
     competencias_lista = []
     if asignatura.competencias:
         competencias_lista = [
@@ -303,6 +330,8 @@ def ver_ficha_asignatura(request, asignatura_id):
         'bloques': bloques,
         'objetivos_lista': objetivos_lista,
         'competencias_lista': competencias_lista,
+        'profesores': profesores,  # ✅ NUEVO
+        'auxiliares': auxiliares,  # ✅ NUEVO
     }
 
     return render(request, 'planta_docente/asignatura/ver_ficha.html', context)
