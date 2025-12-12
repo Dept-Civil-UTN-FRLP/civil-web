@@ -755,3 +755,120 @@ def obtener_cargo_efectivo(cargo) -> Dict[str, any]:
         'es_cargo_temporal': False,
         'cargo_base_info': None,
     }
+
+
+# ============================================================================
+# PLANIFICACIONES - FUNCIONES HELPER
+# ============================================================================
+
+def obtener_responsable_planificacion(asignatura):
+    """
+    Obtiene el docente responsable de la planificación de una asignatura.
+    
+    Prioridad: Titular → Asociado → Adjunto
+    
+    Args:
+        asignatura (Asignatura): Asignatura para la cual obtener responsable
+    
+    Returns:
+        Cargo|None: Cargo activo del docente responsable, o None si no hay
+    
+    Example:
+        >>> responsable = obtener_responsable_planificacion(asignatura)
+        >>> if responsable:
+        >>>     print(f"Responsable: {responsable.docente.get_full_name()}")
+    """
+    from planta_docente.models import Cargo
+
+    ORDEN_PRIORIDAD = ['tit', 'aso', 'adj']
+
+    for categoria in ORDEN_PRIORIDAD:
+        cargo = Cargo.objects.filter(
+            asignatura=asignatura,
+            estado='activo',
+            categoria=categoria
+        ).select_related('docente').first()
+
+        # Validar que el docente tenga email
+        if cargo and cargo.docente and cargo.docente.email:
+            return cargo
+
+    return None
+
+
+def obtener_planificaciones_faltantes(año_lectivo=None):
+    """
+    Identifica asignaturas sin planificación para el año especificado.
+    
+    Args:
+        año_lectivo (int, optional): Año lectivo a consultar. 
+                                     Si no se especifica, usa el año actual.
+    
+    Returns:
+        QuerySet: Asignaturas sin planificación para el año
+    
+    Example:
+        >>> faltantes = obtener_planificaciones_faltantes(2025)
+        >>> print(f"Faltan {faltantes.count()} planificaciones")
+    """
+    from django.utils import timezone
+    from planta_docente.models import Asignatura, PlanificacionAnual
+
+    if not año_lectivo:
+        año_lectivo = timezone.now().year
+
+    # Todas las asignaturas activas
+    asignaturas_activas = Asignatura.objects.filter(activa=True)
+
+    # Asignaturas que YA tienen planificación para el año
+    asignaturas_con_planificacion = PlanificacionAnual.objects.filter(
+        año=año_lectivo,
+        archivo__isnull=False  # Solo contar las que tienen archivo subido
+    ).values_list('asignatura_id', flat=True)
+
+    # Retornar las que NO tienen planificación
+    return asignaturas_activas.exclude(id__in=asignaturas_con_planificacion)
+
+
+def obtener_estadisticas_planificaciones(año_lectivo=None):
+    """
+    Obtiene estadísticas de planificaciones para un año lectivo.
+    
+    Args:
+        año_lectivo (int, optional): Año lectivo a consultar.
+    
+    Returns:
+        dict: Diccionario con estadísticas
+            - total_asignaturas (int)
+            - con_planificacion (int)
+            - pendientes (int)
+            - porcentaje_completado (float)
+    
+    Example:
+        >>> stats = obtener_estadisticas_planificaciones(2025)
+        >>> print(f"Completado: {stats['porcentaje_completado']:.1f}%")
+    """
+    from django.utils import timezone
+    from planta_docente.models import Asignatura, PlanificacionAnual
+
+    if not año_lectivo:
+        año_lectivo = timezone.now().year
+
+    total_asignaturas = Asignatura.objects.filter(activa=True).count()
+
+    con_planificacion = PlanificacionAnual.objects.filter(
+        año=año_lectivo,
+        archivo__isnull=False
+    ).count()
+
+    pendientes = total_asignaturas - con_planificacion
+
+    porcentaje = (con_planificacion / total_asignaturas *
+                  100) if total_asignaturas > 0 else 0
+
+    return {
+        'total_asignaturas': total_asignaturas,
+        'con_planificacion': con_planificacion,
+        'pendientes': pendientes,
+        'porcentaje_completado': round(porcentaje, 1)
+    }
