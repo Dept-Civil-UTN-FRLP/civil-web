@@ -1,0 +1,313 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ asignatura.nombre }} - Ficha{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ficha-section {
+        background-color: #f8f9fa;
+        border-left: 4px solid #0d6efd;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .ficha-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-card {
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .info-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+    }
+    
+    .info-value {
+        font-size: 1.125rem;
+        color: #212529;
+        font-weight: 500;
+    }
+    
+    .objetivos-list {
+        list-style: none;
+        padding-left: 0;
+    }
+    
+    .objetivos-list li {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        background: white;
+        border-left: 3px solid #0d6efd;
+        border-radius: 4px;
+    }
+    
+    .objetivos-list li:before {
+        content: "✓";
+        color: #198754;
+        font-weight: bold;
+        margin-right: 0.5rem;
+    }
+    
+    .contenidos-box {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        white-space: pre-line;
+        line-height: 1.8;
+    }
+    
+    @media print {
+        .no-print {
+            display: none;
+        }
+        
+        .ficha-header {
+            background: #667eea !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header con Acciones -->
+    <div class="row mb-4 no-print">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'planta_docente:dashboard_asignaturas' %}">Asignaturas</a>
+                    </li>
+                    <li class="breadcrumb-item active">{{ asignatura.nombre }}</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="col-md-4 text-end">
+            {% if perms.planta_docente.change_asignatura %}
+            <a href="{% url 'planta_docente:editar_ficha_asignatura' asignatura.pk %}" 
+               class="btn btn-primary me-2">
+                <i class="bi bi-pencil"></i> Editar Ficha
+            </a>
+            {% endif %}
+            <button onclick="window.print()" class="btn btn-outline-secondary">
+                <i class="bi bi-printer"></i> Imprimir
+            </button>
+        </div>
+    </div>
+
+    <!-- Header Principal -->
+    <div class="ficha-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h2 mb-2">{{ asignatura.nombre|title }}</h1>
+                <p class="mb-0">
+                    <span class="badge bg-light text-dark me-2">
+                        {{ asignatura.get_departamento_display }}
+                    </span>
+                    <span class="badge bg-light text-dark me-2">
+                        Nivel {{ asignatura.get_nivel_display }}
+                    </span>
+                    {% if asignatura.obligatoria %}
+                    <span class="badge bg-success">Obligatoria</span>
+                    {% else %}
+                    <span class="badge bg-info">Electiva</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                {% if asignatura.numero_orden %}
+                <h3 class="display-4 mb-0">Nº {{ asignatura.numero_orden }}</h3>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Información General -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3">
+                <i class="bi bi-info-circle text-primary"></i> Información General
+            </h4>
+            <div class="info-grid">
+                <!-- Carrera -->
+                <div class="info-card">
+                    <div class="info-label">Carrera</div>
+                    <div class="info-value">{{ asignatura.get_especialidad_display }}</div>
+                </div>
+                
+                <!-- Número de Orden -->
+                {% if asignatura.numero_orden %}
+                <div class="info-card">
+                    <div class="info-label">Nº de Orden</div>
+                    <div class="info-value">{{ asignatura.numero_orden }}</div>
+                </div>
+                {% endif %}
+                
+                <!-- Nivel -->
+                <div class="info-card">
+                    <div class="info-label">Nivel</div>
+                    <div class="info-value">{{ asignatura.get_nivel_display }}</div>
+                </div>
+                
+                <!-- Departamento -->
+                <div class="info-card">
+                    <div class="info-label">Departamento</div>
+                    <div class="info-value">{{ asignatura.get_departamento_display }}</div>
+                </div>
+                
+                <!-- Horas Cátedra Semanales -->
+                <div class="info-card">
+                    <div class="info-label">Horas Cátedra Semanales</div>
+                    <div class="info-value">{{ asignatura.hora_semanal }}</div>
+                </div>
+                
+                <!-- Horas Reloj Total -->
+                <div class="info-card">
+                    <div class="info-label">Horas Reloj Total</div>
+                    <div class="info-value">{{ asignatura.hora_total }}</div>
+                </div>
+                
+                <!-- Dictado -->
+                <div class="info-card">
+                    <div class="info-label">Dictado</div>
+                    <div class="info-value">{{ asignatura.get_dictado_display }}</div>
+                </div>
+                
+                <!-- Comisiones -->
+                {% if asignatura.numero_comisiones %}
+                <div class="info-card">
+                    <div class="info-label">Comisiones</div>
+                    <div class="info-value">{{ asignatura.numero_comisiones }}</div>
+                </div>
+                {% endif %}
+                
+                <!-- Estudiantes -->
+                {% if asignatura.numero_estudiantes %}
+                <div class="info-card">
+                    <div class="info-label">Estudiantes Promedio</div>
+                    <div class="info-value">{{ asignatura.numero_estudiantes }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Bloques y Áreas -->
+    <div class="row mb-4">
+        {% if bloques %}
+        <div class="col-md-6">
+            <div class="ficha-section">
+                <h5 class="mb-3">
+                    <i class="bi bi-grid-3x3-gap text-primary"></i> Bloque
+                </h5>
+                {% for bloque in bloques %}
+                <span class="badge bg-secondary me-1">{{ bloque }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if areas %}
+        <div class="col-md-6">
+            <div class="ficha-section">
+                <h5 class="mb-3">
+                    <i class="bi bi-diagram-3 text-primary"></i> Área
+                </h5>
+                {% for area in areas %}
+                <span class="badge bg-info me-1">{{ area }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Competencias -->
+    {% if asignatura.competencias %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="ficha-section">
+                <h5 class="mb-3">
+                    <i class="bi bi-trophy text-warning"></i> Competencias Específicas
+                </h5>
+                <p class="mb-0">
+                    {% for comp in asignatura.competencias.split '-' %}
+                        {% if comp %}
+                        <span class="badge bg-warning text-dark me-1 mb-1">{{ comp }}</span>
+                        {% endif %}
+                    {% endfor %}
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Objetivos -->
+    {% if objetivos_lista %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3">
+                <i class="bi bi-bullseye text-success"></i> Objetivos
+            </h4>
+            <ul class="objetivos-list">
+                {% for objetivo in objetivos_lista %}
+                <li>{{ objetivo }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Contenidos Mínimos -->
+    {% if asignatura.contenidos_minimos %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3">
+                <i class="bi bi-journal-text text-primary"></i> Contenidos Mínimos
+            </h4>
+            <div class="contenidos-box">
+                {{ asignatura.contenidos_minimos }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Botones de Acción Inferiores -->
+    <div class="row mt-5 no-print">
+        <div class="col-12 text-center">
+            <a href="{% url 'planta_docente:dashboard_asignaturas' %}" 
+               class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Volver al Listado
+            </a>
+            {% if perms.planta_docente.change_asignatura %}
+            <a href="{% url 'planta_docente:editar_ficha_asignatura' asignatura.pk %}" 
+               class="btn btn-primary">
+                <i class="bi bi-pencil"></i> Editar Ficha
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
