@@ -201,3 +201,18 @@ LOGGING = {
         },
     },
 }
+
+
+# ============================================================================
+# PLANIFICACIONES ANUALES - CONFIGURACIÓN
+# ============================================================================
+
+# Límites de upload para planificaciones
+MAX_UPLOAD_SIZE = 20 * 1024 * 1024  # 20MB en bytes
+
+# Extensiones permitidas para planificaciones
+ALLOWED_PLANIFICACION_EXTENSIONS = ['.pdf', '.docx']
+
+# Email específico para notificaciones de planificaciones
+PLANTA_DOCENTE_EMAIL = config(
+    "PLANTA_DOCENTE_EMAIL", default="plantadocente@frlp.utn.edu.ar")

@@ -5,6 +5,8 @@ from django.dispatch import receiver
 from django.utils import timezone
 
 from .managers import CargoManager, DocenteManager
+from .validators import validar_extension_planificacion, validar_tamaño_planificacion
+
 
 # Create your models here.
 
@@ -1823,6 +1825,14 @@ class PlanificacionAnual(models.Model):
     cantidad_notificaciones = models.PositiveIntegerField(
         default=0,
         verbose_name="Cantidad de notificaciones enviadas"
+    )
+    
+    archivo = models.FileField(
+        upload_to='planificaciones/%Y/',
+        verbose_name="Archivo de planificación",
+        help_text="Formatos permitidos: PDF, DOCX (máx. 20MB)",
+        validators=[validar_extension_planificacion,
+                    validar_tamaño_planificacion]  # ✅ AGREGAR
     )
 
     class Meta:
