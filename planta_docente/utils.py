@@ -818,7 +818,7 @@ def obtener_planificaciones_faltantes(año_lectivo=None):
         año_lectivo = timezone.now().year
 
     # Todas las asignaturas activas
-    asignaturas_activas = Asignatura.objects.filter(activa=True)
+    asignaturas_todas = Asignatura.objects.all()
 
     # Asignaturas que YA tienen planificación para el año
     asignaturas_con_planificacion = PlanificacionAnual.objects.filter(
@@ -827,7 +827,7 @@ def obtener_planificaciones_faltantes(año_lectivo=None):
     ).values_list('asignatura_id', flat=True)
 
     # Retornar las que NO tienen planificación
-    return asignaturas_activas.exclude(id__in=asignaturas_con_planificacion)
+    return asignaturas_todas.exclude(id__in=asignaturas_con_planificacion)
 
 
 def obtener_estadisticas_planificaciones(año_lectivo=None):
@@ -854,7 +854,7 @@ def obtener_estadisticas_planificaciones(año_lectivo=None):
     if not año_lectivo:
         año_lectivo = timezone.now().year
 
-    total_asignaturas = Asignatura.objects.filter(activa=True).count()
+    total_asignaturas = Asignatura.objects.count()
 
     con_planificacion = PlanificacionAnual.objects.filter(
         año=año_lectivo,

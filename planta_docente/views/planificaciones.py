@@ -43,7 +43,7 @@ def dashboard_planificaciones(request):
 
     # Enriquecer con información del responsable
     faltantes_data = []
-    for asignatura in faltantes_queryset.select_related('departamento'):
+    for asignatura in faltantes_queryset:
         responsable_cargo = obtener_responsable_planificacion(asignatura)
 
         # Obtener o crear PlanificacionAnual para tracking

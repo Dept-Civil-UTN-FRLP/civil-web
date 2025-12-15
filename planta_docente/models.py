@@ -200,12 +200,83 @@ class Docente(models.Model):
 
         if errors:
             raise ValidationError(errors)
-
+    
+    @property
+    def email(self):
+        """
+        Retorna el email principal del docente, o el primero disponible.
+        
+        Returns:
+            str|None: Email del docente o None si no tiene emails configurados
+        
+        Example:
+            >>> docente = Docente.objects.get(pk=1)
+            >>> print(docente.email)
+            'jperez@frlp.utn.edu.ar'
+        """
+        # Intentar obtener email principal
+        email_principal = self.correos.filter(principal=True).first()
+        if email_principal:
+            return email_principal.email
+        
+        # Si no hay principal, retornar el primero disponible
+        primer_email = self.correos.first()
+        if primer_email:
+            return primer_email.email
+        
+        return None
+    
+    @property
+    def tiene_email(self):
+        """
+        Indica si el docente tiene al menos un email configurado.
+        
+        Returns:
+            bool: True si tiene emails, False si no
+        
+        Example:
+            >>> if docente.tiene_email:
+            >>>     enviar_notificacion(docente.email)
+        """
+        return self.correos.exists()
+    
     def save(self, *args, **kwargs):
         """Override save para ejecutar validaciones."""
         self.full_clean()
         super().save(*args, **kwargs)
-
+        
+    def get_full_name(self):
+        """
+        Retorna el nombre completo del docente en formato: APELLIDO, Nombre.
+        
+        Returns:
+            str: Nombre completo formateado
+        
+        Example:
+            >>> docente.get_full_name()
+            'PÉREZ, Juan Carlos'
+        """
+        if self.apellido and self.nombre:
+            return f"{self.apellido.upper()}, {self.nombre.title()}"
+        elif self.apellido:
+            return self.apellido.upper()
+        elif self.nombre:
+            return self.nombre.title()
+        return "Sin nombre"
+    
+    def get_short_name(self):
+        """
+        Retorna solo el apellido del docente.
+        
+        Returns:
+            str: Apellido en mayúsculas
+        
+        Example:
+            >>> docente.get_short_name()
+            'PÉREZ'
+        """
+        return self.apellido.upper() if self.apellido else "Sin apellido"
+    
     class Meta:
         verbose_name = "Docente"
         verbose_name_plural = "Docentes"
@@ -220,7 +291,7 @@ class Docente(models.Model):
 
     def __str__(self) -> str:
         sufijo = " (JUBILADO)" if self.jubilado else ""
-        return f"{self.apellido.upper()}, {self.nombre.title()}{sufijo}"
+        return self.get_full_name() + sufijo
 
 
 class Correo(models.Model):
