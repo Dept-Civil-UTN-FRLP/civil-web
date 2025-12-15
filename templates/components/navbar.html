@@ -64,29 +64,33 @@ Variables esperadas en context:
 
             <!-- Planta Docente -->
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle {% if 'planta_docente' in request.resolver_match.app_name %}active{% endif %}" 
-                 href="#" role="button" data-bs-toggle="dropdown">
-                <i class="bi bi-person-badge"></i> Planta Docente
-              </a>
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="{% url 'planta_docente:dashboard' %}">
-                  <i class="bi bi-grid"></i> Dashboard
-                </a></li>
-                <li><a class="dropdown-item" href="{% url 'planta_docente:vencimientos' %}">
-                  <i class="bi bi-calendar-x"></i> Vencimientos
-                </a></li>
-                <li><a class="dropdown-item" href="{% url 'planta_docente:jubilaciones' %}">
-                  <i class="bi bi-calendar-check"></i> Jubilaciones
-                </a></li>
-                <li><a class="dropdown-item" href="{% url 'planta_docente:dashboard_asignaturas' %}">
-                  <i class="bi bi-diagram-3"></i> Estructura de Cátedra
-                </a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="{% url 'planta_docente:crear_cargo' %}">
-                  <i class="bi bi-plus-circle"></i> Nuevo Cargo
-                </a></li>
-              </ul>
-            </li>
+  <a class="nav-link dropdown-toggle {% if 'planta_docente' in request.resolver_match.app_name %}active{% endif %}" 
+     href="#" role="button" data-bs-toggle="dropdown">
+    <i class="bi bi-person-badge"></i> Planta Docente
+  </a>
+  <ul class="dropdown-menu">
+    <li><a class="dropdown-item" href="{% url 'planta_docente:dashboard' %}">
+      <i class="bi bi-grid"></i> Dashboard
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'planta_docente:vencimientos' %}">
+      <i class="bi bi-calendar-x"></i> Vencimientos
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'planta_docente:jubilaciones' %}">
+      <i class="bi bi-calendar-check"></i> Jubilaciones
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'planta_docente:dashboard_asignaturas' %}">
+      <i class="bi bi-diagram-3"></i> Estructura de Cátedra
+    </a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="{% url 'planta_docente:dashboard_planificaciones' %}">
+      <i class="bi bi-calendar-check"></i> Planificaciones Anuales
+    </a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="{% url 'planta_docente:crear_cargo' %}">
+      <i class="bi bi-plus-circle"></i> Nuevo Cargo
+    </a></li>
+  </ul>
+</li>
 
       </ul>
 
