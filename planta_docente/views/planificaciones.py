@@ -244,11 +244,30 @@ def notificar_planificacion_individual(request, pk):
     if request.method == 'POST':
         tipo_mensaje = request.POST.get('tipo_mensaje', 'generico')
         adjuntar_ficha = request.POST.get('adjuntar_ficha') == 'on'
+        
+        # Obtener archivos adicionales
+        archivos_adicionales = request.FILES.getlist('archivos_adicionales')
+        
+        # Validar tamaño de archivos
+        max_size = 10 * 1024 * 1024  # 10MB por archivo
+        max_total = 25 * 1024 * 1024  # 25MB total
+        total_size = sum(f.size for f in archivos_adicionales)
+
+        if any(f.size > max_size for f in archivos_adicionales):
+            messages.error(
+                request, 'Uno o más archivos superan el tamaño máximo de 10 MB.')
+            return redirect('planta_docente:notificar_planificacion_individual', pk=pk)
+
+        if total_size > max_total:
+            messages.error(
+                request, 'El tamaño total de los archivos supera el límite de 25 MB.')
+            return redirect('planta_docente:notificar_planificacion_individual', pk=pk)
 
         if tipo_mensaje == 'generico':
             exito, mensaje = PlanificacionEmailService.enviar_solicitud_generica(
                 planificacion,
                 adjuntar_ficha=adjuntar_ficha,
+                archivos_adicionales=archivos_adicionales,
                 usuario=request.user
             )
         else:
@@ -262,6 +281,7 @@ def notificar_planificacion_individual(request, pk):
                 planificacion,
                 cuerpo_personalizado,
                 adjuntar_ficha=adjuntar_ficha,
+                archivos_adicionales=archivos_adicionales,
                 usuario=request.user
             )
 

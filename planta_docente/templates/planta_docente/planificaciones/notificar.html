@@ -94,7 +94,7 @@
             {% else %}
             
             <!-- Formulario -->
-            <form method="post" id="notificarForm">
+            <form method="post" id="notificarF" enctype="multipart/form-data">
                 {% csrf_token %}
                 
                 <!-- Tipo de Mensaje -->
@@ -143,6 +143,23 @@
                             </small>
                         </label>
                     </div>
+                </div>
+                
+                <!-- Adjuntar Archivos Adicionales -->
+                <div class="mb-4">
+                    <label for="archivosAdicionales" class="form-label">
+                        <strong>Adjuntar archivos adicionales (opcional)</strong>
+                    </label>
+                    <input type="file" class="form-control" id="archivosAdicionales" 
+                           name="archivos_adicionales" multiple
+                           accept=".pdf,.docx,.xlsx,.pptx,.zip,.jpg,.jpeg,.png">
+                    <small class="form-text text-muted">
+                        Puedes adjuntar múltiples archivos (PDF, Word, Excel, PowerPoint, imágenes, ZIP).
+                        <br>Tamaño máximo por archivo: 10 MB. Total máximo: 25 MB.
+                    </small>
+
+                    <!-- Preview de archivos seleccionados -->
+                    <div id="archivosPreview" class="mt-2"></div>
                 </div>
                 
                 <!-- Preview (Opcional) -->
@@ -259,5 +276,102 @@
     
     // Preview inicial
     actualizarPreview();
+
+
+    // ============================================================
+    // PREVIEW DE ARCHIVOS ADICIONALES
+    // ============================================================
+    const inputArchivos = document.getElementById('archivosAdicionales');
+    const previewContainer = document.getElementById('archivosPreview');
+    
+    if (inputArchivos) {
+        inputArchivos.addEventListener('change', function(e) {
+            previewContainer.innerHTML = '';
+            
+            const files = Array.from(e.target.files);
+            
+            if (files.length === 0) {
+                return;
+            }
+            
+            // Validar tamaño
+            const maxSizeMB = 10;
+            const maxTotalMB = 25;
+            let totalSize = 0;
+            let hasError = false;
+            
+            const filesList = document.createElement('div');
+            filesList.className = 'alert alert-info';
+            filesList.innerHTML = '<strong>Archivos seleccionados:</strong><ul class="mb-0 mt-2">';
+            
+            files.forEach((file, index) => {
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                totalSize += file.size;
+                
+                const li = document.createElement('li');
+                
+                if (file.size > maxSizeMB * 1024 * 1024) {
+                    li.innerHTML = `<span class="text-danger"><strong>${file.name}</strong> (${sizeMB} MB) - ⚠️ Demasiado grande</span>`;
+                    hasError = true;
+                } else {
+                    li.innerHTML = `${file.name} (${sizeMB} MB)`;
+                }
+                
+                filesList.querySelector('ul').appendChild(li);
+            });
+            
+            filesList.innerHTML += '</ul>';
+            
+            // Validar tamaño total
+            const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+            
+            if (totalSize > maxTotalMB * 1024 * 1024) {
+                const warning = document.createElement('div');
+                warning.className = 'alert alert-danger mt-2';
+                warning.innerHTML = `<strong>⚠️ Tamaño total: ${totalSizeMB} MB</strong><br>Máximo permitido: ${maxTotalMB} MB`;
+                previewContainer.appendChild(warning);
+                hasError = true;
+            } else {
+                const info = document.createElement('small');
+                info.className = 'text-muted';
+                info.textContent = `Tamaño total: ${totalSizeMB} MB de ${maxTotalMB} MB permitidos`;
+                filesList.appendChild(info);
+            }
+            
+            previewContainer.appendChild(filesList);
+            
+            // Deshabilitar botón si hay error
+            const btnEnviar = document.getElementById('btnEnviar');
+            if (btnEnviar) {
+                btnEnviar.disabled = hasError;
+            }
+        });
+    }
+    
+    // Validación adicional en submit
+    const formNotificar = document.getElementById('notificarForm');
+    if (formNotificar && inputArchivos) {
+        formNotificar.addEventListener('submit', function(e) {
+            const files = inputArchivos.files;
+            const maxSizeMB = 10;
+            const maxTotalMB = 25;
+            let totalSize = 0;
+            
+            for (let file of files) {
+                if (file.size > maxSizeMB * 1024 * 1024) {
+                    e.preventDefault();
+                    alert(`El archivo "${file.name}" es demasiado grande (máx. ${maxSizeMB} MB).`);
+                    return false;
+                }
+                totalSize += file.size;
+            }
+            
+            if (totalSize > maxTotalMB * 1024 * 1024) {
+                e.preventDefault();
+                alert(`El tamaño total de los archivos supera el límite de ${maxTotalMB} MB.`);
+                return false;
+            }
+        });
+    }
 </script>
 {% endblock %}

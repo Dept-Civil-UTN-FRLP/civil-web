@@ -16,15 +16,16 @@ class PlanificacionEmailService:
     """
 
     @staticmethod
-    def enviar_solicitud_generica(planificacion, adjuntar_ficha=False, usuario=None):
+    def enviar_solicitud_generica(planificacion, adjuntar_ficha=False, archivos_adicionales=None, usuario=None):
         """
         Envía email genérico solicitando planificación.
-        
+
         Args:
             planificacion (PlanificacionAnual): Planificación a notificar
             adjuntar_ficha (bool): Si adjuntar ficha de asignatura
+            archivos_adicionales (list): Lista de archivos UploadedFile
             usuario (User): Usuario que envía la notificación
-        
+
         Returns:
             tuple: (bool exito, str mensaje)
         """
@@ -69,20 +70,30 @@ class PlanificacionEmailService:
                 pdf_ficha = PlanificacionEmailService._generar_pdf_ficha(
                     planificacion.asignatura)
                 if pdf_ficha:
-                    # Nombre del archivo
                     nombre_limpio = planificacion.asignatura.nombre.replace(
                         ' ', '_').replace('/', '-')
                     filename = f'Ficha_{nombre_limpio}.pdf'
-
-                    # Adjuntar al email
                     email.attach(filename, pdf_ficha, 'application/pdf')
                     archivos_adjuntos.append(filename)
-
-                    print(f"PDF adjunto: {filename} ({len(pdf_ficha)} bytes)")
             except Exception as e:
-                # Continuar sin adjunto si falla
-                print(f"Error adjuntando ficha: {str(e)}")
                 pass
+
+        # ✅ NUEVO: Adjuntar archivos adicionales
+        if archivos_adicionales:
+            for archivo in archivos_adicionales:
+                try:
+                    # Leer contenido del archivo
+                    contenido = archivo.read()
+
+                    # Adjuntar al email
+                    email.attach(archivo.name, contenido, archivo.content_type)
+                    archivos_adjuntos.append(archivo.name)
+
+                    print(
+                        f"✅ Archivo adicional adjunto: {archivo.name} ({archivo.size} bytes)")
+                except Exception as e:
+                    print(f"⚠️ Error adjuntando {archivo.name}: {str(e)}")
+                    # Continuar con otros archivos
 
         # Intentar enviar
         try:
@@ -123,7 +134,7 @@ class PlanificacionEmailService:
 
     @staticmethod
     def enviar_solicitud_personalizada(planificacion, cuerpo_personalizado,
-                                       adjuntar_ficha=False, usuario=None):
+                                       adjuntar_ficha=False, archivos_adicionales=None, usuario=None):
         """
         Envía email personalizado.
         
@@ -183,6 +194,23 @@ class PlanificacionEmailService:
                     archivos_adjuntos.append(filename)
             except Exception as e:
                 pass
+            
+        # Adjuntar archivos adicionales
+        if archivos_adicionales:
+            for archivo in archivos_adicionales:
+                try:
+                    # Leer contenido del archivo
+                    contenido = archivo.read()
+
+                    # Adjuntar al email
+                    email.attach(archivo.name, contenido, archivo.content_type)
+                    archivos_adjuntos.append(archivo.name)
+
+                    print(
+                        f"✅ Archivo adicional adjunto: {archivo.name} ({archivo.size} bytes)")
+                except Exception as e:
+                    print(f"⚠️ Error adjuntando {archivo.name}: {str(e)}")
+                    # Continuar con otros archivos
 
         # Intentar enviar
         try:
