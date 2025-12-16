@@ -100,39 +100,55 @@
     </div>
     
     <!-- Estadísticas -->
-    <div class="row mb-4">
-        <!-- Total Asignaturas -->
-        <div class="col-md-3">
-            <div class="stats-card bg-light">
-                <p class="stats-number text-secondary">{{ stats.total_asignaturas }}</p>
-                <p class="stats-label">Total Asignaturas</p>
-            </div>
-        </div>
-        
-        <!-- Con Planificación -->
-        <div class="col-md-3">
-            <div class="stats-card bg-success bg-opacity-10">
-                <p class="stats-number text-success">{{ stats.con_planificacion }}</p>
-                <p class="stats-label">Con Planificación</p>
-            </div>
-        </div>
-        
-        <!-- Pendientes -->
-        <div class="col-md-3">
-            <div class="stats-card bg-warning bg-opacity-10">
-                <p class="stats-number text-warning">{{ stats.pendientes }}</p>
-                <p class="stats-label">Pendientes</p>
-            </div>
-        </div>
-        
-        <!-- Porcentaje -->
-        <div class="col-md-3">
-            <div class="stats-card bg-info bg-opacity-10">
-                <p class="stats-number text-info">{{ stats.porcentaje_completado }}%</p>
-                <p class="stats-label">Completado</p>
-            </div>
+<div class="row mb-4">
+    <!-- Total Asignaturas -->
+    <div class="col-md-2">
+        <div class="stats-card bg-light">
+            <p class="stats-number text-secondary">{{ stats.total_asignaturas }}</p>
+            <p class="stats-label">Total</p>
         </div>
     </div>
+    
+    <!-- Con Planificación RECIBIDA -->
+    <div class="col-md-2">
+        <div class="stats-card bg-success bg-opacity-10">
+            <p class="stats-number text-success">{{ stats.con_planificacion }}</p>
+            <p class="stats-label">Recibidas ✓</p>
+        </div>
+    </div>
+    
+    <!-- ✅ NUEVO: Notificadas pero Pendientes -->
+    <div class="col-md-2">
+        <div class="stats-card bg-info bg-opacity-10">
+            <p class="stats-number text-info">{{ stats.notificadas_pendientes }}</p>
+            <p class="stats-label">Notificadas ⏳</p>
+        </div>
+    </div>
+    
+    <!-- ✅ NUEVO: Sin Notificar -->
+    <div class="col-md-2">
+        <div class="stats-card bg-warning bg-opacity-10">
+            <p class="stats-number text-warning">{{ stats.sin_notificar }}</p>
+            <p class="stats-label">Sin Notificar</p>
+        </div>
+    </div>
+    
+    <!-- Total Pendientes -->
+    <div class="col-md-2">
+        <div class="stats-card bg-danger bg-opacity-10">
+            <p class="stats-number text-danger">{{ stats.pendientes }}</p>
+            <p class="stats-label">Faltantes</p>
+        </div>
+    </div>
+    
+    <!-- Porcentaje -->
+    <div class="col-md-2">
+        <div class="stats-card bg-primary bg-opacity-10">
+            <p class="stats-number text-primary">{{ stats.porcentaje_completado }}%</p>
+            <p class="stats-label">Completado</p>
+        </div>
+    </div>
+</div>
     
     <!-- Barra de Progreso -->
     <div class="row mb-4">
@@ -222,12 +238,26 @@
                             
                             <!-- Estado -->
                             <td>
-                                {% if item.planificacion.estado == 'pendiente' %}
-                                    <span class="badge bg-secondary">Pendiente</span>
-                                {% elif item.planificacion.estado == 'enviada' %}
-                                    <span class="badge bg-primary">Notificación enviada</span>
-                                {% endif %}
-                            </td>
+    {% if item.planificacion.id and item.planificacion.archivo %}
+        <!-- Tiene archivo subido -->
+        {% if item.planificacion.estado == 'aprobada' %}
+            <span class="badge bg-success">✓ Aprobada</span>
+        {% else %}
+            <span class="badge bg-success">✓ Recibida</span>
+        {% endif %}
+    {% elif item.planificacion.id and item.planificacion.estado == 'enviada' %}
+        <!-- Notificación enviada, esperando respuesta -->
+        <span class="badge bg-info">
+            <i class="bi bi-clock"></i> Notificada
+        </span>
+    {% elif item.planificacion.id and item.planificacion.estado == 'pendiente' %}
+        <!-- Existe registro pero no notificada -->
+        <span class="badge bg-warning">⚠ Pendiente</span>
+    {% else %}
+        <!-- Sin registro -->
+        <span class="badge bg-secondary">Sin iniciar</span>
+    {% endif %}
+</td>
                             
                             <!-- Notificaciones -->
                             <td>
@@ -406,69 +436,79 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
-    // Cambio de año
-    document.getElementById('selectorAño').addEventListener('change', function() {
-        window.location.href = '?año=' + this.value;
-    });
-    
-    // Tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-    
-    // Botones notificar individual
-    document.querySelectorAll('.btn-notificar').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const planificacionId = this.dataset.planificacionId;
-            const asignatura = this.dataset.asignatura;
-            
-            // Mostrar modal
-            const modal = new bootstrap.Modal(document.getElementById('modalNotificar'));
-            modal.show();
-            
-            // Cargar contenido via AJAX (implementar en siguiente fase)
-            document.getElementById('modalNotificarBody').innerHTML = `
-                <p>Funcionalidad de notificación para <strong>${asignatura}</strong> será implementada en la siguiente fase.</p>
-                <p class="text-muted">Planificación ID: ${planificacionId}</p>
-            `;
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // ============================================================
+        // CAMBIO DE AÑO
+        // ============================================================
+        const selectorAño = document.getElementById('selectorAño');
+        if (selectorAño) {
+            selectorAño.addEventListener('change', function() {
+                window.location.href = '?año=' + this.value;
+            });
+        }
+        
+        // ============================================================
+        // TOOLTIPS
+        // ============================================================
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
         });
-    });
-    
-    // Notificar todos
-    document.getElementById('btnNotificarTodos').addEventListener('click', function() {
-        if (confirm('¿Enviar notificación a todas las asignaturas pendientes?')) {
-            alert('Funcionalidad será implementada en la siguiente fase.');
-        }
-    });
-
-    // Notificar todos - Confirmación
-    document.getElementById('formNotificarTodos')?.addEventListener('submit', function(e) {
-        const count = {{ page_obj.paginator.count|default:0 }};
         
-        if (!confirm(`¿Enviar notificación genérica a ${count} asignaturas pendientes?`)) {
-            e.preventDefault();
-            return false;
+        // ============================================================
+        // NOTIFICAR TODOS (MASIVO)
+        // ============================================================
+        const formNotificarTodos = document.getElementById('formNotificarTodos');
+        if (formNotificarTodos) {
+            formNotificarTodos.addEventListener('submit', function(e) {
+                const count = {{ page_obj.paginator.count|default:0 }};
+                
+                if (!confirm(`¿Enviar notificación genérica a ${count} asignaturas pendientes?\n\nEsto puede tardar varios minutos.`)) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // Deshabilitar botón
+                const btn = document.getElementById('btnNotificarTodos');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Enviando...';
+                }
+            });
         }
         
-        // Deshabilitar botón
-        const btn = document.getElementById('btnNotificarTodos');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Enviando...';
-    });
-    // Botones crear y notificar
-    document.querySelectorAll('.btn-crear-notificar').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const asignaturaId = this.dataset.asignaturaId;
-            const asignaturaNombre = this.dataset.asignaturaNombre;
-            const año = this.dataset.año;
-            
-            if (confirm(`¿Crear registro y notificar a ${asignaturaNombre}?`)) {
-                // Crear formulario temporal
+        // ============================================================
+        // BOTONES CREAR Y NOTIFICAR (AMARILLOS)
+        // ============================================================
+        const botonesCrearNotificar = document.querySelectorAll('.btn-crear-notificar');
+        console.log('Botones crear-notificar encontrados:', botonesCrearNotificar.length);
+        
+        botonesCrearNotificar.forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const asignaturaId = this.getAttribute('data-asignatura-id');
+                const asignaturaNombre = this.getAttribute('data-asignatura-nombre');
+                const año = this.getAttribute('data-año');
+                
+                console.log('Click detectado:', {
+                    id: asignaturaId,
+                    nombre: asignaturaNombre,
+                    año: año
+                });
+                
+                if (!confirm(`¿Crear registro de planificación y notificar?\n\nAsignatura: ${asignaturaNombre}\nAño: ${año}`)) {
+                    return;
+                }
+                
+                // Deshabilitar botón
+                this.disabled = true;
+                this.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+                
+                // Crear formulario
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = '{% url "planta_docente:crear_y_notificar" %}';
@@ -494,11 +534,15 @@
                 añoInput.value = año;
                 form.appendChild(añoInput);
                 
-                // Agregar al DOM y submit
+                console.log('Enviando formulario...');
+                
+                // Agregar al DOM y enviar
                 document.body.appendChild(form);
                 form.submit();
-            }
+            });
         });
+        
+        console.log('✅ Scripts de planificaciones cargados correctamente');
     });
 </script>
 {% endblock %}

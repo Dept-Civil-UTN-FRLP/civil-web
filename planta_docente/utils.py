@@ -800,16 +800,16 @@ def obtener_planificaciones_faltantes(año_lectivo=None):
     """
     Identifica asignaturas sin planificación para el año especificado.
     
+    Una planificación se considera "faltante" si:
+    - No existe registro, o
+    - Existe pero está en estado 'pendiente' o 'enviada' (sin archivo)
+    
     Args:
         año_lectivo (int, optional): Año lectivo a consultar. 
                                      Si no se especifica, usa el año actual.
     
     Returns:
-        QuerySet: Asignaturas sin planificación para el año
-    
-    Example:
-        >>> faltantes = obtener_planificaciones_faltantes(2025)
-        >>> print(f"Faltan {faltantes.count()} planificaciones")
+        QuerySet: Asignaturas sin planificación recibida para el año
     """
     from django.utils import timezone
     from planta_docente.models import Asignatura, PlanificacionAnual
@@ -817,16 +817,18 @@ def obtener_planificaciones_faltantes(año_lectivo=None):
     if not año_lectivo:
         año_lectivo = timezone.now().year
 
-    # Todas las asignaturas activas
+    # Todas las asignaturas
     asignaturas_todas = Asignatura.objects.all()
 
-    # Asignaturas que YA tienen planificación para el año
+    # Asignaturas que YA tienen planificación RECIBIDA
+    # Solo contar las que tienen archivo Y están en estado recibida/aprobada
     asignaturas_con_planificacion = PlanificacionAnual.objects.filter(
         año=año_lectivo,
-        archivo__isnull=False  # Solo contar las que tienen archivo subido
+        archivo__isnull=False,  # Tiene archivo subido
+        estado__in=['recibida', 'aprobada']
     ).values_list('asignatura_id', flat=True)
 
-    # Retornar las que NO tienen planificación
+    # Retornar las que NO tienen planificación completa
     return asignaturas_todas.exclude(id__in=asignaturas_con_planificacion)
 
 
@@ -838,37 +840,50 @@ def obtener_estadisticas_planificaciones(año_lectivo=None):
         año_lectivo (int, optional): Año lectivo a consultar.
     
     Returns:
-        dict: Diccionario con estadísticas
-            - total_asignaturas (int)
-            - con_planificacion (int)
-            - pendientes (int)
-            - porcentaje_completado (float)
-    
-    Example:
-        >>> stats = obtener_estadisticas_planificaciones(2025)
-        >>> print(f"Completado: {stats['porcentaje_completado']:.1f}%")
+        dict: Diccionario con estadísticas detalladas
     """
     from django.utils import timezone
     from planta_docente.models import Asignatura, PlanificacionAnual
-
+    
     if not año_lectivo:
         año_lectivo = timezone.now().year
-
+    
     total_asignaturas = Asignatura.objects.count()
-
+    
+    # Planificaciones RECIBIDAS (con archivo)
     con_planificacion = PlanificacionAnual.objects.filter(
         año=año_lectivo,
-        archivo__isnull=False
+        archivo__isnull=False,
+        estado__in=['recibida', 'aprobada']
     ).count()
-
+    
+    # Notificaciones ENVIADAS (esperando respuesta)
+    notificadas_pendientes = PlanificacionAnual.objects.filter(
+        año=año_lectivo,
+        estado='enviada',
+        archivo=''
+    ).count()
+    
+    # Sin notificar
+    sin_notificar = PlanificacionAnual.objects.filter(
+        año=año_lectivo,
+        estado='pendiente'
+    ).count()
+    
+    # O que ni siquiera tienen registro
+    sin_registro = total_asignaturas - PlanificacionAnual.objects.filter(
+        año=año_lectivo
+    ).count()
+    
     pendientes = total_asignaturas - con_planificacion
-
-    porcentaje = (con_planificacion / total_asignaturas *
-                  100) if total_asignaturas > 0 else 0
-
+    
+    porcentaje = (con_planificacion / total_asignaturas * 100) if total_asignaturas > 0 else 0
+    
     return {
         'total_asignaturas': total_asignaturas,
         'con_planificacion': con_planificacion,
         'pendientes': pendientes,
+        'notificadas_pendientes': notificadas_pendientes,
+        'sin_notificar': sin_notificar + sin_registro,
         'porcentaje_completado': round(porcentaje, 1)
     }
