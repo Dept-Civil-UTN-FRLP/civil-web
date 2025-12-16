@@ -38,23 +38,26 @@ def dashboard_planificaciones(request):
     # Obtener estadísticas
     stats = obtener_estadisticas_planificaciones(año_seleccionado)
 
-    # Obtener asignaturas faltantes con responsables
+    # Obtener asignaturas faltantes
     faltantes_queryset = obtener_planificaciones_faltantes(año_seleccionado)
 
-    # Enriquecer con información del responsable
     faltantes_data = []
     for asignatura in faltantes_queryset:
         responsable_cargo = obtener_responsable_planificacion(asignatura)
 
-        # Obtener o crear PlanificacionAnual para tracking
-        planificacion, created = PlanificacionAnual.objects.get_or_create(
-            asignatura=asignatura,
-            año=año_seleccionado,
-            defaults={
-                'estado': 'pendiente',
-                'docente_responsable': responsable_cargo.docente if responsable_cargo else None
-            }
-        )
+        try:
+            planificacion = PlanificacionAnual.objects.get(
+                asignatura=asignatura,
+                año=año_seleccionado
+            )
+        except PlanificacionAnual.DoesNotExist:
+            # Si no existe, crear objeto temporal sin guardar
+            planificacion = PlanificacionAnual(
+                asignatura=asignatura,
+                año=año_seleccionado,
+                estado='pendiente',
+                docente_responsable=responsable_cargo.docente if responsable_cargo else None
+            )
 
         faltantes_data.append({
             'asignatura': asignatura,

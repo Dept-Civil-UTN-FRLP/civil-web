@@ -1787,10 +1787,6 @@ class Resolucion(models.Model):
         return f"Res. {self.get_origen_display()} {self.numero}/{self.año} - {self.cargo.docente.apellido.upper()}"
 
 
-# ============================================================================
-# PLANIFICACIONES ANUALES
-# ============================================================================
-
 class PlanificacionAnual(models.Model):
     """
     Planificación anual de una asignatura.
