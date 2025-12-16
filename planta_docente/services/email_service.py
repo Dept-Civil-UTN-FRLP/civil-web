@@ -69,11 +69,19 @@ class PlanificacionEmailService:
                 pdf_ficha = PlanificacionEmailService._generar_pdf_ficha(
                     planificacion.asignatura)
                 if pdf_ficha:
-                    filename = f'Ficha_{planificacion.asignatura.nombre.replace(" ", "_")}.pdf'
+                    # Nombre del archivo
+                    nombre_limpio = planificacion.asignatura.nombre.replace(
+                        ' ', '_').replace('/', '-')
+                    filename = f'Ficha_{nombre_limpio}.pdf'
+
+                    # Adjuntar al email
                     email.attach(filename, pdf_ficha, 'application/pdf')
                     archivos_adjuntos.append(filename)
+
+                    print(f"PDF adjunto: {filename} ({len(pdf_ficha)} bytes)")
             except Exception as e:
                 # Continuar sin adjunto si falla
+                print(f"Error adjuntando ficha: {str(e)}")
                 pass
 
         # Intentar enviar
@@ -217,29 +225,44 @@ class PlanificacionEmailService:
     def _generar_pdf_ficha(asignatura):
         """
         Genera PDF de la ficha de asignatura.
-        
+
         Args:
             asignatura (Asignatura): Asignatura para generar ficha
-        
+
         Returns:
             bytes: PDF generado o None si falla
         """
         try:
-            from django.http import HttpRequest
-            from planta_docente.views.estructura_catedra import ver_ficha_asignatura
-            from weasyprint import HTML
-
-            # Crear request fake
-            request = HttpRequest()
-            request.method = 'GET'
-
-            # Renderizar template de ficha
             from django.template.loader import render_to_string
+            from weasyprint import HTML
+            from planta_docente.models import Cargo
+            from django.utils import timezone
 
-            # Obtener datos necesarios
+            # Obtener cargos asociados
+            cargos = Cargo.objects.filter(
+                asignatura=asignatura,
+                estado='activo'
+            ).select_related('docente').order_by('categoria', 'docente__apellido')
+
+            # Separar profesores y auxiliares
+            profesores = []
+            auxiliares = []
+
+            TIPOS_PROFESORES = ['tit', 'aso', 'adj']
+            TIPOS_AUXILIARES = ['jtp', 'atp1', 'atp2', 'ads']
+
+            for cargo in cargos:
+                tipo_nombre = cargo.categoria
+                if any(tipo in tipo_nombre for tipo in TIPOS_PROFESORES):
+                    profesores.append(cargo)
+                elif any(tipo in tipo_nombre for tipo in TIPOS_AUXILIARES):
+                    auxiliares.append(cargo)
+
+            # Obtener áreas y bloques
             areas = asignatura.area.all()
             bloques = asignatura.bloque.all()
 
+            # Parsear objetivos
             objetivos_lista = []
             if asignatura.objetivos:
                 objetivos_lista = [
@@ -248,6 +271,7 @@ class PlanificacionEmailService:
                     if obj.strip()
                 ]
 
+            # Parsear competencias
             competencias_lista = []
             if asignatura.competencias:
                 competencias_lista = [
@@ -256,6 +280,7 @@ class PlanificacionEmailService:
                     if comp.strip()
                 ]
 
+            # Parsear contenidos
             contenidos_lista = []
             if asignatura.contenidos_minimos:
                 contenidos_lista = [
@@ -264,20 +289,33 @@ class PlanificacionEmailService:
                     if obj.strip()
                 ]
 
+            # Contexto para el template
             context = {
                 'asignatura': asignatura,
+                'año': timezone.now().year,
                 'areas': areas,
                 'bloques': bloques,
                 'objetivos_lista': objetivos_lista,
                 'competencias_lista': competencias_lista,
                 'contenidos_lista': contenidos_lista,
+                'profesores': profesores,
+                'auxiliares': auxiliares,
             }
 
+            # Renderizar template
             html_string = render_to_string(
-                'planta_docente/asignatura/ver_ficha.html', context)
+                'planta_docente/asignatura/ver_ficha_pdf.html',
+                context
+            )
+
+            # Generar PDF
             pdf = HTML(string=html_string).write_pdf()
 
             return pdf
+
         except Exception as e:
-            # Si falla, retornar None
+            # Log del error (opcional)
+            print(f"Error generando PDF de ficha: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return None
