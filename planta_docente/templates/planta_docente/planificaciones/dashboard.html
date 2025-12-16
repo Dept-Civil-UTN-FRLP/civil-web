@@ -3,7 +3,8 @@
 
 {% block title %}Planificaciones Anuales - {{ año_seleccionado }}{% endblock %}
 
-{% block extra_css %}
+
+{% block content %}
 <style>
     .stats-card {
         border-radius: 10px;
@@ -55,9 +56,7 @@
         color: #6c757d;
     }
 </style>
-{% endblock %}
 
-{% block content %}
 <div class="container-fluid py-4">
     
     <!-- Breadcrumb -->
@@ -68,36 +67,35 @@
         </ol>
     </nav>
     
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>
-            <i class="bi bi-calendar-check text-primary"></i> 
-            Planificaciones Anuales
-        </h2>
-        
-        <!-- Selector de Año -->
-        <div class="d-flex align-items-center gap-3">
-            <select class="form-select" id="selectorAño" style="width: 150px;">
-                {% for año in años_disponibles %}
-                <option value="{{ año }}" {% if año == año_seleccionado %}selected{% endif %}>
-                    {{ año }}
-                </option>
-                {% endfor %}
-            </select>
-            
-            <form method="post" action="{% url 'planta_docente:notificar_masivo' %}" 
-      id="formNotificarTodos" style="display: inline;">
-    {% csrf_token %}
-    <input type="hidden" name="año" value="{{ año_seleccionado }}">
-    <input type="hidden" name="tipo_mensaje" value="generico">
-    <input type="hidden" name="adjuntar_ficha" value="on">
+    <!-- Header con selector de año y botón notificar -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        <i class="bi bi-calendar-check text-primary"></i> 
+        Planificaciones Anuales
+    </h2>
     
-    <button type="submit" class="btn btn-primary" id="btnNotificarTodos">
-        <i class="bi bi-envelope-fill"></i> Notificar Todos
-    </button>
-</form>
-        </div>
+    <div class="d-flex align-items-center gap-3">
+        <!-- Selector de Año -->
+        <select class="form-select" id="selectorAño" style="width: 150px;">
+            {% for año in años_disponibles %}
+            <option value="{{ año }}" {% if año == año_seleccionado %}selected{% endif %}>
+                {{ año }}
+            </option>
+            {% endfor %}
+        </select>
+        
+        <!-- Botón Notificar Todos -->
+        {% if stats.sin_notificar > 0 %}
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNotificarMasivo">
+            <i class="bi bi-envelope-fill"></i> Notificar Todos ({{ stats.sin_notificar }})
+        </button>
+        {% else %}
+        <button type="button" class="btn btn-secondary" disabled>
+            <i class="bi bi-check-circle"></i> Todos Notificados
+        </button>
+        {% endif %}
     </div>
+</div>
     
     <!-- Estadísticas -->
 <div class="row mb-4">
@@ -247,12 +245,10 @@
         {% endif %}
     {% elif item.planificacion.id and item.planificacion.estado == 'enviada' %}
         <!-- Notificación enviada, esperando respuesta -->
-        <span class="badge bg-info">
-            <i class="bi bi-clock"></i> Notificada
-        </span>
+        <span class="badge bg-info">Notificada</span>
     {% elif item.planificacion.id and item.planificacion.estado == 'pendiente' %}
         <!-- Existe registro pero no notificada -->
-        <span class="badge bg-warning">⚠ Pendiente</span>
+        <span class="badge bg-warning">Pendiente</span>
     {% else %}
         <!-- Sin registro -->
         <span class="badge bg-secondary">Sin iniciar</span>
@@ -437,6 +433,105 @@
     </div>
 </div>
 
+
+<!-- Modal: Notificar Masivo -->
+<div class="modal fade" id="modalNotificarMasivo" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-envelope-fill"></i> Notificación Masiva de Planificaciones
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <form method="post" action="{% url 'planta_docente:notificar_masivo' %}" id="formNotificarMasivo">
+                {% csrf_token %}
+                <input type="hidden" name="año" value="{{ año_seleccionado }}">
+                
+                <div class="modal-body">
+                    
+                    <!-- Información -->
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-info-circle"></i> Información</h6>
+                        <p class="mb-1">
+                            Se enviará notificación a <strong>{{ stats.sin_notificar }}</strong> asignaturas 
+                            que aún no han sido notificadas para el año <strong>{{ año_seleccionado }}</strong>.
+                        </p>
+                        <p class="mb-0">
+                            <small>Solo se notificarán asignaturas con docente responsable y email configurado.</small>
+                        </p>
+                    </div>
+                    
+                    <!-- Tipo de Mensaje -->
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Tipo de mensaje</strong></label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="tipo_mensaje" 
+                                   id="tipoGenericoMasivo" value="generico" checked>
+                            <label class="form-check-label" for="tipoGenericoMasivo">
+                                <strong>Mensaje genérico</strong>
+                                <br><small class="text-muted">Plantilla estándar para todos</small>
+                            </label>
+                        </div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="radio" name="tipo_mensaje" 
+                                   id="tipoPersonalizadoMasivo" value="personalizado">
+                            <label class="form-check-label" for="tipoPersonalizadoMasivo">
+                                <strong>Mensaje personalizado</strong>
+                                <br><small class="text-muted">Mismo mensaje personalizado para todos</small>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Mensaje Personalizado -->
+                    <div class="mb-3" id="mensajePersonalizadoMasivoContainer" style="display: none;">
+                        <label for="cuerpoPersonalizadoMasivo" class="form-label">
+                            <strong>Mensaje personalizado</strong>
+                        </label>
+                        <textarea class="form-control" id="cuerpoPersonalizadoMasivo" 
+                                  name="cuerpo_personalizado" rows="6"
+                                  placeholder="Este mensaje se enviará a todos los docentes responsables..."></textarea>
+                    </div>
+                    
+                    <!-- Adjuntar Ficha -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="adjuntar_ficha" 
+                                   id="adjuntarFichaMasivo" checked>
+                            <label class="form-check-label" for="adjuntarFichaMasivo">
+                                <strong>Adjuntar ficha de asignatura a cada email</strong>
+                                <br><small class="text-muted">
+                                    Incluye PDF con información de cada asignatura
+                                </small>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Advertencia -->
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Atención:</strong> Este proceso puede tardar varios minutos dependiendo 
+                        de la cantidad de notificaciones a enviar.
+                    </div>
+                    
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="btnEnviarMasivo">
+                        <i class="bi bi-send-fill"></i> Enviar Notificaciones
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         
@@ -543,6 +638,59 @@
         });
         
         console.log('✅ Scripts de planificaciones cargados correctamente');
+    const radioGenericoMasivo = document.getElementById('tipoGenericoMasivo');
+        const radioPersonalizadoMasivo = document.getElementById('tipoPersonalizadoMasivo');
+        const containerMasivo = document.getElementById('mensajePersonalizadoMasivoContainer');
+        const textareaMasivo = document.getElementById('cuerpoPersonalizadoMasivo');
+        
+        if (radioGenericoMasivo && radioPersonalizadoMasivo) {
+            radioGenericoMasivo.addEventListener('change', function() {
+                containerMasivo.style.display = 'none';
+                textareaMasivo.required = false;
+            });
+            
+            radioPersonalizadoMasivo.addEventListener('change', function() {
+                containerMasivo.style.display = 'block';
+                textareaMasivo.required = true;
+            });
+        }
+        
+        // Validación y confirmación del formulario masivo
+        const formMasivo = document.getElementById('formNotificarMasivo');
+        if (formMasivo) {
+            formMasivo.addEventListener('submit', function(e) {
+                const tipoPersonalizado = radioPersonalizadoMasivo?.checked;
+                const mensaje = textareaMasivo?.value.trim();
+                
+                // Validar mensaje personalizado
+                if (tipoPersonalizado && !mensaje) {
+                    e.preventDefault();
+                    alert('Por favor escribe un mensaje personalizado.');
+                    return false;
+                }
+                
+                // Confirmación
+                const count = {{ stats.sin_notificar|default:0 }};
+                if (!confirm(`¿Enviar notificación a ${count} asignaturas?\n\nEsto puede tardar varios minutos.`)) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // Deshabilitar botón y mostrar loading
+                const btn = document.getElementById('btnEnviarMasivo');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando...';
+                }
+                
+                // Cerrar modal después de un momento
+                setTimeout(function() {
+                    bootstrap.Modal.getInstance(document.getElementById('modalNotificarMasivo'))?.hide();
+                }, 500);
+            });
+        }
+        
+        console.log('✅ Scripts de notificación masiva cargados');
     });
 </script>
 {% endblock %}

@@ -301,23 +301,32 @@ def notificar_masivo(request):
 
     tipo_mensaje = request.POST.get('tipo_mensaje', 'generico')
     adjuntar_ficha = request.POST.get('adjuntar_ficha') == 'on'
+    cuerpo_personalizado = request.POST.get(
+        'cuerpo_personalizado', '') if tipo_mensaje == 'personalizado' else None
 
-    # Obtener asignaturas pendientes
+    # Validar mensaje personalizado
+    if tipo_mensaje == 'personalizado' and not cuerpo_personalizado:
+        messages.error(request, 'Debe escribir un mensaje personalizado.')
+        return redirect('planta_docente:dashboard_planificaciones')
+
+    # Obtener asignaturas pendientes (sin notificar)
     faltantes = obtener_planificaciones_faltantes(año)
 
     resultados = {
         'exitosos': 0,
         'fallidos': 0,
+        'sin_responsable': 0,
         'errores': []
     }
 
     for asignatura in faltantes:
         responsable_cargo = obtener_responsable_planificacion(asignatura)
 
+        # Saltar si no hay responsable
         if not responsable_cargo:
-            resultados['fallidos'] += 1
+            resultados['sin_responsable'] += 1
             resultados['errores'].append(
-                f"{asignatura.nombre}: Sin responsable")
+                f"{asignatura.nombre}: Sin responsable con email")
             continue
 
         # Crear o recuperar PlanificacionAnual
@@ -330,6 +339,10 @@ def notificar_masivo(request):
             }
         )
 
+        # Saltar si ya fue notificada
+        if planificacion.estado == 'enviada':
+            continue
+
         # Enviar notificación
         if tipo_mensaje == 'generico':
             exito, mensaje = PlanificacionEmailService.enviar_solicitud_generica(
@@ -338,7 +351,6 @@ def notificar_masivo(request):
                 usuario=request.user
             )
         else:
-            cuerpo_personalizado = request.POST.get('cuerpo_personalizado', '')
             exito, mensaje = PlanificacionEmailService.enviar_solicitud_personalizada(
                 planificacion,
                 cuerpo_personalizado,
@@ -352,20 +364,33 @@ def notificar_masivo(request):
             resultados['fallidos'] += 1
             resultados['errores'].append(f"{asignatura.nombre}: {mensaje}")
 
-    # Mensaje de resultado
+    # Mensajes de resultado
+    total_procesadas = resultados['exitosos'] + \
+        resultados['fallidos'] + resultados['sin_responsable']
+
     if resultados['exitosos'] > 0:
         messages.success(
             request,
-            f'✅ Notificaciones enviadas: {resultados["exitosos"]} exitosas'
+            f'✅ {resultados["exitosos"]} notificaciones enviadas exitosamente'
+        )
+
+    if resultados['sin_responsable'] > 0:
+        messages.warning(
+            request,
+            f'⚠️ {resultados["sin_responsable"]} asignaturas sin responsable con email'
         )
 
     if resultados['fallidos'] > 0:
-        messages.warning(
+        messages.error(
             request,
-            f'⚠️ Fallos: {resultados["fallidos"]} (ver detalles en consola)'
+            f'❌ {resultados["fallidos"]} fallos al enviar'
         )
-        for error in resultados['errores'][:5]:  # Mostrar solo primeros 5
+        # Mostrar primeros 3 errores
+        for error in resultados['errores'][:3]:
             messages.error(request, error)
+
+    if total_procesadas == 0:
+        messages.info(request, 'ℹ️ No hay asignaturas pendientes de notificar')
 
     return redirect('planta_docente:dashboard_planificaciones')
 
