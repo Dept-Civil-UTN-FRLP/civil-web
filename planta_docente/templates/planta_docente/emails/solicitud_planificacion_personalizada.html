@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitud de Planificación Anual</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .content {
+            background: #f8f9fa;
+            padding: 30px;
+            border: 1px solid #dee2e6;
+        }
+        .info-box {
+            background: white;
+            border-left: 4px solid #0d6efd;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #0d6efd;
+        }
+        .mensaje-personalizado {
+            background: white;
+            border: 2px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .footer {
+            background: #343a40;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 0.9rem;
+            border-radius: 0 0 10px 10px;
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="header">
+        <h1>Solicitud de Planificación Anual {{ año }}</h1>
+        <p>Universidad Tecnológica Nacional - Facultad Regional La Plata</p>
+    </div>
+    
+    <div class="content">
+        <p>Estimado/a <strong>{{ cargo.get_categoria_display }} {{ docente.apellido }}</strong>,</p>
+        
+        <div class="info-box">
+            <h3>📚 Información de la Asignatura</h3>
+            <p><strong>Asignatura:</strong> {{ asignatura.nombre|title }}</p>
+            <p><strong>Departamento:</strong> {{ asignatura.get_departamento_display }}</p>
+            <p><strong>Nivel:</strong> {{ asignatura.get_nivel_display }}</p>
+            <p><strong>Su cargo:</strong> {{ cargo.get_categoria_display }} - {{ cargo.get_dedicacion_display }}</p>
+        </div>
+        
+        <div class="mensaje-personalizado">
+            <h3>📝 Mensaje:</h3>
+            {{ mensaje_personalizado|linebreaks }}
+        </div>
+        
+        <h3>📎 Formatos Aceptados:</h3>
+        <p>PDF o DOCX (tamaño máximo: 20 MB)</p>
+        
+        <p style="text-align: center; margin-top: 30px;">
+            <strong>Para enviar su planificación, puede:</strong>
+        </p>
+        
+        <ul>
+            <li>Responder a este correo adjuntando el archivo</li>
+            <li>Enviar el archivo a: <a href="mailto:{{ settings.PLANTA_DOCENTE_EMAIL }}">{{ settings.PLANTA_DOCENTE_EMAIL }}</a></li>
+        </ul>
+        
+        <p>Ante cualquier consulta, no dude en contactarnos.</p>
+        
+        <p>Saludos cordiales,</p>
+        <p><strong>Departamento de Planta Docente</strong><br>
+        UTN - Facultad Regional La Plata</p>
+    </div>
+    
+    <div class="footer">
+        <p>Este es un mensaje automático del Sistema de Gestión de Planta Docente.</p>
+        <p>© {{ año }} UTN - FRLP. Todos los derechos reservados.</p>
+    </div>
+    
+</body>
+</html>

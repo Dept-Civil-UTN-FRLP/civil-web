@@ -85,9 +85,17 @@
                 {% endfor %}
             </select>
             
-            <button class="btn btn-primary" id="btnNotificarTodos">
-                <i class="bi bi-envelope-fill"></i> Notificar Todos
-            </button>
+            <form method="post" action="{% url 'planta_docente:notificar_masivo' %}" 
+      id="formNotificarTodos" style="display: inline;">
+    {% csrf_token %}
+    <input type="hidden" name="año" value="{{ año_seleccionado }}">
+    <input type="hidden" name="tipo_mensaje" value="generico">
+    <input type="hidden" name="adjuntar_ficha" value="on">
+    
+    <button type="submit" class="btn btn-primary" id="btnNotificarTodos">
+        <i class="bi bi-envelope-fill"></i> Notificar Todos
+    </button>
+</form>
         </div>
     </div>
     
@@ -246,23 +254,21 @@
                                     
                                     <!-- Notificar -->
                                     {% if item.responsable_email %}
-                                    <button type="button"
-                                            class="btn btn-outline-primary btn-action btn-notificar"
-                                            data-planificacion-id="{{ item.planificacion.id }}"
-                                            data-asignatura="{{ item.asignatura.nombre }}"
-                                            data-bs-toggle="tooltip"
-                                            title="Enviar notificación">
-                                        <i class="bi bi-envelope"></i>
-                                    </button>
-                                    {% else %}
-                                    <button type="button"
-                                            class="btn btn-outline-secondary btn-action"
-                                            disabled
-                                            data-bs-toggle="tooltip"
-                                            title="Sin email configurado">
-                                        <i class="bi bi-envelope-slash"></i>
-                                    </button>
-                                    {% endif %}
+<a href="{% url 'planta_docente:notificar_planificacion_individual' item.planificacion.id %}"
+   class="btn btn-outline-primary btn-action"
+   data-bs-toggle="tooltip"
+   title="Enviar notificación por email">
+    <i class="bi bi-envelope"></i>
+</a>
+{% else %}
+<button type="button"
+        class="btn btn-outline-secondary btn-action"
+        disabled
+        data-bs-toggle="tooltip"
+        title="{% if item.responsable_cargo %}Docente sin email configurado{% else %}Sin docente responsable{% endif %}">
+    <i class="bi bi-envelope-slash"></i>
+</button>
+{% endif %}
                                 </div>
                             </td>
                         </tr>
@@ -426,6 +432,21 @@
         if (confirm('¿Enviar notificación a todas las asignaturas pendientes?')) {
             alert('Funcionalidad será implementada en la siguiente fase.');
         }
+    });
+
+    // Notificar todos - Confirmación
+    document.getElementById('formNotificarTodos')?.addEventListener('submit', function(e) {
+        const count = {{ page_obj.paginator.count|default:0 }};
+        
+        if (!confirm(`¿Enviar notificación genérica a ${count} asignaturas pendientes?`)) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Deshabilitar botón
+        const btn = document.getElementById('btnNotificarTodos');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Enviando...';
     });
 </script>
 {% endblock %}

@@ -17,7 +17,7 @@ from planta_docente.utils import (
     obtener_planificaciones_faltantes,
     obtener_responsable_planificacion,
 )
-
+from planta_docente.services.email_service import PlanificacionEmailService
 
 @login_required
 @staff_member_required
@@ -231,3 +231,140 @@ def vista_previa_notificacion(request, pk):
         'destinatario': responsable_cargo.docente.email,
         'nombre': responsable_cargo.docente.get_full_name(),
     })
+
+
+@login_required
+@staff_member_required
+def notificar_planificacion_individual(request, pk):
+    """
+    Envía notificación para una planificación específica.
+    """
+    planificacion = get_object_or_404(PlanificacionAnual, pk=pk)
+
+    if request.method == 'POST':
+        tipo_mensaje = request.POST.get('tipo_mensaje', 'generico')
+        adjuntar_ficha = request.POST.get('adjuntar_ficha') == 'on'
+
+        if tipo_mensaje == 'generico':
+            exito, mensaje = PlanificacionEmailService.enviar_solicitud_generica(
+                planificacion,
+                adjuntar_ficha=adjuntar_ficha,
+                usuario=request.user
+            )
+        else:
+            cuerpo_personalizado = request.POST.get('cuerpo_personalizado', '')
+            if not cuerpo_personalizado:
+                messages.error(
+                    request, 'Debe escribir un mensaje personalizado.')
+                return redirect('planta_docente:dashboard_planificaciones')
+
+            exito, mensaje = PlanificacionEmailService.enviar_solicitud_personalizada(
+                planificacion,
+                cuerpo_personalizado,
+                adjuntar_ficha=adjuntar_ficha,
+                usuario=request.user
+            )
+
+        if exito:
+            messages.success(request, f'✉️ {mensaje}')
+        else:
+            messages.error(request, f'❌ {mensaje}')
+
+        return redirect('planta_docente:dashboard_planificaciones')
+
+    # GET: Mostrar formulario
+    responsable_cargo = obtener_responsable_planificacion(
+        planificacion.asignatura)
+
+    context = {
+        'planificacion': planificacion,
+        'responsable_cargo': responsable_cargo,
+    }
+
+    return render(request, 'planta_docente/planificaciones/notificar.html', context)
+
+
+@login_required
+@staff_member_required
+def notificar_masivo(request):
+    """
+    Envía notificaciones masivas a todas las asignaturas pendientes.
+    """
+    if request.method != 'POST':
+        return redirect('planta_docente:dashboard_planificaciones')
+
+    año = request.POST.get('año', timezone.now().year)
+    try:
+        año = int(año)
+    except (ValueError, TypeError):
+        año = timezone.now().year
+
+    tipo_mensaje = request.POST.get('tipo_mensaje', 'generico')
+    adjuntar_ficha = request.POST.get('adjuntar_ficha') == 'on'
+
+    # Obtener asignaturas pendientes
+    faltantes = obtener_planificaciones_faltantes(año)
+
+    resultados = {
+        'exitosos': 0,
+        'fallidos': 0,
+        'errores': []
+    }
+
+    for asignatura in faltantes:
+        responsable_cargo = obtener_responsable_planificacion(asignatura)
+
+        if not responsable_cargo:
+            resultados['fallidos'] += 1
+            resultados['errores'].append(
+                f"{asignatura.nombre}: Sin responsable")
+            continue
+
+        # Crear o recuperar PlanificacionAnual
+        planificacion, created = PlanificacionAnual.objects.get_or_create(
+            asignatura=asignatura,
+            año=año,
+            defaults={
+                'estado': 'pendiente',
+                'docente_responsable': responsable_cargo.docente
+            }
+        )
+
+        # Enviar notificación
+        if tipo_mensaje == 'generico':
+            exito, mensaje = PlanificacionEmailService.enviar_solicitud_generica(
+                planificacion,
+                adjuntar_ficha=adjuntar_ficha,
+                usuario=request.user
+            )
+        else:
+            cuerpo_personalizado = request.POST.get('cuerpo_personalizado', '')
+            exito, mensaje = PlanificacionEmailService.enviar_solicitud_personalizada(
+                planificacion,
+                cuerpo_personalizado,
+                adjuntar_ficha=adjuntar_ficha,
+                usuario=request.user
+            )
+
+        if exito:
+            resultados['exitosos'] += 1
+        else:
+            resultados['fallidos'] += 1
+            resultados['errores'].append(f"{asignatura.nombre}: {mensaje}")
+
+    # Mensaje de resultado
+    if resultados['exitosos'] > 0:
+        messages.success(
+            request,
+            f'✅ Notificaciones enviadas: {resultados["exitosos"]} exitosas'
+        )
+
+    if resultados['fallidos'] > 0:
+        messages.warning(
+            request,
+            f'⚠️ Fallos: {resultados["fallidos"]} (ver detalles en consola)'
+        )
+        for error in resultados['errores'][:5]:  # Mostrar solo primeros 5
+            messages.error(request, error)
+
+    return redirect('planta_docente:dashboard_planificaciones')

@@ -112,4 +112,8 @@ urlpatterns = [
          views.eliminar_planificacion, name='eliminar_planificacion'),
     path('planificaciones/<int:pk>/preview/',
          views.vista_previa_notificacion, name='preview_notificacion'),
+    path('planificaciones/<int:pk>/notificar/', views.notificar_planificacion_individual,
+         name='notificar_planificacion_individual'),
+    path('planificaciones/notificar-masivo/',
+         views.notificar_masivo, name='notificar_masivo'),
 ]
