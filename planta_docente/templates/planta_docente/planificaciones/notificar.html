@@ -3,7 +3,7 @@
 
 {% block title %}Notificar Planificación - {{ planificacion.asignatura.nombre }}{% endblock %}
 
-{% block extra_css %}
+{% block planta_content %}
 <style>
     .notificar-card {
         max-width: 900px;
@@ -27,9 +27,7 @@
         overflow-y: auto;
     }
 </style>
-{% endblock %}
 
-{% block planta_content %}
 <div class="container py-4">
     
     <!-- Breadcrumb -->
@@ -189,9 +187,7 @@
     </div>
     
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
     // Mostrar/ocultar mensaje personalizado
     document.querySelectorAll('input[name="tipo_mensaje"]').forEach(radio => {

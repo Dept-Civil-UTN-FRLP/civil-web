@@ -68,7 +68,7 @@
     </div>
     
     <div class="content">
-        <p>Estimado/a <strong>{{ cargo.get_categoria_display }} {{ docente.apellido }}</strong>,</p>
+        <p>Estimado/a <strong>{{ cargo.get_categoria_display }} {{ docente.apellido|title }}</strong>,</p>
         
         <p>Por medio de la presente, solicitamos la <strong>Planificación Anual {{ año }}</strong> de la asignatura bajo su responsabilidad:</p>
         
@@ -89,10 +89,10 @@
         </ul>
         
         <h3>📎 Formatos Aceptados:</h3>
-        <p>PDF o DOCX (tamaño máximo: 20 MB)</p>
+        <p>PDF o DOCX</p>
         
         <h3>📅 Plazo de Entrega:</h3>
-        <p>Se solicita la presentación de la planificación a la brevedad posible.</p>
+        <p>Se solicita la presentación de la planificación dentro de los proximos 15 habiles.</p>
         
         <p style="text-align: center; margin-top: 30px;">
             <strong>Para enviar su planificación, puede:</strong>
@@ -100,19 +100,32 @@
         
         <ul>
             <li>Responder a este correo adjuntando el archivo</li>
-            <li>Enviar el archivo a: <a href="mailto:plantadocente@frlp.utn.edu.ar">plantadocente@frlp.utn.edu.ar</a></li>
         </ul>
         
         <p>Ante cualquier consulta, no dude en contactarnos.</p>
         
         <p>Saludos cordiales,</p>
-        <p><strong>Departamento de Planta Docente</strong><br>
-        UTN - Facultad Regional La Plata</p>
+        <p><br></p>
+        <p>
+            <strong>Ing. Jorge RONCONI</strong>
+            Secretario de Departamento
+        </p>
+        <p>
+            <strong>Ing. Adrian CUATTRICCHIO</strong>
+            Director de Departamento
+        </p>
+        <p>
+            <strong>
+                Departamento Ingeniería Civil<br>
+                Universidad Tecnológica Nacional<br>
+                Facultad Regional La Plata
+            </strong>
+        </p>
     </div>
     
     <div class="footer">
-        <p>Este es un mensaje automático del Sistema de Gestión de Planta Docente.</p>
-        <p>© {{ año }} UTN - FRLP. Todos los derechos reservados.</p>
+        <p>Este es un mensaje automático.</p>
+        <p>© {{ año }} Dpto. Ing Civil FRLP. Todos los derechos reservados.</p>
     </div>
     
 </body>
