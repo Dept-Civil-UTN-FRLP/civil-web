@@ -47,4 +47,7 @@ __all__ = [
     'descargar_planificacion',
     'eliminar_planificacion',
     'vista_previa_notificacion',
+    'notificar_planificacion_individual',
+    'notificar_masivo',
+    'crear_y_notificar',
 ]

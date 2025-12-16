@@ -368,3 +368,37 @@ def notificar_masivo(request):
             messages.error(request, error)
 
     return redirect('planta_docente:dashboard_planificaciones')
+
+
+@login_required
+@staff_member_required
+def crear_y_notificar(request):
+    """
+    Crea el registro de planificación y redirige a la vista de notificación.
+    """
+    if request.method != 'POST':
+        return redirect('planta_docente:dashboard_planificaciones')
+
+    asignatura_id = request.POST.get('asignatura_id')
+    año = request.POST.get('año', timezone.now().year)
+
+    try:
+        año = int(año)
+    except (ValueError, TypeError):
+        año = timezone.now().year
+
+    asignatura = get_object_or_404(Asignatura, pk=asignatura_id)
+    responsable_cargo = obtener_responsable_planificacion(asignatura)
+
+    # Crear registro
+    planificacion, created = PlanificacionAnual.objects.get_or_create(
+        asignatura=asignatura,
+        año=año,
+        defaults={
+            'estado': 'pendiente',
+            'docente_responsable': responsable_cargo.docente if responsable_cargo else None
+        }
+    )
+
+    # Redirigir a notificar
+    return redirect('planta_docente:notificar_planificacion_individual', pk=planificacion.id)

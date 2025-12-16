@@ -116,4 +116,6 @@ urlpatterns = [
          name='notificar_planificacion_individual'),
     path('planificaciones/notificar-masivo/',
          views.notificar_masivo, name='notificar_masivo'),
+    path('planificaciones/crear-y-notificar/',
+         views.crear_y_notificar, name='crear_y_notificar'),
 ]

@@ -254,12 +254,24 @@
                                     
                                     <!-- Notificar -->
                                     {% if item.responsable_email %}
-<a href="{% url 'planta_docente:notificar_planificacion_individual' item.planificacion.id %}"
-   class="btn btn-outline-primary btn-action"
-   data-bs-toggle="tooltip"
-   title="Enviar notificación por email">
-    <i class="bi bi-envelope"></i>
-</a>
+    {% if item.planificacion.id %}
+        <a href="{% url 'planta_docente:notificar_planificacion_individual' item.planificacion.id %}"
+           class="btn btn-outline-primary btn-action"
+           data-bs-toggle="tooltip"
+           title="Enviar notificación por email">
+            <i class="bi bi-envelope"></i>
+        </a>
+    {% else %}
+        <button type="button"
+                class="btn btn-outline-warning btn-action btn-crear-notificar"
+                data-asignatura-id="{{ item.asignatura.id }}"
+                data-asignatura-nombre="{{ item.asignatura.nombre }}"
+                data-año="{{ año_seleccionado }}"
+                data-bs-toggle="tooltip"
+                title="Crear registro y notificar">
+            <i class="bi bi-envelope-plus"></i>
+        </button>
+    {% endif %}
 {% else %}
 <button type="button"
         class="btn btn-outline-secondary btn-action"
@@ -447,6 +459,46 @@
         const btn = document.getElementById('btnNotificarTodos');
         btn.disabled = true;
         btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Enviando...';
+    });
+    // Botones crear y notificar
+    document.querySelectorAll('.btn-crear-notificar').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const asignaturaId = this.dataset.asignaturaId;
+            const asignaturaNombre = this.dataset.asignaturaNombre;
+            const año = this.dataset.año;
+            
+            if (confirm(`¿Crear registro y notificar a ${asignaturaNombre}?`)) {
+                // Crear formulario temporal
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '{% url "planta_docente:crear_y_notificar" %}';
+                
+                // CSRF Token
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = '{{ csrf_token }}';
+                form.appendChild(csrfInput);
+                
+                // Asignatura ID
+                const asignaturaInput = document.createElement('input');
+                asignaturaInput.type = 'hidden';
+                asignaturaInput.name = 'asignatura_id';
+                asignaturaInput.value = asignaturaId;
+                form.appendChild(asignaturaInput);
+                
+                // Año
+                const añoInput = document.createElement('input');
+                añoInput.type = 'hidden';
+                añoInput.name = 'año';
+                añoInput.value = año;
+                form.appendChild(añoInput);
+                
+                // Agregar al DOM y submit
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
     });
 </script>
 {% endblock %}
