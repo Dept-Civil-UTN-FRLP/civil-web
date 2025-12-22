@@ -324,6 +324,25 @@ def notificar_masivo(request):
     cuerpo_personalizado = request.POST.get(
         'cuerpo_personalizado', '') if tipo_mensaje == 'personalizado' else None
 
+    # Obtener archivos adicionales
+    archivos_adicionales = request.FILES.getlist('archivos_adicionales')
+
+    # Validar tamaño de archivos
+    if archivos_adicionales:
+        max_size = 10 * 1024 * 1024  # 10MB por archivo
+        max_total = 25 * 1024 * 1024  # 25MB total
+        total_size = sum(f.size for f in archivos_adicionales)
+
+        if any(f.size > max_size for f in archivos_adicionales):
+            messages.error(
+                request, 'Uno o más archivos superan el tamaño máximo de 10 MB.')
+            return redirect('planta_docente:dashboard_planificaciones')
+
+        if total_size > max_total:
+            messages.error(
+                request, 'El tamaño total de los archivos supera el límite de 25 MB.')
+            return redirect('planta_docente:dashboard_planificaciones')
+
     # Validar mensaje personalizado
     if tipo_mensaje == 'personalizado' and not cuerpo_personalizado:
         messages.error(request, 'Debe escribir un mensaje personalizado.')
@@ -368,6 +387,7 @@ def notificar_masivo(request):
             exito, mensaje = PlanificacionEmailService.enviar_solicitud_generica(
                 planificacion,
                 adjuntar_ficha=adjuntar_ficha,
+                archivos_adicionales=archivos_adicionales,  # ✅ NUEVO
                 usuario=request.user
             )
         else:
@@ -375,6 +395,7 @@ def notificar_masivo(request):
                 planificacion,
                 cuerpo_personalizado,
                 adjuntar_ficha=adjuntar_ficha,
+                archivos_adicionales=archivos_adicionales,  # ✅ NUEVO
                 usuario=request.user
             )
 
@@ -410,7 +431,7 @@ def notificar_masivo(request):
             messages.error(request, error)
 
     if total_procesadas == 0:
-        messages.info(request, 'ℹ️ No hay asignaturas pendientes de notificar')
+        messages.info(request, 'No hay asignaturas pendientes de notificar')
 
     return redirect('planta_docente:dashboard_planificaciones')
 
