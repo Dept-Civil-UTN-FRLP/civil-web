@@ -2,6 +2,7 @@
 from .main import *
 from .estructura_catedra import *
 from .funciones_sustantivas import *
+from .planificaciones import *
 
 
 __all__ = [
@@ -40,4 +41,13 @@ __all__ = [
     'editar_funcion_sustantiva',
     'eliminar_funcion_sustantiva',
     'toggle_activa_funcion_sustantiva',
+    # Vistas de planificaciones
+    'dashboard_planificaciones',
+    'subir_planificacion',
+    'descargar_planificacion',
+    'eliminar_planificacion',
+    'vista_previa_notificacion',
+    'notificar_planificacion_individual',
+    'notificar_masivo',
+    'crear_y_notificar',
 ]

@@ -5,6 +5,8 @@ from django.dispatch import receiver
 from django.utils import timezone
 
 from .managers import CargoManager, DocenteManager
+from .validators import validar_extension_planificacion, validar_tamaño_planificacion
+
 
 # Create your models here.
 
@@ -198,12 +200,83 @@ class Docente(models.Model):
 
         if errors:
             raise ValidationError(errors)
-
+    
+    @property
+    def email(self):
+        """
+        Retorna el email principal del docente, o el primero disponible.
+        
+        Returns:
+            str|None: Email del docente o None si no tiene emails configurados
+        
+        Example:
+            >>> docente = Docente.objects.get(pk=1)
+            >>> print(docente.email)
+            'jperez@frlp.utn.edu.ar'
+        """
+        # Intentar obtener email principal
+        email_principal = self.correos.filter(principal=True).first()
+        if email_principal:
+            return email_principal.email
+        
+        # Si no hay principal, retornar el primero disponible
+        primer_email = self.correos.first()
+        if primer_email:
+            return primer_email.email
+        
+        return None
+    
+    @property
+    def tiene_email(self):
+        """
+        Indica si el docente tiene al menos un email configurado.
+        
+        Returns:
+            bool: True si tiene emails, False si no
+        
+        Example:
+            >>> if docente.tiene_email:
+            >>>     enviar_notificacion(docente.email)
+        """
+        return self.correos.exists()
+    
     def save(self, *args, **kwargs):
         """Override save para ejecutar validaciones."""
         self.full_clean()
         super().save(*args, **kwargs)
-
+        
+    def get_full_name(self):
+        """
+        Retorna el nombre completo del docente en formato: APELLIDO, Nombre.
+        
+        Returns:
+            str: Nombre completo formateado
+        
+        Example:
+            >>> docente.get_full_name()
+            'PÉREZ, Juan Carlos'
+        """
+        if self.apellido and self.nombre:
+            return f"{self.apellido.upper()}, {self.nombre.title()}"
+        elif self.apellido:
+            return self.apellido.upper()
+        elif self.nombre:
+            return self.nombre.title()
+        return "Sin nombre"
+    
+    def get_short_name(self):
+        """
+        Retorna solo el apellido del docente.
+        
+        Returns:
+            str: Apellido en mayúsculas
+        
+        Example:
+            >>> docente.get_short_name()
+            'PÉREZ'
+        """
+        return self.apellido.upper() if self.apellido else "Sin apellido"
+    
     class Meta:
         verbose_name = "Docente"
         verbose_name_plural = "Docentes"
@@ -218,7 +291,7 @@ class Docente(models.Model):
 
     def __str__(self) -> str:
         sufijo = " (JUBILADO)" if self.jubilado else ""
-        return f"{self.apellido.upper()}, {self.nombre.title()}{sufijo}"
+        return self.get_full_name() + sufijo
 
 
 class Correo(models.Model):
@@ -1712,3 +1785,268 @@ class Resolucion(models.Model):
 
     def __str__(self):
         return f"Res. {self.get_origen_display()} {self.numero}/{self.año} - {self.cargo.docente.apellido.upper()}"
+
+
+class PlanificacionAnual(models.Model):
+    """
+    Planificación anual de una asignatura.
+    Mantiene historial año a año con control de versiones.
+    """
+
+    # Relación con asignatura
+    asignatura = models.ForeignKey(
+        'Asignatura',
+        on_delete=models.CASCADE,
+        related_name='planificaciones',
+        verbose_name="Asignatura"
+    )
+
+    # Año lectivo
+    año = models.PositiveIntegerField(
+        verbose_name="Año lectivo",
+        help_text="Año para el cual es válida esta planificación"
+    )
+
+    # Archivo
+    archivo = models.FileField(
+        upload_to='planificaciones/%Y/',
+        verbose_name="Archivo de planificación",
+        help_text="Formatos permitidos: PDF, DOCX (máx. 20MB)"
+    )
+
+    archivo_nombre_original = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Nombre original del archivo"
+    )
+
+    # Metadatos de carga
+    fecha_subida = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de subida"
+    )
+
+    subido_por = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='planificaciones_subidas',
+        verbose_name="Subido por"
+    )
+
+    # Estado del proceso
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente de recepción'),
+        ('enviada', 'Notificación enviada'),
+        ('recibida', 'Planificación recibida'),
+        ('aprobada', 'Aprobada'),
+        ('observada', 'Con observaciones'),
+    ]
+
+    estado = models.CharField(
+        max_length=20,
+        choices=ESTADO_CHOICES,
+        default='pendiente',
+        verbose_name="Estado"
+    )
+
+    # Docente responsable (al momento de la solicitud)
+    docente_responsable = models.ForeignKey(
+        'Docente',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='planificaciones_responsable',
+        verbose_name="Docente responsable"
+    )
+
+    # Observaciones
+    observaciones = models.TextField(
+        blank=True,
+        verbose_name="Observaciones"
+    )
+
+    # Aprobación (para uso futuro)
+    fecha_aprobacion = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de aprobación"
+    )
+
+    aprobado_por = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='planificaciones_aprobadas',
+        verbose_name="Aprobado por"
+    )
+
+    # Control de notificaciones
+    fecha_ultima_notificacion = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Última notificación enviada"
+    )
+
+    cantidad_notificaciones = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Cantidad de notificaciones enviadas"
+    )
+    
+    archivo = models.FileField(
+        upload_to='planificaciones/%Y/',
+        verbose_name="Archivo de planificación",
+        help_text="Formatos permitidos: PDF, DOCX (máx. 20MB)",
+        validators=[validar_extension_planificacion,
+                    validar_tamaño_planificacion]  # ✅ AGREGAR
+    )
+
+    class Meta:
+        db_table = 'planta_docente_planificacion_anual'
+        unique_together = [['asignatura', 'año']]
+        ordering = ['-año', 'asignatura__nombre']
+        verbose_name = "Planificación Anual"
+        verbose_name_plural = "Planificaciones Anuales"
+        indexes = [
+            models.Index(fields=['año', 'estado']),
+            models.Index(fields=['asignatura', 'año']),
+        ]
+
+    def __str__(self):
+        return f"{self.asignatura.nombre} - {self.año}"
+
+    def save(self, *args, **kwargs):
+        """Override para guardar nombre original del archivo."""
+        if self.archivo and not self.archivo_nombre_original:
+            self.archivo_nombre_original = self.archivo.name
+        super().save(*args, **kwargs)
+
+    @property
+    def extension_archivo(self):
+        """Retorna la extensión del archivo."""
+        import os
+        if self.archivo:
+            return os.path.splitext(self.archivo.name)[1].lower()
+        return ''
+
+    @property
+    def tamaño_archivo_mb(self):
+        """Retorna el tamaño del archivo en MB."""
+        if self.archivo:
+            return round(self.archivo.size / (1024 * 1024), 2)
+        return 0
+
+    @property
+    def tiene_planificacion(self):
+        """Indica si ya se subió la planificación."""
+        return bool(self.archivo)
+
+    @property
+    def dias_desde_ultima_notificacion(self):
+        """Calcula días desde la última notificación."""
+        if not self.fecha_ultima_notificacion:
+            return None
+        from django.utils import timezone
+        delta = timezone.now() - self.fecha_ultima_notificacion
+        return delta.days
+
+
+class HistorialNotificacionPlanificacion(models.Model):
+    """
+    Registro histórico de notificaciones enviadas para solicitar planificaciones.
+    Permite auditoría completa de comunicaciones.
+    """
+
+    # Relación con planificación
+    planificacion = models.ForeignKey(
+        'PlanificacionAnual',
+        on_delete=models.CASCADE,
+        related_name='historial_notificaciones',
+        verbose_name="Planificación"
+    )
+
+    # Destinatario
+    destinatario = models.ForeignKey(
+        'Docente',
+        on_delete=models.SET_NULL,
+        null=True,
+        verbose_name="Docente destinatario"
+    )
+
+    email_destinatario = models.EmailField(
+        verbose_name="Email destinatario"
+    )
+
+    # Contenido del email
+    asunto = models.CharField(
+        max_length=255,
+        verbose_name="Asunto"
+    )
+
+    cuerpo = models.TextField(
+        verbose_name="Cuerpo del mensaje"
+    )
+
+    # Tipo de mensaje
+    TIPO_CHOICES = [
+        ('generico', 'Mensaje genérico'),
+        ('personalizado', 'Mensaje personalizado'),
+        ('recordatorio', 'Recordatorio'),
+    ]
+
+    tipo_mensaje = models.CharField(
+        max_length=20,
+        choices=TIPO_CHOICES,
+        default='generico',
+        verbose_name="Tipo de mensaje"
+    )
+
+    # Archivos adjuntos (rutas relativas)
+    archivos_adjuntos = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="Archivos adjuntos",
+        help_text="Lista de rutas de archivos adjuntados"
+    )
+
+    ficha_adjunta = models.BooleanField(
+        default=False,
+        verbose_name="Ficha de asignatura adjunta"
+    )
+
+    # Metadatos de envío
+    fecha_envio = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de envío"
+    )
+
+    enviado_por = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        verbose_name="Enviado por"
+    )
+
+    # Estado del envío
+    enviado_exitosamente = models.BooleanField(
+        default=False,
+        verbose_name="Enviado exitosamente"
+    )
+
+    error_envio = models.TextField(
+        blank=True,
+        verbose_name="Error de envío"
+    )
+
+    class Meta:
+        db_table = 'planta_docente_historial_notificacion'
+        ordering = ['-fecha_envio']
+        verbose_name = "Historial de Notificación"
+        verbose_name_plural = "Historial de Notificaciones"
+        indexes = [
+            models.Index(fields=['planificacion', '-fecha_envio']),
+        ]
+
+    def __str__(self):
+        return f"Notificación a {self.email_destinatario} - {self.fecha_envio.strftime('%d/%m/%Y')}"

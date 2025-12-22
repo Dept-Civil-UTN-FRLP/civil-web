@@ -1,0 +1,696 @@
+{% extends 'planta_docente/base_planta.html' %}
+{% load static %}
+
+{% block title %}Planificaciones Anuales - {{ año_seleccionado }}{% endblock %}
+
+
+{% block content %}
+<style>
+    .stats-card {
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin: 0;
+    }
+    
+    .stats-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-top: 0.5rem;
+    }
+    
+    .progress-custom {
+        height: 25px;
+        border-radius: 10px;
+        background-color: #e9ecef;
+    }
+    
+    .progress-bar-custom {
+        font-size: 0.9rem;
+        font-weight: 600;
+        line-height: 25px;
+    }
+    
+    .table-planificaciones {
+        font-size: 0.95rem;
+    }
+    
+    .badge-responsable {
+        font-size: 0.85rem;
+        padding: 0.35em 0.65em;
+    }
+    
+    .btn-action {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .notificaciones-info {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'planta_docente:dashboard_asignaturas' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Planificaciones Anuales</li>
+        </ol>
+    </nav>
+    
+    <!-- Header con selector de año y botón notificar -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        <i class="bi bi-calendar-check text-primary"></i> 
+        Planificaciones Anuales
+    </h2>
+    
+    <div class="d-flex align-items-center gap-3">
+        <!-- Selector de Año -->
+        <select class="form-select" id="selectorAño" style="width: 150px;">
+            {% for año in años_disponibles %}
+            <option value="{{ año }}" {% if año == año_seleccionado %}selected{% endif %}>
+                {{ año }}
+            </option>
+            {% endfor %}
+        </select>
+        
+        <!-- Botón Notificar Todos -->
+        {% if stats.sin_notificar > 0 %}
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNotificarMasivo">
+            <i class="bi bi-envelope-fill"></i> Notificar Todos ({{ stats.sin_notificar }})
+        </button>
+        {% else %}
+        <button type="button" class="btn btn-secondary" disabled>
+            <i class="bi bi-check-circle"></i> Todos Notificados
+        </button>
+        {% endif %}
+    </div>
+</div>
+    
+    <!-- Estadísticas -->
+<div class="row mb-4">
+    <!-- Total Asignaturas -->
+    <div class="col-md-2">
+        <div class="stats-card bg-light">
+            <p class="stats-number text-secondary">{{ stats.total_asignaturas }}</p>
+            <p class="stats-label">Total</p>
+        </div>
+    </div>
+    
+    <!-- Con Planificación RECIBIDA -->
+    <div class="col-md-2">
+        <div class="stats-card bg-success bg-opacity-10">
+            <p class="stats-number text-success">{{ stats.con_planificacion }}</p>
+            <p class="stats-label">Recibidas ✓</p>
+        </div>
+    </div>
+    
+    <!-- ✅ NUEVO: Notificadas pero Pendientes -->
+    <div class="col-md-2">
+        <div class="stats-card bg-info bg-opacity-10">
+            <p class="stats-number text-info">{{ stats.notificadas_pendientes }}</p>
+            <p class="stats-label">Notificadas ⏳</p>
+        </div>
+    </div>
+    
+    <!-- ✅ NUEVO: Sin Notificar -->
+    <div class="col-md-2">
+        <div class="stats-card bg-warning bg-opacity-10">
+            <p class="stats-number text-warning">{{ stats.sin_notificar }}</p>
+            <p class="stats-label">Sin Notificar</p>
+        </div>
+    </div>
+    
+    <!-- Total Pendientes -->
+    <div class="col-md-2">
+        <div class="stats-card bg-danger bg-opacity-10">
+            <p class="stats-number text-danger">{{ stats.pendientes }}</p>
+            <p class="stats-label">Faltantes</p>
+        </div>
+    </div>
+    
+    <!-- Porcentaje -->
+    <div class="col-md-2">
+        <div class="stats-card bg-primary bg-opacity-10">
+            <p class="stats-number text-primary">{{ stats.porcentaje_completado }}%</p>
+            <p class="stats-label">Completado</p>
+        </div>
+    </div>
+</div>
+    
+    <!-- Barra de Progreso -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="progress progress-custom">
+                <div class="progress-bar progress-bar-custom bg-success" 
+                     role="progressbar" 
+                     style="width: {{ stats.porcentaje_completado }}%">
+                    {{ stats.con_planificacion }} de {{ stats.total_asignaturas }}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pestañas -->
+    <ul class="nav nav-tabs mb-4" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pendientes">
+                Pendientes ({{ stats.pendientes }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#recientes">
+                Recibidas Recientemente
+            </button>
+        </li>
+    </ul>
+    
+    <!-- Contenido de Pestañas -->
+    <div class="tab-content">
+        
+        <!-- Tab: Pendientes -->
+        <div class="tab-pane fade show active" id="pendientes">
+            
+            {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover table-planificaciones">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 30%;">Asignatura</th>
+                            <th style="width: 15%;">Departamento</th>
+                            <th style="width: 20%;">Responsable</th>
+                            <th style="width: 15%;">Estado</th>
+                            <th style="width: 10%;">Notif.</th>
+                            <th style="width: 10%;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in page_obj %}
+                        <tr>
+                            <!-- Asignatura -->
+                            <td>
+                                <strong>{{ item.asignatura.nombre|title }}</strong><br>
+                                <small class="text-muted">
+                                    {{ item.asignatura.get_nivel_display }} - 
+                                    {% if item.asignatura.obligatoria %}
+                                        <span class="badge bg-primary">Obligatoria</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Optativa</span>
+                                    {% endif %}
+                                </small>
+                            </td>
+                            
+                            <!-- Departamento -->
+                            <td>{{ item.asignatura.get_departamento_display }}</td>
+                            
+                            <!-- Responsable -->
+                            <td>
+                                {% if item.responsable_cargo %}
+                                    <span class="badge badge-responsable bg-info">
+                                        {{ item.responsable_cargo.get_categoria_display|upper }}
+                                    </span><br>
+                                    <small>{{ item.responsable_nombre }}</small><br>
+                                    {% if item.responsable_email %}
+                                        <small class="text-muted">
+                                            <i class="bi bi-envelope"></i> {{ item.responsable_email }}
+                                        </small>
+                                    {% else %}
+                                        <small class="text-danger">
+                                            <i class="bi bi-exclamation-triangle"></i> Sin email
+                                        </small>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-warning">Sin responsable</span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Estado -->
+                            <td>
+    {% if item.planificacion.id and item.planificacion.archivo %}
+        <!-- Tiene archivo subido -->
+        {% if item.planificacion.estado == 'aprobada' %}
+            <span class="badge bg-success">✓ Aprobada</span>
+        {% else %}
+            <span class="badge bg-success">✓ Recibida</span>
+        {% endif %}
+    {% elif item.planificacion.id and item.planificacion.estado == 'enviada' %}
+        <!-- Notificación enviada, esperando respuesta -->
+        <span class="badge bg-info">Notificada</span>
+    {% elif item.planificacion.id and item.planificacion.estado == 'pendiente' %}
+        <!-- Existe registro pero no notificada -->
+        <span class="badge bg-warning">Pendiente</span>
+    {% else %}
+        <!-- Sin registro -->
+        <span class="badge bg-secondary">Sin iniciar</span>
+    {% endif %}
+</td>
+                            
+                            <!-- Notificaciones -->
+                            <td>
+                                <span class="badge bg-light text-dark">
+                                    {{ item.planificacion.cantidad_notificaciones }}
+                                </span>
+                                {% if item.planificacion.fecha_ultima_notificacion %}
+                                    <br><small class="notificaciones-info">
+                                        {{ item.planificacion.dias_desde_ultima_notificacion }} días
+                                    </small>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Acciones -->
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <!-- Subir -->
+                                    <a href="{% url 'planta_docente:subir_planificacion' item.asignatura.id %}?año={{ año_seleccionado }}" 
+                                       class="btn btn-outline-success btn-action"
+                                       data-bs-toggle="tooltip"
+                                       title="Subir planificación">
+                                        <i class="bi bi-upload"></i>
+                                    </a>
+                                    
+                                    <!-- Notificar -->
+                                    {% if item.responsable_email %}
+    {% if item.planificacion.id %}
+        <a href="{% url 'planta_docente:notificar_planificacion_individual' item.planificacion.id %}"
+           class="btn btn-outline-primary btn-action"
+           data-bs-toggle="tooltip"
+           title="Enviar notificación por email">
+            <i class="bi bi-envelope"></i>
+        </a>
+    {% else %}
+        <button type="button"
+                class="btn btn-outline-warning btn-action btn-crear-notificar"
+                data-asignatura-id="{{ item.asignatura.id }}"
+                data-asignatura-nombre="{{ item.asignatura.nombre }}"
+                data-año="{{ año_seleccionado }}"
+                data-bs-toggle="tooltip"
+                title="Crear registro y notificar">
+            <i class="bi bi-envelope-plus"></i>
+        </button>
+    {% endif %}
+{% else %}
+<button type="button"
+        class="btn btn-outline-secondary btn-action"
+        disabled
+        data-bs-toggle="tooltip"
+        title="{% if item.responsable_cargo %}Docente sin email configurado{% else %}Sin docente responsable{% endif %}">
+    <i class="bi bi-envelope-slash"></i>
+</button>
+{% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Paginación -->
+            {% if page_obj.has_other_pages %}
+            <nav>
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?año={{ año_seleccionado }}&page={{ page_obj.previous_page_number }}">
+                            Anterior
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?año={{ año_seleccionado }}&page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?año={{ año_seleccionado }}&page={{ page_obj.next_page_number }}">
+                            Siguiente
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            <div class="alert alert-success">
+                <i class="bi bi-check-circle"></i>
+                <strong>¡Excelente!</strong> Todas las asignaturas tienen su planificación para {{ año_seleccionado }}.
+            </div>
+            {% endif %}
+            
+        </div>
+        
+        <!-- Tab: Recientes -->
+        <div class="tab-pane fade" id="recientes">
+            {% if recientes %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Asignatura</th>
+                            <th>Responsable</th>
+                            <th>Fecha de Subida</th>
+                            <th>Tamaño</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for plan in recientes %}
+                        <tr>
+                            <td>
+                                <strong>{{ plan.asignatura.nombre|title }}</strong><br>
+                                <small class="text-muted">{{ plan.asignatura.get_departamento_display }}</small>
+                            </td>
+                            <td>
+                                {% if plan.docente_responsable %}
+                                    {{ plan.docente_responsable.get_full_name }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ plan.fecha_subida|date:"d/m/Y H:i" }}</td>
+                            <td>{{ plan.tamaño_archivo_mb }} MB</td>
+                            <td>
+                                <a href="{% url 'planta_docente:descargar_planificacion' plan.id %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-download"></i> Descargar
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                No hay planificaciones recibidas para {{ año_seleccionado }}.
+            </div>
+            {% endif %}
+        </div>
+        
+    </div>
+    
+</div>
+
+<!-- Modal: Notificar Individual -->
+<div class="modal fade" id="modalNotificar" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-envelope"></i> Enviar Solicitud de Planificación
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalNotificarBody">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal: Notificar Masivo -->
+<div class="modal fade" id="modalNotificarMasivo" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-envelope-fill"></i> Notificación Masiva de Planificaciones
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <form method="post" action="{% url 'planta_docente:notificar_masivo' %}" id="formNotificarMasivo">
+                {% csrf_token %}
+                <input type="hidden" name="año" value="{{ año_seleccionado }}">
+                
+                <div class="modal-body">
+                    
+                    <!-- Información -->
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-info-circle"></i> Información</h6>
+                        <p class="mb-1">
+                            Se enviará notificación a <strong>{{ stats.sin_notificar }}</strong> asignaturas 
+                            que aún no han sido notificadas para el año <strong>{{ año_seleccionado }}</strong>.
+                        </p>
+                        <p class="mb-0">
+                            <small>Solo se notificarán asignaturas con docente responsable y email configurado.</small>
+                        </p>
+                    </div>
+                    
+                    <!-- Tipo de Mensaje -->
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Tipo de mensaje</strong></label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="tipo_mensaje" 
+                                   id="tipoGenericoMasivo" value="generico" checked>
+                            <label class="form-check-label" for="tipoGenericoMasivo">
+                                <strong>Mensaje genérico</strong>
+                                <br><small class="text-muted">Plantilla estándar para todos</small>
+                            </label>
+                        </div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="radio" name="tipo_mensaje" 
+                                   id="tipoPersonalizadoMasivo" value="personalizado">
+                            <label class="form-check-label" for="tipoPersonalizadoMasivo">
+                                <strong>Mensaje personalizado</strong>
+                                <br><small class="text-muted">Mismo mensaje personalizado para todos</small>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Mensaje Personalizado -->
+                    <div class="mb-3" id="mensajePersonalizadoMasivoContainer" style="display: none;">
+                        <label for="cuerpoPersonalizadoMasivo" class="form-label">
+                            <strong>Mensaje personalizado</strong>
+                        </label>
+                        <textarea class="form-control" id="cuerpoPersonalizadoMasivo" 
+                                  name="cuerpo_personalizado" rows="6"
+                                  placeholder="Este mensaje se enviará a todos los docentes responsables..."></textarea>
+                    </div>
+                    
+                    <!-- Adjuntar Ficha -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="adjuntar_ficha" 
+                                   id="adjuntarFichaMasivo" checked>
+                            <label class="form-check-label" for="adjuntarFichaMasivo">
+                                <strong>Adjuntar ficha de asignatura a cada email</strong>
+                                <br><small class="text-muted">
+                                    Incluye PDF con información de cada asignatura
+                                </small>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Advertencia -->
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Atención:</strong> Este proceso puede tardar varios minutos dependiendo 
+                        de la cantidad de notificaciones a enviar.
+                    </div>
+                    
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="btnEnviarMasivo">
+                        <i class="bi bi-send-fill"></i> Enviar Notificaciones
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // ============================================================
+        // CAMBIO DE AÑO
+        // ============================================================
+        const selectorAño = document.getElementById('selectorAño');
+        if (selectorAño) {
+            selectorAño.addEventListener('change', function() {
+                window.location.href = '?año=' + this.value;
+            });
+        }
+        
+        // ============================================================
+        // TOOLTIPS
+        // ============================================================
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // ============================================================
+        // NOTIFICAR TODOS (MASIVO)
+        // ============================================================
+        const formNotificarTodos = document.getElementById('formNotificarTodos');
+        if (formNotificarTodos) {
+            formNotificarTodos.addEventListener('submit', function(e) {
+                const count = {{ page_obj.paginator.count|default:0 }};
+                
+                if (!confirm(`¿Enviar notificación genérica a ${count} asignaturas pendientes?\n\nEsto puede tardar varios minutos.`)) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // Deshabilitar botón
+                const btn = document.getElementById('btnNotificarTodos');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Enviando...';
+                }
+            });
+        }
+        
+        // ============================================================
+        // BOTONES CREAR Y NOTIFICAR (AMARILLOS)
+        // ============================================================
+        const botonesCrearNotificar = document.querySelectorAll('.btn-crear-notificar');
+        console.log('Botones crear-notificar encontrados:', botonesCrearNotificar.length);
+        
+        botonesCrearNotificar.forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const asignaturaId = this.getAttribute('data-asignatura-id');
+                const asignaturaNombre = this.getAttribute('data-asignatura-nombre');
+                const año = this.getAttribute('data-año');
+                
+                console.log('Click detectado:', {
+                    id: asignaturaId,
+                    nombre: asignaturaNombre,
+                    año: año
+                });
+                
+                if (!confirm(`¿Crear registro de planificación y notificar?\n\nAsignatura: ${asignaturaNombre}\nAño: ${año}`)) {
+                    return;
+                }
+                
+                // Deshabilitar botón
+                this.disabled = true;
+                this.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+                
+                // Crear formulario
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '{% url "planta_docente:crear_y_notificar" %}';
+                
+                // CSRF Token
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = '{{ csrf_token }}';
+                form.appendChild(csrfInput);
+                
+                // Asignatura ID
+                const asignaturaInput = document.createElement('input');
+                asignaturaInput.type = 'hidden';
+                asignaturaInput.name = 'asignatura_id';
+                asignaturaInput.value = asignaturaId;
+                form.appendChild(asignaturaInput);
+                
+                // Año
+                const añoInput = document.createElement('input');
+                añoInput.type = 'hidden';
+                añoInput.name = 'año';
+                añoInput.value = año;
+                form.appendChild(añoInput);
+                
+                console.log('Enviando formulario...');
+                
+                // Agregar al DOM y enviar
+                document.body.appendChild(form);
+                form.submit();
+            });
+        });
+        
+        console.log('✅ Scripts de planificaciones cargados correctamente');
+    const radioGenericoMasivo = document.getElementById('tipoGenericoMasivo');
+        const radioPersonalizadoMasivo = document.getElementById('tipoPersonalizadoMasivo');
+        const containerMasivo = document.getElementById('mensajePersonalizadoMasivoContainer');
+        const textareaMasivo = document.getElementById('cuerpoPersonalizadoMasivo');
+        
+        if (radioGenericoMasivo && radioPersonalizadoMasivo) {
+            radioGenericoMasivo.addEventListener('change', function() {
+                containerMasivo.style.display = 'none';
+                textareaMasivo.required = false;
+            });
+            
+            radioPersonalizadoMasivo.addEventListener('change', function() {
+                containerMasivo.style.display = 'block';
+                textareaMasivo.required = true;
+            });
+        }
+        
+        // Validación y confirmación del formulario masivo
+        const formMasivo = document.getElementById('formNotificarMasivo');
+        if (formMasivo) {
+            formMasivo.addEventListener('submit', function(e) {
+                const tipoPersonalizado = radioPersonalizadoMasivo?.checked;
+                const mensaje = textareaMasivo?.value.trim();
+                
+                // Validar mensaje personalizado
+                if (tipoPersonalizado && !mensaje) {
+                    e.preventDefault();
+                    alert('Por favor escribe un mensaje personalizado.');
+                    return false;
+                }
+                
+                // Confirmación
+                const count = {{ stats.sin_notificar|default:0 }};
+                if (!confirm(`¿Enviar notificación a ${count} asignaturas?\n\nEsto puede tardar varios minutos.`)) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // Deshabilitar botón y mostrar loading
+                const btn = document.getElementById('btnEnviarMasivo');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando...';
+                }
+                
+                // Cerrar modal después de un momento
+                setTimeout(function() {
+                    bootstrap.Modal.getInstance(document.getElementById('modalNotificarMasivo'))?.hide();
+                }, 500);
+            });
+        }
+        
+        console.log('✅ Scripts de notificación masiva cargados');
+    });
+</script>
+{% endblock %}

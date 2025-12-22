@@ -1,5 +1,7 @@
 # planta_docente/forms.py
 
+from planta_docente.models import PlanificacionAnual
+from django.core.exceptions import ValidationError
 from django import forms
 from .models import Cargo, Docente, Asignatura
 from django.utils import timezone
@@ -206,3 +208,77 @@ class AsignaturaFichaForm(forms.ModelForm):
         self.fields['hora_total'].label = "Horas Reloj Total"
         self.fields['numero_comisiones'].label = "Cantidad de Comisiones"
         self.fields['numero_estudiantes'].label = "Cantidad Promedio de Estudiantes"
+
+
+class PlanificacionUploadForm(forms.ModelForm):
+    """
+    Formulario para subir archivos de planificación.
+    """
+
+    class Meta:
+        model = PlanificacionAnual
+        fields = ['archivo', 'observaciones']
+        widgets = {
+            'archivo': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': '.pdf,.docx',
+            }),
+            'observaciones': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Observaciones adicionales (opcional)'
+            }),
+        }
+        labels = {
+            'archivo': 'Archivo de Planificación',
+            'observaciones': 'Observaciones',
+        }
+        help_texts = {
+            'archivo': 'Formatos permitidos: PDF, DOCX. Tamaño máximo: 20MB',
+        }
+
+
+class NotificacionForm(forms.Form):
+    """
+    Formulario para configurar notificaciones.
+    """
+    TIPO_CHOICES = [
+        ('generico', 'Mensaje genérico'),
+        ('personalizado', 'Mensaje personalizado'),
+    ]
+
+    tipo_mensaje = forms.ChoiceField(
+        choices=TIPO_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='generico',
+        label='Tipo de mensaje'
+    )
+
+    adjuntar_ficha = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label='Adjuntar ficha de asignatura'
+    )
+
+    cuerpo_personalizado = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 8,
+            'placeholder': 'Escriba aquí el mensaje personalizado...'
+        }),
+        label='Mensaje personalizado'
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        tipo = cleaned_data.get('tipo_mensaje')
+        cuerpo = cleaned_data.get('cuerpo_personalizado')
+
+        if tipo == 'personalizado' and not cuerpo:
+            raise ValidationError(
+                'Debe escribir un mensaje personalizado si selecciona esta opción.'
+            )
+
+        return cleaned_data

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Ficha de Asignatura - {{ asignatura.nombre }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #333;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 1.5cm;
+            padding-bottom: 0.5cm;
+            border-bottom: 3px solid #2c3e50;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 18pt;
+            color: #2c3e50;
+            text-transform: uppercase;
+        }
+        
+        .header p {
+            margin: 0.3cm 0 0 0;
+            font-size: 10pt;
+            color: #7f8c8d;
+        }
+        
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 0.8cm;
+        }
+        
+        .info-table td {
+            padding: 0.3cm 0.4cm;
+            border: 1px solid #bdc3c7;
+            vertical-align: top;
+        }
+        
+        .info-table td.label {
+            background-color: #ecf0f1;
+            font-weight: bold;
+            width: 25%;
+        }
+        
+        .section-title {
+            font-size: 13pt;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-top: 0.8cm;
+            margin-bottom: 0.4cm;
+            padding-bottom: 0.2cm;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.15cm 0.3cm;
+            margin: 0.1cm;
+            background-color: #3498db;
+            color: white;
+            border-radius: 3px;
+            font-size: 9pt;
+        }
+        
+        .objetivos-list {
+            margin-left: 0.5cm;
+        }
+        
+        .objetivos-list li {
+            margin-bottom: 0.3cm;
+            line-height: 1.5;
+        }
+        
+        .contenidos-box {
+            background-color: #f8f9fa;
+            padding: 0.5cm;
+            border-left: 3px solid #3498db;
+            margin-top: 0.3cm;
+        }
+        
+        .footer {
+            position: fixed;
+            bottom: 1cm;
+            left: 2cm;
+            right: 2cm;
+            text-align: center;
+            font-size: 8pt;
+            color: #95a5a6;
+            border-top: 1px solid #ecf0f1;
+            padding-top: 0.3cm;
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- Header -->
+    <div class="header">
+        <h1>{{ asignatura.nombre|title }}</h1>
+        <p>Universidad Tecnológica Nacional - Facultad Regional La Plata</p>
+        <p>Año Lectivo {{ año }}</p>
+    </div>
+    
+    <!-- Información General -->
+    <table class="info-table">
+        <tr>
+            <td class="label">Departamento:</td>
+            <td>{{ asignatura.get_departamento_display }}</td>
+            <td class="label">Carrera:</td>
+            <td>{{ asignatura.get_especialidad_display|default:"No especificada" }}</td>
+        </tr>
+        <tr>
+            <td class="label">Nivel:</td>
+            <td>{{ asignatura.get_nivel_display }}</td>
+            <td class="label">Duración:</td>
+            <td>{{ asignatura.get_dictado_display|default:"Cuatrimestral" }}</td>
+        </tr>
+        <tr>
+            <td class="label">Bloque:</td>
+            <td>
+                {% if bloques %}
+                    {% for bloque in bloques %}
+                        {{ bloque.nombre|title }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                {% else %}
+                    No especificado
+                {% endif %}
+            </td>
+            <td class="label">Área:</td>
+            <td>
+                {% if areas %}
+                    {% for area in areas %}
+                        {{ area.nombre|title }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                {% else %}
+                    No especificada
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td class="label">Carga Horaria Semanal:</td>
+            <td>{{ asignatura.hora_semanal|default:"0" }} hs Cátedra</td>
+            <td class="label">Carga Horaria Total:</td>
+            <td>{{ asignatura.hora_total|default:"0" }} Hs Cátedra</td>
+        </tr>
+    </table>
+    
+    <!-- Profesores -->
+    {% if profesores %}
+    <div class="section-title">Profesores</div>
+    <table class="info-table">
+        {% for cargo in profesores %}
+        <tr>
+            <td class="label">{{ cargo.get_categoria_display|upper }}</td>
+            <td>{{ cargo.docente.apellido|upper }}, {{ cargo.docente.nombre|title }}</td>
+            <td class="label">Dedicación:</td>
+            <td>{{ cargo.get_dedicacion_display }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+    
+    <!-- Auxiliares -->
+    {% if auxiliares %}
+    <div class="section-title">Auxiliares</div>
+    <table class="info-table">
+        {% for cargo in auxiliares %}
+        <tr>
+            <td class="label">{{ cargo.get_categoria_display|upper }}</td>
+            <td>{{ cargo.docente.apellido|upper }}, {{ cargo.docente.nombre|title }}</td>
+            <td class="label">Dedicación:</td>
+            <td>{{ cargo.get_dedicacion_display }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+    
+    <!-- Competencias -->
+    {% if competencias_lista %}
+    <div class="section-title">Competencias Específicas</div>
+    <p>
+        {% for comp in competencias_lista %}
+        <span class="badge">{{ comp }}</span>
+        {% endfor %}
+    </p>
+    {% endif %}
+    
+    <!-- Objetivos -->
+    {% if objetivos_lista %}
+    <div class="section-title">Objetivos</div>
+    <ul class="objetivos-list">
+        {% for objetivo in objetivos_lista %}
+        <li>{{ objetivo }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    
+    <!-- Contenidos Mínimos -->
+    {% if contenidos_lista %}
+    <div class="section-title">Contenidos Mínimos</div>
+    <div class="contenidos-box">
+        <ul>
+            {% for contenido in contenidos_lista %}
+            <li>{{ contenido }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    
+    <!-- Footer -->
+    <div class="footer">
+        Documento generado automáticamente
+    </div>
+    
+</body>
+</html>
