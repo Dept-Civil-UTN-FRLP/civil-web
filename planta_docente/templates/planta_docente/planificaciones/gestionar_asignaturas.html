@@ -1,0 +1,147 @@
+<!-- templates/planta_docente/planificaciones/gestionar_asignaturas.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-gear"></i> Gestionar Asignaturas por Año</h2>
+        
+        <!-- Selector de año -->
+        <div>
+            <label>Año lectivo:</label>
+            <select class="form-select d-inline-block w-auto" onchange="cambiarAño(this.value)">
+                {% for año in años_disponibles %}
+                <option value="{{ año }}" {% if año == año_seleccionado %}selected{% endif %}>
+                    {{ año }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Asignatura</th>
+                    <th>Nivel</th>
+                    <th>Departamento</th>
+                    <th class="text-center">Estado</th>
+                    <th>Motivo</th>
+                    <th class="text-center">Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in page_obj %}
+                <tr id="row-{{ item.asignatura.id }}">
+                    <td>{{ item.asignatura.nombre|title }}</td>
+                    <td>{{ item.asignatura.get_nivel_display }}</td>
+                    <td>{{ item.asignatura.get_departamento_display }}</td>
+                    <td class="text-center">
+                        <span class="badge bg-{{ item.activa|yesno:'success,secondary' }}">
+                            {{ item.activa|yesno:'Activa,Deshabilitada' }}
+                        </span>
+                    </td>
+                    <td>
+                        <small class="text-muted">{{ item.motivo|default:'-' }}</small>
+                    </td>
+                    <td class="text-center">
+                        <button 
+                            class="btn btn-sm btn-{{ item.activa|yesno:'danger,success' }}"
+                            onclick="toggleAsignatura({{ item.asignatura.id }}, {{ item.activa|yesno:'false,true' }})">
+                            <i class="bi bi-{{ item.activa|yesno:'x-circle,check-circle' }}"></i>
+                            {{ item.activa|yesno:'Deshabilitar,Habilitar' }}
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Paginación -->
+    {% include 'partials/pagination.html' %}
+</div>
+
+<!-- Modal para motivo de deshabilitación -->
+<div class="modal fade" id="motivoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Motivo de Deshabilitación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="modal-asignatura-id">
+                <textarea 
+                    class="form-control" 
+                    id="modal-motivo" 
+                    rows="3" 
+                    placeholder="Ej: Plan de estudios discontinuado"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" onclick="confirmarDeshabilitar()">
+                    Deshabilitar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const año = {{ año_seleccionado }};
+const motivoModal = new bootstrap.Modal(document.getElementById('motivoModal'));
+
+function cambiarAño(nuevoAño) {
+    window.location.href = `?año=${nuevoAño}`;
+}
+
+function toggleAsignatura(asignaturaId, habilitar) {
+    if (!habilitar) {
+        // Deshabilitar: pedir motivo
+        document.getElementById('modal-asignatura-id').value = asignaturaId;
+        document.getElementById('modal-motivo').value = '';
+        motivoModal.show();
+    } else {
+        // Habilitar: directo
+        enviarToggle(asignaturaId, true, '');
+    }
+}
+
+function confirmarDeshabilitar() {
+    const asignaturaId = document.getElementById('modal-asignatura-id').value;
+    const motivo = document.getElementById('modal-motivo').value.trim();
+    
+    if (!motivo) {
+        alert('Debe proporcionar un motivo');
+        return;
+    }
+    
+    motivoModal.hide();
+    enviarToggle(asignaturaId, false, motivo);
+}
+
+function enviarToggle(asignaturaId, activa, motivo) {
+    const formData = new FormData();
+    formData.append('asignatura_id', asignaturaId);
+    formData.append('año', año);
+    formData.append('activa', activa);
+    formData.append('motivo', motivo);
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    
+    fetch("{% url 'planta_docente:toggle_asignatura_año' %}", {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+</script>
+{% endblock %}
