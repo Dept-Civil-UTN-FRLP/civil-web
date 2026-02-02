@@ -1,7 +1,63 @@
 <!-- templates/planta_docente/planificaciones/gestionar_asignaturas.html -->
-{% extends 'base.html' %}
+{% extends 'planta_docente/base_planta.html' %}
+{% load static %}
 
 {% block content %}
+<script>
+const año = {{ año_seleccionado }};
+const motivoModal = new bootstrap.Modal(document.getElementById('motivoModal'));
+
+function cambiarAño(nuevoAño) {
+    window.location.href = `?año=${nuevoAño}`;
+}
+
+function toggleAsignatura(asignaturaId, habilitar) {
+    if (!habilitar) {
+        // Deshabilitar: pedir motivo
+        document.getElementById('modal-asignatura-id').value = asignaturaId;
+        document.getElementById('modal-motivo').value = '';
+        motivoModal.show();
+    } else {
+        // Habilitar: directo
+        enviarToggle(asignaturaId, true, '');
+    }
+}
+
+function confirmarDeshabilitar() {
+    const asignaturaId = document.getElementById('modal-asignatura-id').value;
+    const motivo = document.getElementById('modal-motivo').value.trim();
+    
+    if (!motivo) {
+        alert('Debe proporcionar un motivo');
+        return;
+    }
+    
+    motivoModal.hide();
+    enviarToggle(asignaturaId, false, motivo);
+}
+
+function enviarToggle(asignaturaId, activa, motivo) {
+    const formData = new FormData();
+    formData.append('asignatura_id', asignaturaId);
+    formData.append('año', año);
+    formData.append('activa', activa);
+    formData.append('motivo', motivo);
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    
+    fetch("{% url 'planta_docente:toggle_asignatura_año' %}", {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+</script>
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-gear"></i> Gestionar Asignaturas por Año</h2>
@@ -60,7 +116,7 @@
     </div>
 
     <!-- Paginación -->
-    {% include 'partials/pagination.html' %}
+    {% include 'components/pagination.html' %}
 </div>
 
 <!-- Modal para motivo de deshabilitación -->
@@ -89,59 +145,4 @@
     </div>
 </div>
 
-<script>
-const año = {{ año_seleccionado }};
-const motivoModal = new bootstrap.Modal(document.getElementById('motivoModal'));
-
-function cambiarAño(nuevoAño) {
-    window.location.href = `?año=${nuevoAño}`;
-}
-
-function toggleAsignatura(asignaturaId, habilitar) {
-    if (!habilitar) {
-        // Deshabilitar: pedir motivo
-        document.getElementById('modal-asignatura-id').value = asignaturaId;
-        document.getElementById('modal-motivo').value = '';
-        motivoModal.show();
-    } else {
-        // Habilitar: directo
-        enviarToggle(asignaturaId, true, '');
-    }
-}
-
-function confirmarDeshabilitar() {
-    const asignaturaId = document.getElementById('modal-asignatura-id').value;
-    const motivo = document.getElementById('modal-motivo').value.trim();
-    
-    if (!motivo) {
-        alert('Debe proporcionar un motivo');
-        return;
-    }
-    
-    motivoModal.hide();
-    enviarToggle(asignaturaId, false, motivo);
-}
-
-function enviarToggle(asignaturaId, activa, motivo) {
-    const formData = new FormData();
-    formData.append('asignatura_id', asignaturaId);
-    formData.append('año', año);
-    formData.append('activa', activa);
-    formData.append('motivo', motivo);
-    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-    
-    fetch("{% url 'planta_docente:toggle_asignatura_año' %}", {
-        method: 'POST',
-        body: formData
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('Error: ' + data.error);
-        }
-    });
-}
-</script>
 {% endblock %}
