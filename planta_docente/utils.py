@@ -267,7 +267,7 @@ def obtener_estado_vencimiento(cargo):
         return {
             "tipo": "pausado",
             "mensaje": f"Vencimiento suspendido (Licencia M.J. desde {cargo.fecha_inicio_licencia_mj.strftime('%d/%m/%Y') if cargo.fecha_inicio_licencia_mj else 'N/A'})",
-            "clase_badge": "bg-warning text-dark",
+            "badge_class": "bg-warning text-dark",
             "icono": "bi-pause-circle",
             "dias_licencia": dias_licencia,
             "fecha_vencimiento_original": cargo.fecha_vencimiento_original_pre_licencia,
@@ -279,7 +279,7 @@ def obtener_estado_vencimiento(cargo):
         return {
             "tipo": "sin_vencimiento",
             "mensaje": "Sin fecha de vencimiento",
-            "clase_badge": "bg-secondary",
+            "badge_class": "bg-secondary",
             "icono": "bi-infinity",
             "urgente": False,
         }
@@ -294,7 +294,7 @@ def obtener_estado_vencimiento(cargo):
             "tipo": "vencido",
             "dias_vencido": dias_vencido,
             "mensaje": f"Vencido hace {dias_vencido} día{'s' if dias_vencido != 1 else ''}",
-            "clase_badge": "bg-danger",
+            "badge_class": "bg-danger",
             "icono": "bi-exclamation-triangle-fill",
             "urgente": True
         }
@@ -306,7 +306,7 @@ def obtener_estado_vencimiento(cargo):
             "dias_restantes": dias_restantes,
             "fecha_vencimiento": cargo.fecha_vencimiento,
             "mensaje": f"Vence en {dias_restantes} día{'s' if dias_restantes != 1 else ''}",
-            "clase_badge": "bg-danger",
+            "badge_class": "bg-danger",
             "icono": "bi-clock-fill",
             "urgente": True
         }
@@ -318,7 +318,7 @@ def obtener_estado_vencimiento(cargo):
             "dias_restantes": dias_restantes,
             "fecha_vencimiento": cargo.fecha_vencimiento,
             "mensaje": f"Vence en {dias_restantes} días",
-            "clase_badge": "bg-warning text-dark",
+            "badge_class": "bg-warning text-dark",
             "icono": "bi-clock",
             "urgente": False, 
         }
@@ -329,7 +329,7 @@ def obtener_estado_vencimiento(cargo):
         "dias_restantes": dias_restantes,
         "fecha_vencimiento": cargo.fecha_vencimiento,
         "mensaje": f"Vigente ({dias_restantes} días)",
-        "clase_badge": "bg-success",
+        "badge_class": "bg-success",
         "icono": "bi-check-circle",
         "urgente": False,
     }
