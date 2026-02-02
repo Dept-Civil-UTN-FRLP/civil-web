@@ -4,8 +4,14 @@
 
 {% block content %}
 <script>
+// ✅ Declarar variables globales
+let motivoModal;
 const año = {{ año_seleccionado }};
-const motivoModal = new bootstrap.Modal(document.getElementById('motivoModal'));
+
+// ✅ Inicializar cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    motivoModal = new bootstrap.Modal(document.getElementById('motivoModal'));
+});
 
 function cambiarAño(nuevoAño) {
     window.location.href = `?año=${nuevoAño}`;
@@ -55,6 +61,10 @@ function enviarToggle(asignaturaId, activa, motivo) {
         } else {
             alert('Error: ' + data.error);
         }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        alert('Error de conexión: ' + err.message);
     });
 }
 </script>
