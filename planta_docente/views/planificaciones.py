@@ -468,3 +468,99 @@ def crear_y_notificar(request):
 
     # Redirigir a notificar
     return redirect('planta_docente:notificar_planificacion_individual', pk=planificacion.id)
+
+
+@login_required
+@staff_member_required
+def gestionar_asignaturas_año(request):
+    """
+    Vista para habilitar/deshabilitar asignaturas por año.
+    """
+    año_actual = timezone.now().year
+    año_seleccionado = request.GET.get('año', año_actual)
+
+    try:
+        año_seleccionado = int(año_seleccionado)
+    except (ValueError, TypeError):
+        año_seleccionado = año_actual
+
+    # Todas las asignaturas con su estado para el año
+    from planta_docente.models import Asignatura, AsignaturaAnual
+
+    asignaturas = Asignatura.objects.all().order_by('nivel', 'nombre')
+
+    asignaturas_data = []
+    for asig in asignaturas:
+        try:
+            config = AsignaturaAnual.objects.get(
+                asignatura=asig,
+                año=año_seleccionado
+            )
+        except AsignaturaAnual.DoesNotExist:
+            # Por defecto activa
+            config = None
+
+        asignaturas_data.append({
+            'asignatura': asig,
+            'config': config,
+            'activa': config.activa if config else True,
+            'motivo': config.motivo_deshabilitacion if config else '',
+        })
+
+    # Paginación
+    from django.core.paginator import Paginator
+    paginator = Paginator(asignaturas_data, 30)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Años disponibles
+    años_disponibles = range(año_actual - 1, año_actual + 4)
+
+    context = {
+        'año_seleccionado': año_seleccionado,
+        'años_disponibles': años_disponibles,
+        'page_obj': page_obj,
+    }
+
+    return render(request, 'planta_docente/planificaciones/gestionar_asignaturas.html', context)
+
+
+@login_required
+@staff_member_required
+def toggle_asignatura_año(request):
+    """
+    AJAX: Habilita/deshabilita una asignatura para un año específico.
+    """
+    from planta_docente.models import Asignatura, AsignaturaAnual
+
+    asignatura_id = request.POST.get('asignatura_id')
+    año = request.POST.get('año')
+    activa = request.POST.get('activa') == 'true'
+    motivo = request.POST.get('motivo', '')
+
+    try:
+        año = int(año)
+        asignatura = Asignatura.objects.get(pk=asignatura_id)
+
+        # Crear o actualizar configuración
+        config, created = AsignaturaAnual.objects.update_or_create(
+            asignatura=asignatura,
+            año=año,
+            defaults={
+                'activa': activa,
+                'motivo_deshabilitacion': motivo if not activa else '',
+                'modificado_por': request.user
+            }
+        )
+
+        return JsonResponse({
+            'success': True,
+            'activa': config.activa,
+            'mensaje': f"{'Habilitada' if activa else 'Deshabilitada'} para {año}"
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)
