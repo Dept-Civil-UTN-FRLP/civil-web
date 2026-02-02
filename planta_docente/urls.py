@@ -118,4 +118,9 @@ urlpatterns = [
          views.notificar_masivo, name='notificar_masivo'),
     path('planificaciones/crear-y-notificar/',
          views.crear_y_notificar, name='crear_y_notificar'),
+    path('planificaciones/gestionar-asignaturas/',
+         views.gestionar_asignaturas_año, name='gestionar_asignaturas_año'),
+    path('planificaciones/toggle-asignatura/',
+         views.toggle_asignatura_año, name='toggle_asignatura_año'),
+
 ]
