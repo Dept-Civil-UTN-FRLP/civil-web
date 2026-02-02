@@ -329,7 +329,7 @@ def obtener_estado_vencimiento(cargo):
         "dias_restantes": dias_restantes,
         "fecha_vencimiento": cargo.fecha_vencimiento,
         "mensaje": f"Vigente ({dias_restantes} días)",
-        "badge_class": "bg-success",
+        "clase_badge": "bg-success",
         "icono": "bi-check-circle",
         "urgente": False,
     }
@@ -796,94 +796,95 @@ def obtener_responsable_planificacion(asignatura):
     return None
 
 
-def obtener_planificaciones_faltantes(año_lectivo=None):
+def obtener_planificaciones_faltantes(año):
     """
-    Identifica asignaturas sin planificación para el año especificado.
-    
-    Una planificación se considera "faltante" si:
-    - No existe registro, o
-    - Existe pero está en estado 'pendiente' o 'enviada' (sin archivo)
+    Obtiene asignaturas que NO tienen planificación subida para el año.
+    EXCLUYE asignaturas deshabilitadas para ese año.
     
     Args:
-        año_lectivo (int, optional): Año lectivo a consultar. 
-                                     Si no se especifica, usa el año actual.
-    
+        año: Año lectivo a consultar
+        
     Returns:
-        QuerySet: Asignaturas sin planificación recibida para el año
+        QuerySet: Asignaturas sin planificación y activas para el año
     """
-    from django.utils import timezone
-    from planta_docente.models import Asignatura, PlanificacionAnual
+    from planta_docente.models import Asignatura, PlanificacionAnual, AsignaturaAnual
 
-    if not año_lectivo:
-        año_lectivo = timezone.now().year
-
-    # Todas las asignaturas
-    asignaturas_todas = Asignatura.objects.all()
-
-    # Asignaturas que YA tienen planificación RECIBIDA
-    # Solo contar las que tienen archivo Y están en estado recibida/aprobada
-    asignaturas_con_planificacion = PlanificacionAnual.objects.filter(
-        año=año_lectivo,
-        archivo__isnull=False,  # Tiene archivo subido
+    # Asignaturas con planificación ya recibida
+    con_planificacion = PlanificacionAnual.objects.filter(
+        año=año,
         estado__in=['recibida', 'aprobada']
     ).values_list('asignatura_id', flat=True)
 
-    # Retornar las que NO tienen planificación completa
-    return asignaturas_todas.exclude(id__in=asignaturas_con_planificacion)
+    # Asignaturas deshabilitadas para este año
+    deshabilitadas = AsignaturaAnual.objects.filter(
+        año=año,
+        activa=False
+    ).values_list('asignatura_id', flat=True)
+
+    # Asignaturas faltantes = todas - (con planificación + deshabilitadas)
+    faltantes = Asignatura.objects.exclude(
+        id__in=list(con_planificacion) + list(deshabilitadas)
+    ).order_by('nivel', 'nombre')
+
+    return faltantes
 
 
-def obtener_estadisticas_planificaciones(año_lectivo=None):
+def obtener_estadisticas_planificaciones(año):
     """
-    Obtiene estadísticas de planificaciones para un año lectivo.
+    Calcula estadísticas de planificaciones considerando asignaturas deshabilitadas.
     
     Args:
-        año_lectivo (int, optional): Año lectivo a consultar.
-    
+        año: Año lectivo
+        
     Returns:
-        dict: Diccionario con estadísticas detalladas
+        dict: Diccionario con estadísticas:
+            - total_asignaturas: Total de asignaturas en el sistema
+            - deshabilitadas: Asignaturas inactivas para este año
+            - asignaturas_efectivas: Base real (total - deshabilitadas)
+            - recibidas: Planificaciones ya entregadas
+            - notificadas: Notificaciones enviadas sin respuesta
+            - pendientes: Asignaturas sin notificar
+            - porcentaje_recibidas: % de cumplimiento
     """
-    from django.utils import timezone
-    from planta_docente.models import Asignatura, PlanificacionAnual
-    
-    if not año_lectivo:
-        año_lectivo = timezone.now().year
-    
+    from planta_docente.models import Asignatura, PlanificacionAnual, AsignaturaAnual
+
+    # Total de asignaturas
     total_asignaturas = Asignatura.objects.count()
-    
-    # Planificaciones RECIBIDAS (con archivo)
-    con_planificacion = PlanificacionAnual.objects.filter(
-        año=año_lectivo,
-        archivo__isnull=False,
+
+    # Deshabilitadas este año
+    deshabilitadas = AsignaturaAnual.objects.filter(
+        año=año,
+        activa=False
+    ).count()
+
+    # Base efectiva = total - deshabilitadas
+    asignaturas_efectivas = total_asignaturas - deshabilitadas
+
+    # Con planificación recibida
+    recibidas = PlanificacionAnual.objects.filter(
+        año=año,
         estado__in=['recibida', 'aprobada']
     ).count()
-    
-    # Notificaciones ENVIADAS (esperando respuesta)
-    notificadas_pendientes = PlanificacionAnual.objects.filter(
-        año=año_lectivo,
-        estado='enviada',
-        archivo=''
+
+    # Notificaciones enviadas (pero sin respuesta)
+    notificadas = PlanificacionAnual.objects.filter(
+        año=año,
+        estado='enviada'
     ).count()
-    
-    # Sin notificar
-    sin_notificar = PlanificacionAnual.objects.filter(
-        año=año_lectivo,
-        estado='pendiente'
-    ).count()
-    
-    # O que ni siquiera tienen registro
-    sin_registro = total_asignaturas - PlanificacionAnual.objects.filter(
-        año=año_lectivo
-    ).count()
-    
-    pendientes = total_asignaturas - con_planificacion
-    
-    porcentaje = (con_planificacion / total_asignaturas * 100) if total_asignaturas > 0 else 0
-    
+
+    # Pendientes = efectivas - (recibidas + notificadas)
+    pendientes = asignaturas_efectivas - recibidas - notificadas
+
+    # Porcentaje
+    porcentaje = round((recibidas / asignaturas_efectivas * 100),
+                       1) if asignaturas_efectivas > 0 else 0
+
     return {
         'total_asignaturas': total_asignaturas,
-        'con_planificacion': con_planificacion,
+        'deshabilitadas': deshabilitadas,
+        'asignaturas_efectivas': asignaturas_efectivas,
+        'recibidas': recibidas,
+        'notificadas': notificadas,
         'pendientes': pendientes,
-        'notificadas_pendientes': notificadas_pendientes,
-        'sin_notificar': sin_notificar + sin_registro,
-        'porcentaje_completado': round(porcentaje, 1)
+        'porcentaje_recibidas': porcentaje,
     }
