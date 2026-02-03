@@ -2050,3 +2050,60 @@ class HistorialNotificacionPlanificacion(models.Model):
 
     def __str__(self):
         return f"Notificación a {self.email_destinatario} - {self.fecha_envio.strftime('%d/%m/%Y')}"
+
+
+class AsignaturaAnual(models.Model):
+    """
+    Control de asignaturas activas por año lectivo.
+    Permite habilitar/deshabilitar asignaturas para años específicos.
+    """
+    asignatura = models.ForeignKey(
+        'Asignatura',
+        on_delete=models.CASCADE,
+        related_name='config_anual'
+    )
+
+    año = models.PositiveIntegerField(
+        verbose_name="Año lectivo"
+    )
+
+    activa = models.BooleanField(
+        default=True,
+        verbose_name="Asignatura activa este año",
+        help_text="Desmarcar si la asignatura no se dicta este año"
+    )
+
+    motivo_deshabilitacion = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="Motivo de deshabilitación",
+        help_text="Ej: Plan de estudios discontinuado, asignatura fusionada, etc."
+    )
+
+    fecha_modificacion = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última modificación"
+    )
+
+    modificado_por = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Modificado por"
+    )
+
+    class Meta:
+        db_table = 'planta_docente_asignatura_anual'
+        unique_together = [['asignatura', 'año']]
+        ordering = ['-año', 'asignatura__nombre']
+        verbose_name = "Configuración Anual de Asignatura"
+        verbose_name_plural = "Configuraciones Anuales de Asignaturas"
+        indexes = [
+            models.Index(fields=['año', 'activa']),
+            models.Index(fields=['asignatura', 'año']),
+        ]
+
+    def __str__(self):
+        estado = "Activa" if self.activa else "Deshabilitada"
+        return f"{self.asignatura.nombre} - {self.año} ({estado})"

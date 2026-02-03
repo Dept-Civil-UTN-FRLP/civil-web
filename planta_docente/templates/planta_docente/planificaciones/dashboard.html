@@ -445,7 +445,8 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             
-            <form method="post" action="{% url 'planta_docente:notificar_masivo' %}" id="formNotificarMasivo">
+            <form method="post" action="{% url 'planta_docente:notificar_masivo' %}" 
+                  id="formNotificarMasivo" enctype="multipart/form-data">
                 {% csrf_token %}
                 <input type="hidden" name="año" value="{{ año_seleccionado }}">
                 
@@ -508,6 +509,23 @@
                         </div>
                     </div>
                     
+                    <!-- Adjuntar Archivos Adicionales -->
+                    <div class="mb-3">
+                        <label for="archivosAdicionalesMasivo" class="form-label">
+                            <strong>Adjuntar archivos adicionales (opcional)</strong>
+                        </label>
+                        <input type="file" class="form-control" id="archivosAdicionalesMasivo" 
+                               name="archivos_adicionales" multiple
+                               accept=".pdf,.docx,.xlsx,.pptx,.zip,.jpg,.jpeg,.png">
+                        <small class="form-text text-muted">
+                            Los mismos archivos se adjuntarán a TODOS los emails.
+                            <br>Tamaño máximo por archivo: 10 MB. Total máximo: 25 MB.
+                        </small>
+                        
+                        <!-- Preview de archivos seleccionados -->
+                        <div id="archivosPreviewMasivo" class="mt-2"></div>
+                    </div>
+                    
                     <!-- Advertencia -->
                     <div class="alert alert-warning">
                         <i class="bi bi-exclamation-triangle"></i>
@@ -531,7 +549,6 @@
 </div>
 
 
-
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         
@@ -552,28 +569,6 @@
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
-        
-        // ============================================================
-        // NOTIFICAR TODOS (MASIVO)
-        // ============================================================
-        const formNotificarTodos = document.getElementById('formNotificarTodos');
-        if (formNotificarTodos) {
-            formNotificarTodos.addEventListener('submit', function(e) {
-                const count = {{ page_obj.paginator.count|default:0 }};
-                
-                if (!confirm(`¿Enviar notificación genérica a ${count} asignaturas pendientes?\n\nEsto puede tardar varios minutos.`)) {
-                    e.preventDefault();
-                    return false;
-                }
-                
-                // Deshabilitar botón
-                const btn = document.getElementById('btnNotificarTodos');
-                if (btn) {
-                    btn.disabled = true;
-                    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Enviando...';
-                }
-            });
-        }
         
         // ============================================================
         // BOTONES CREAR Y NOTIFICAR (AMARILLOS)
@@ -637,8 +632,10 @@
             });
         });
         
-        console.log('✅ Scripts de planificaciones cargados correctamente');
-    const radioGenericoMasivo = document.getElementById('tipoGenericoMasivo');
+        // ============================================================
+        // MODAL NOTIFICAR MASIVO - Toggle mensaje personalizado
+        // ============================================================
+        const radioGenericoMasivo = document.getElementById('tipoGenericoMasivo');
         const radioPersonalizadoMasivo = document.getElementById('tipoPersonalizadoMasivo');
         const containerMasivo = document.getElementById('mensajePersonalizadoMasivoContainer');
         const textareaMasivo = document.getElementById('cuerpoPersonalizadoMasivo');
@@ -655,7 +652,79 @@
             });
         }
         
-        // Validación y confirmación del formulario masivo
+        // ============================================================
+        // PREVIEW DE ARCHIVOS ADICIONALES EN MODAL MASIVO
+        // ============================================================
+        const inputArchivosMasivo = document.getElementById('archivosAdicionalesMasivo');
+        const previewContainerMasivo = document.getElementById('archivosPreviewMasivo');
+        
+        if (inputArchivosMasivo) {
+            inputArchivosMasivo.addEventListener('change', function(e) {
+                previewContainerMasivo.innerHTML = '';
+                
+                const files = Array.from(e.target.files);
+                
+                if (files.length === 0) {
+                    return;
+                }
+                
+                // Validar tamaño
+                const maxSizeMB = 10;
+                const maxTotalMB = 25;
+                let totalSize = 0;
+                let hasError = false;
+                
+                const filesList = document.createElement('div');
+                filesList.className = 'alert alert-info';
+                filesList.innerHTML = '<strong>Archivos a adjuntar en TODOS los emails:</strong><ul class="mb-0 mt-2">';
+                
+                files.forEach((file) => {
+                    const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                    totalSize += file.size;
+                    
+                    const li = document.createElement('li');
+                    
+                    if (file.size > maxSizeMB * 1024 * 1024) {
+                        li.innerHTML = `<span class="text-danger"><strong>${file.name}</strong> (${sizeMB} MB) - ⚠️ Demasiado grande</span>`;
+                        hasError = true;
+                    } else {
+                        li.innerHTML = `${file.name} (${sizeMB} MB)`;
+                    }
+                    
+                    filesList.querySelector('ul').appendChild(li);
+                });
+                
+                filesList.innerHTML += '</ul>';
+                
+                // Validar tamaño total
+                const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+                
+                if (totalSize > maxTotalMB * 1024 * 1024) {
+                    const warning = document.createElement('div');
+                    warning.className = 'alert alert-danger mt-2';
+                    warning.innerHTML = `<strong>⚠️ Tamaño total: ${totalSizeMB} MB</strong><br>Máximo permitido: ${maxTotalMB} MB`;
+                    previewContainerMasivo.appendChild(warning);
+                    hasError = true;
+                } else {
+                    const info = document.createElement('small');
+                    info.className = 'text-muted';
+                    info.textContent = `Tamaño total: ${totalSizeMB} MB de ${maxTotalMB} MB permitidos`;
+                    filesList.appendChild(info);
+                }
+                
+                previewContainerMasivo.appendChild(filesList);
+                
+                // Deshabilitar botón si hay error
+                const btnEnviar = document.getElementById('btnEnviarMasivo');
+                if (btnEnviar) {
+                    btnEnviar.disabled = hasError;
+                }
+            });
+        }
+        
+        // ============================================================
+        // MODAL NOTIFICAR MASIVO - Validación y submit
+        // ============================================================
         const formMasivo = document.getElementById('formNotificarMasivo');
         if (formMasivo) {
             formMasivo.addEventListener('submit', function(e) {
@@ -667,6 +736,29 @@
                     e.preventDefault();
                     alert('Por favor escribe un mensaje personalizado.');
                     return false;
+                }
+                
+                // Validar archivos
+                if (inputArchivosMasivo && inputArchivosMasivo.files.length > 0) {
+                    const files = inputArchivosMasivo.files;
+                    const maxSizeMB = 10;
+                    const maxTotalMB = 25;
+                    let totalSize = 0;
+                    
+                    for (let file of files) {
+                        if (file.size > maxSizeMB * 1024 * 1024) {
+                            e.preventDefault();
+                            alert(`El archivo "${file.name}" es demasiado grande (máx. ${maxSizeMB} MB).`);
+                            return false;
+                        }
+                        totalSize += file.size;
+                    }
+                    
+                    if (totalSize > maxTotalMB * 1024 * 1024) {
+                        e.preventDefault();
+                        alert(`El tamaño total de los archivos supera el límite de ${maxTotalMB} MB.`);
+                        return false;
+                    }
                 }
                 
                 // Confirmación
@@ -690,7 +782,8 @@
             });
         }
         
-        console.log('✅ Scripts de notificación masiva cargados');
+        console.log('✅ Scripts de planificaciones cargados correctamente');
+        console.log('✅ Scripts de notificación masiva con adjuntos cargados');
     });
 </script>
 {% endblock %}

@@ -82,6 +82,9 @@ class PlanificacionEmailService:
         if archivos_adicionales:
             for archivo in archivos_adicionales:
                 try:
+                    # ✅ CRÍTICO: Resetear puntero al inicio antes de leer
+                    archivo.seek(0)
+
                     # Leer contenido del archivo
                     contenido = archivo.read()
 
@@ -89,8 +92,7 @@ class PlanificacionEmailService:
                     email.attach(archivo.name, contenido, archivo.content_type)
                     archivos_adjuntos.append(archivo.name)
 
-                    print(
-                        f"✅ Archivo adicional adjunto: {archivo.name} ({archivo.size} bytes)")
+                    print(f"✅ Archivo adicional adjunto: {archivo.name} ({archivo.size} bytes)")
                 except Exception as e:
                     print(f"⚠️ Error adjuntando {archivo.name}: {str(e)}")
                     # Continuar con otros archivos
@@ -199,6 +201,9 @@ class PlanificacionEmailService:
         if archivos_adicionales:
             for archivo in archivos_adicionales:
                 try:
+                    # ✅ CRÍTICO: Resetear puntero al inicio antes de leer
+                    archivo.seek(0)
+
                     # Leer contenido del archivo
                     contenido = archivo.read()
 

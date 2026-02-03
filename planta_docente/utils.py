@@ -268,7 +268,7 @@ def obtener_estado_vencimiento(cargo):
         return {
             "tipo": "pausado",
             "mensaje": f"Vencimiento suspendido (Licencia M.J. desde {cargo.fecha_inicio_licencia_mj.strftime('%d/%m/%Y') if cargo.fecha_inicio_licencia_mj else 'N/A'})",
-            "clase_badge": "bg-warning text-dark",
+            "badge_class": "bg-warning text-dark",
             "icono": "bi-pause-circle",
             "dias_licencia": dias_licencia,
             "fecha_vencimiento_original": cargo.fecha_vencimiento_original_pre_licencia,
@@ -280,7 +280,7 @@ def obtener_estado_vencimiento(cargo):
         return {
             "tipo": "sin_vencimiento",
             "mensaje": "Sin fecha de vencimiento",
-            "clase_badge": "bg-secondary",
+            "badge_class": "bg-secondary",
             "icono": "bi-infinity",
             "urgente": False,
         }
@@ -295,7 +295,7 @@ def obtener_estado_vencimiento(cargo):
             "tipo": "vencido",
             "dias_vencido": dias_vencido,
             "mensaje": f"Vencido hace {dias_vencido} día{'s' if dias_vencido != 1 else ''}",
-            "clase_badge": "bg-danger",
+            "badge_class": "bg-danger",
             "icono": "bi-exclamation-triangle-fill",
             "urgente": True
         }
@@ -307,7 +307,7 @@ def obtener_estado_vencimiento(cargo):
             "dias_restantes": dias_restantes,
             "fecha_vencimiento": cargo.fecha_vencimiento,
             "mensaje": f"Vence en {dias_restantes} día{'s' if dias_restantes != 1 else ''}",
-            "clase_badge": "bg-danger",
+            "badge_class": "bg-danger",
             "icono": "bi-clock-fill",
             "urgente": True
         }
@@ -319,7 +319,7 @@ def obtener_estado_vencimiento(cargo):
             "dias_restantes": dias_restantes,
             "fecha_vencimiento": cargo.fecha_vencimiento,
             "mensaje": f"Vence en {dias_restantes} días",
-            "clase_badge": "bg-warning text-dark",
+            "badge_class": "bg-warning text-dark",
             "icono": "bi-clock",
             "urgente": False, 
         }
@@ -797,58 +797,59 @@ def obtener_responsable_planificacion(asignatura):
     return None
 
 
-def obtener_planificaciones_faltantes(año_lectivo=None):
+def obtener_planificaciones_faltantes(año):
     """
-    Identifica asignaturas sin planificación para el año especificado.
-    
-    Una planificación se considera "faltante" si:
-    - No existe registro, o
-    - Existe pero está en estado 'pendiente' o 'enviada' (sin archivo)
+    Obtiene asignaturas que NO tienen planificación subida para el año.
+    EXCLUYE asignaturas deshabilitadas para ese año.
     
     Args:
-        año_lectivo (int, optional): Año lectivo a consultar. 
-                                     Si no se especifica, usa el año actual.
-    
+        año: Año lectivo a consultar
+        
     Returns:
-        QuerySet: Asignaturas sin planificación recibida para el año
+        QuerySet: Asignaturas sin planificación y activas para el año
     """
-    from django.utils import timezone
-    from planta_docente.models import Asignatura, PlanificacionAnual
+    from planta_docente.models import Asignatura, PlanificacionAnual, AsignaturaAnual
 
-    if not año_lectivo:
-        año_lectivo = timezone.now().year
-
-    # Todas las asignaturas
-    asignaturas_todas = Asignatura.objects.all()
-
-    # Asignaturas que YA tienen planificación RECIBIDA
-    # Solo contar las que tienen archivo Y están en estado recibida/aprobada
-    asignaturas_con_planificacion = PlanificacionAnual.objects.filter(
-        año=año_lectivo,
-        archivo__isnull=False,  # Tiene archivo subido
+    # Asignaturas con planificación ya recibida
+    con_planificacion = PlanificacionAnual.objects.filter(
+        año=año,
         estado__in=['recibida', 'aprobada']
     ).values_list('asignatura_id', flat=True)
 
-    # Retornar las que NO tienen planificación completa
-    return asignaturas_todas.exclude(id__in=asignaturas_con_planificacion)
+    # Asignaturas deshabilitadas para este año
+    deshabilitadas = AsignaturaAnual.objects.filter(
+        año=año,
+        activa=False
+    ).values_list('asignatura_id', flat=True)
+
+    # Asignaturas faltantes = todas - (con planificación + deshabilitadas)
+    faltantes = Asignatura.objects.exclude(
+        id__in=list(con_planificacion) + list(deshabilitadas)
+    ).order_by('nivel', 'nombre')
+
+    return faltantes
 
 
-def obtener_estadisticas_planificaciones(año_lectivo=None):
+def obtener_estadisticas_planificaciones(año):
     """
-    Obtiene estadísticas de planificaciones para un año lectivo.
+    Calcula estadísticas de planificaciones considerando asignaturas deshabilitadas.
     
     Args:
-        año_lectivo (int, optional): Año lectivo a consultar.
-    
+        año: Año lectivo
+        
     Returns:
-        dict: Diccionario con estadísticas detalladas
+        dict: Diccionario con estadísticas:
+            - total_asignaturas: Total de asignaturas en el sistema
+            - deshabilitadas: Asignaturas inactivas para este año
+            - asignaturas_efectivas: Base real (total - deshabilitadas)
+            - recibidas: Planificaciones ya entregadas
+            - notificadas: Notificaciones enviadas sin respuesta
+            - pendientes: Asignaturas sin notificar
+            - porcentaje_recibidas: % de cumplimiento
     """
-    from django.utils import timezone
-    from planta_docente.models import Asignatura, PlanificacionAnual
-    
-    if not año_lectivo:
-        año_lectivo = timezone.now().year
-    
+    from planta_docente.models import Asignatura, PlanificacionAnual, AsignaturaAnual
+
+    # Total de asignaturas
     total_asignaturas = Asignatura.objects.count()
 
     base_queryset = PlanificacionAnual.objects.filter(año=año_lectivo)
@@ -881,12 +882,12 @@ def obtener_estadisticas_planificaciones(año_lectivo=None):
     pendientes = max(total_asignaturas - con_planificacion, 0)
 
     porcentaje = (con_planificacion / total_asignaturas * 100) if total_asignaturas > 0 else 0
-    
     return {
         'total_asignaturas': total_asignaturas,
-        'con_planificacion': con_planificacion,
-        'pendientes': pendientes,
-        'notificadas_pendientes': notificadas_pendientes,
-        'sin_notificar': sin_notificar + sin_registro,
-        'porcentaje_completado': round(porcentaje, 1)
+        'deshabilitadas': deshabilitadas,
+        'asignaturas_efectivas': asignaturas_efectivas,
+        'recibidas': recibidas,
+        'notificadas': notificadas,
+        'sin_notificar': pendientes,
+        'porcentaje_recibidas': porcentaje,
     }
