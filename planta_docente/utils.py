@@ -831,63 +831,37 @@ def obtener_planificaciones_faltantes(año):
 
 
 def obtener_estadisticas_planificaciones(año):
-    """
-    Calcula estadísticas de planificaciones considerando asignaturas deshabilitadas.
+    """Obtiene estadísticas de planificaciones anuales para un año lectivo específico."""
     
-    Args:
-        año: Año lectivo
-        
-    Returns:
-        dict: Diccionario con estadísticas:
-            - total_asignaturas: Total de asignaturas en el sistema
-            - deshabilitadas: Asignaturas inactivas para este año
-            - asignaturas_efectivas: Base real (total - deshabilitadas)
-            - recibidas: Planificaciones ya entregadas
-            - notificadas: Notificaciones enviadas sin respuesta
-            - pendientes: Asignaturas sin notificar
-            - porcentaje_recibidas: % de cumplimiento
-    """
-    from planta_docente.models import Asignatura, PlanificacionAnual, AsignaturaAnual
+    from planta_docente.models import PlanificacionAnual, AsignaturaAnual, Asignatura
 
-    # Total de asignaturas
-    total_asignaturas = Asignatura.objects.count()
+    # Contar asignaturas deshabilitadas para este año
+    asignaturas_deshabilitadas = AsignaturaAnual.objects.filter(
+        año=año,
+        activa=False
+    ).values_list('asignatura_id', flat=True)
 
-    base_queryset = PlanificacionAnual.objects.filter(año=año_lectivo)
+    total_deshabilitadas = len(asignaturas_deshabilitadas)
 
-    # Planificaciones RECIBIDAS (con archivo)
-    con_planificacion = base_queryset.filter(
-        estado__in=['recibida', 'aprobada']
-    ).exclude(
-        Q(archivo='') | Q(archivo__isnull=True)
-    ).values('asignatura_id').distinct().count()
+    base_queryset = PlanificacionAnual.objects.filter(año=año)
 
-    # Notificaciones ENVIADAS (esperando respuesta)
-    notificadas_pendientes = base_queryset.filter(
-        estado='enviada'
-    ).filter(
-        Q(archivo='') | Q(archivo__isnull=True)
-    ).values('asignatura_id').distinct().count()
-
-    # Sin notificar
+    total = base_queryset.count()
+    aprobadas = base_queryset.filter(estado='aprobada').count()
+    rechazadas = base_queryset.filter(estado='rechazada').count()
     sin_notificar = base_queryset.filter(
-        estado='pendiente'
-    ).values('asignatura_id').distinct().count()
+        fecha_ultima_notificacion__isnull=True).count()
 
-    # O que ni siquiera tienen registro
-    asignaturas_con_registro = base_queryset.values(
-        'asignatura_id'
-    ).distinct().count()
-    sin_registro = max(total_asignaturas - asignaturas_con_registro, 0)
+    # Ajustar total efectivo
+    total_asignaturas = Asignatura.objects.count()
+    total_efectivo = total_asignaturas - total_deshabilitadas
+    faltantes = total_efectivo - total
 
-    pendientes = max(total_asignaturas - con_planificacion, 0)
-
-    porcentaje = (con_planificacion / total_asignaturas * 100) if total_asignaturas > 0 else 0
     return {
-        'total_asignaturas': total_asignaturas,
-        'deshabilitadas': deshabilitadas,
-        'asignaturas_efectivas': asignaturas_efectivas,
-        'recibidas': recibidas,
-        'notificadas': notificadas,
-        'sin_notificar': pendientes,
-        'porcentaje_recibidas': porcentaje,
+        'total': total,
+        'aprobadas': aprobadas,
+        'rechazadas': rechazadas,
+        'sin_notificar': sin_notificar,
+        'faltantes': faltantes,
+        'total_efectivo': total_efectivo,
+        'deshabilitadas': total_deshabilitadas,
     }
