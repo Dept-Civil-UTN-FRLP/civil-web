@@ -11,6 +11,7 @@ Este módulo contiene funciones puras para:
 from datetime import date, timedelta
 from typing import Dict, Optional, Tuple
 
+from django.db.models import Q
 from django.utils import timezone
 
 
@@ -849,34 +850,36 @@ def obtener_estadisticas_planificaciones(año_lectivo=None):
         año_lectivo = timezone.now().year
     
     total_asignaturas = Asignatura.objects.count()
-    
+
+    base_queryset = PlanificacionAnual.objects.filter(año=año_lectivo)
+
     # Planificaciones RECIBIDAS (con archivo)
-    con_planificacion = PlanificacionAnual.objects.filter(
-        año=año_lectivo,
-        archivo__isnull=False,
+    con_planificacion = base_queryset.filter(
         estado__in=['recibida', 'aprobada']
-    ).count()
-    
+    ).exclude(
+        Q(archivo='') | Q(archivo__isnull=True)
+    ).values('asignatura_id').distinct().count()
+
     # Notificaciones ENVIADAS (esperando respuesta)
-    notificadas_pendientes = PlanificacionAnual.objects.filter(
-        año=año_lectivo,
-        estado='enviada',
-        archivo=''
-    ).count()
-    
+    notificadas_pendientes = base_queryset.filter(
+        estado='enviada'
+    ).filter(
+        Q(archivo='') | Q(archivo__isnull=True)
+    ).values('asignatura_id').distinct().count()
+
     # Sin notificar
-    sin_notificar = PlanificacionAnual.objects.filter(
-        año=año_lectivo,
+    sin_notificar = base_queryset.filter(
         estado='pendiente'
-    ).count()
-    
+    ).values('asignatura_id').distinct().count()
+
     # O que ni siquiera tienen registro
-    sin_registro = total_asignaturas - PlanificacionAnual.objects.filter(
-        año=año_lectivo
-    ).count()
-    
-    pendientes = total_asignaturas - con_planificacion
-    
+    asignaturas_con_registro = base_queryset.values(
+        'asignatura_id'
+    ).distinct().count()
+    sin_registro = max(total_asignaturas - asignaturas_con_registro, 0)
+
+    pendientes = max(total_asignaturas - con_planificacion, 0)
+
     porcentaje = (con_planificacion / total_asignaturas * 100) if total_asignaturas > 0 else 0
     
     return {
