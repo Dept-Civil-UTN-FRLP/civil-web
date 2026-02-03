@@ -885,6 +885,6 @@ def obtener_estadisticas_planificaciones(año):
         'asignaturas_efectivas': asignaturas_efectivas,
         'recibidas': recibidas,
         'notificadas': notificadas,
-        'pendientes': pendientes,
+        'sin_notificar': pendientes,
         'porcentaje_recibidas': porcentaje,
     }
