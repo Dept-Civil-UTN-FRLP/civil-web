@@ -324,13 +324,11 @@ def notificar_masivo(request):
     cuerpo_personalizado = request.POST.get(
         'cuerpo_personalizado', '') if tipo_mensaje == 'personalizado' else None
 
-    # Obtener archivos adicionales
     archivos_adicionales = request.FILES.getlist('archivos_adicionales')
 
-    # Validar tamaño de archivos
     if archivos_adicionales:
-        max_size = 10 * 1024 * 1024  # 10MB por archivo
-        max_total = 25 * 1024 * 1024  # 25MB total
+        max_size = 10 * 1024 * 1024
+        max_total = 25 * 1024 * 1024
         total_size = sum(f.size for f in archivos_adicionales)
 
         if any(f.size > max_size for f in archivos_adicionales):
@@ -343,12 +341,10 @@ def notificar_masivo(request):
                 request, 'El tamaño total de los archivos supera el límite de 25 MB.')
             return redirect('planta_docente:dashboard_planificaciones')
 
-    # Validar mensaje personalizado
     if tipo_mensaje == 'personalizado' and not cuerpo_personalizado:
         messages.error(request, 'Debe escribir un mensaje personalizado.')
         return redirect('planta_docente:dashboard_planificaciones')
 
-    # Obtener asignaturas pendientes (sin notificar)
     faltantes = obtener_planificaciones_faltantes(año)
 
     resultados = {
@@ -361,14 +357,12 @@ def notificar_masivo(request):
     for asignatura in faltantes:
         responsable_cargo = obtener_responsable_planificacion(asignatura)
 
-        # Saltar si no hay responsable
         if not responsable_cargo:
             resultados['sin_responsable'] += 1
             resultados['errores'].append(
                 f"{asignatura.nombre}: Sin responsable con email")
             continue
 
-        # Crear o recuperar PlanificacionAnual
         planificacion, created = PlanificacionAnual.objects.get_or_create(
             asignatura=asignatura,
             año=año,
@@ -378,16 +372,12 @@ def notificar_masivo(request):
             }
         )
 
-        # Saltar si ya fue notificada
-        if planificacion.estado == 'enviada':
-            continue
-
-        # Enviar notificación
+        # Enviar notificación (sin validar si ya fue enviada)
         if tipo_mensaje == 'generico':
             exito, mensaje = PlanificacionEmailService.enviar_solicitud_generica(
                 planificacion,
                 adjuntar_ficha=adjuntar_ficha,
-                archivos_adicionales=archivos_adicionales,  # ✅ NUEVO
+                archivos_adicionales=archivos_adicionales,
                 usuario=request.user
             )
         else:
@@ -395,7 +385,7 @@ def notificar_masivo(request):
                 planificacion,
                 cuerpo_personalizado,
                 adjuntar_ficha=adjuntar_ficha,
-                archivos_adicionales=archivos_adicionales,  # ✅ NUEVO
+                archivos_adicionales=archivos_adicionales,
                 usuario=request.user
             )
 
@@ -405,7 +395,6 @@ def notificar_masivo(request):
             resultados['fallidos'] += 1
             resultados['errores'].append(f"{asignatura.nombre}: {mensaje}")
 
-    # Mensajes de resultado
     total_procesadas = resultados['exitosos'] + \
         resultados['fallidos'] + resultados['sin_responsable']
 
@@ -426,7 +415,6 @@ def notificar_masivo(request):
             request,
             f'❌ {resultados["fallidos"]} fallos al enviar'
         )
-        # Mostrar primeros 3 errores
         for error in resultados['errores'][:3]:
             messages.error(request, error)
 
