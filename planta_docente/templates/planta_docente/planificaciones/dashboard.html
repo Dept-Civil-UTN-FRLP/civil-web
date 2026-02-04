@@ -85,15 +85,15 @@
         </select>
         
         <!-- Botón Notificar Todos -->
-        {% if stats.sin_notificar > 0 %}
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNotificarMasivo">
-            <i class="bi bi-envelope-fill"></i> Notificar Todos ({{ stats.sin_notificar }})
-        </button>
-        {% else %}
-        <button type="button" class="btn btn-secondary" disabled>
-            <i class="bi bi-check-circle"></i> Todos Notificados
-        </button>
-        {% endif %}
+        {% if stats.pendientes > 0 %}
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNotificarMasivo">
+    <i class="bi bi-envelope-fill"></i> Notificar Todos ({{ stats.pendientes }})
+</button>
+{% else %}
+<button type="button" class="btn btn-secondary" disabled>
+    <i class="bi bi-check-circle"></i> Todas Recibidas
+</button>
+{% endif %}
     </div>
 </div>
     
@@ -456,8 +456,7 @@
                     <div class="alert alert-info">
                         <h6><i class="bi bi-info-circle"></i> Información</h6>
                         <p class="mb-1">
-                            Se enviará notificación a <strong>{{ stats.sin_notificar }}</strong> asignaturas 
-                            que aún no han sido notificadas para el año <strong>{{ año_seleccionado }}</strong>.
+                            Se enviarán notificaciones a <strong>{{ stats.pendientes }} asignaturas</strong> sin planificación.
                         </p>
                         <p class="mb-0">
                             <small>Solo se notificarán asignaturas con docente responsable y email configurado.</small>
