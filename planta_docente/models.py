@@ -1416,7 +1416,7 @@ class Cargo(models.Model):
         verbose_name_plural = "Cargos"
         constraints = [
             models.UniqueConstraint(
-                fields=['asignatura', 'año'],
+                fields=['asignatura'],
                 condition=models.Q(es_responsable_planificacion=True),
                 name='unique_responsable_planificacion_por_asignatura_año'
             )
