@@ -762,35 +762,40 @@ def obtener_cargo_efectivo(cargo) -> Dict[str, any]:
 # PLANIFICACIONES - FUNCIONES HELPER
 # ============================================================================
 
-def obtener_responsable_planificacion(asignatura):
+def obtener_responsable_planificacion(asignatura, año=None):
     """
     Obtiene el docente responsable de la planificación de una asignatura.
     
-    Prioridad: Titular → Asociado → Adjunto
-    
-    Args:
-        asignatura (Asignatura): Asignatura para la cual obtener responsable
-    
-    Returns:
-        Cargo|None: Cargo activo del docente responsable, o None si no hay
-    
-    Example:
-        >>> responsable = obtener_responsable_planificacion(asignatura)
-        >>> if responsable:
-        >>>     print(f"Responsable: {responsable.docente.get_full_name()}")
+    Prioridad:
+    1. Cargo marcado manualmente como responsable
+    2. Jerarquía automática: Titular → Asociado → Adjunto
     """
     from planta_docente.models import Cargo
 
+    año = año or timezone.now().year
+
+    # 1. Buscar cargo marcado manualmente
+    cargo_manual = Cargo.objects.filter(
+        asignatura=asignatura,
+        año=año,
+        estado='activo',
+        es_responsable_planificacion=True
+    ).select_related('docente').first()
+
+    if cargo_manual and cargo_manual.docente and cargo_manual.docente.email:
+        return cargo_manual
+
+    # 2. Fallback a jerarquía automática
     ORDEN_PRIORIDAD = ['tit', 'aso', 'adj']
 
     for categoria in ORDEN_PRIORIDAD:
         cargo = Cargo.objects.filter(
             asignatura=asignatura,
+            año=año,
             estado='activo',
             categoria=categoria
         ).select_related('docente').first()
 
-        # Validar que el docente tenga email
         if cargo and cargo.docente and cargo.docente.email:
             return cargo
 
