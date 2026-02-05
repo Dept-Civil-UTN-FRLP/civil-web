@@ -762,7 +762,7 @@ def obtener_cargo_efectivo(cargo) -> Dict[str, any]:
 # PLANIFICACIONES - FUNCIONES HELPER
 # ============================================================================
 
-def obtener_responsable_planificacion(asignatura, año=None):
+def obtener_responsable_planificacion(asignatura):
     """
     Obtiene el docente responsable de la planificación de una asignatura.
     
@@ -772,12 +772,9 @@ def obtener_responsable_planificacion(asignatura, año=None):
     """
     from planta_docente.models import Cargo
 
-    año = año or timezone.now().year
-
     # 1. Buscar cargo marcado manualmente
     cargo_manual = Cargo.objects.filter(
         asignatura=asignatura,
-        año=año,
         estado='activo',
         es_responsable_planificacion=True
     ).select_related('docente').first()
@@ -791,7 +788,6 @@ def obtener_responsable_planificacion(asignatura, año=None):
     for categoria in ORDEN_PRIORIDAD:
         cargo = Cargo.objects.filter(
             asignatura=asignatura,
-            año=año,
             estado='activo',
             categoria=categoria
         ).select_related('docente').first()
