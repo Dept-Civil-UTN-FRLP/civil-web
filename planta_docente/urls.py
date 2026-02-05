@@ -122,5 +122,7 @@ urlpatterns = [
          views.gestionar_asignaturas_año, name='gestionar_asignaturas_año'),
     path('planificaciones/toggle-asignatura/',
          views.toggle_asignatura_año, name='toggle_asignatura_año'),
-
+    # En planta_docente/urls.py
+    path('planificaciones/cambiar-responsable/',
+         views.cambiar_responsable_planificacion, name='cambiar_responsable_planificacion'),
 ]
