@@ -1,431 +1,69 @@
-{% extends 'planta_docente/base_planta.html' %}
+{% extends "planta_docente/base_planta.html" %}
 {% load static %}
 
-{% block title %}Planificaciones Anuales - {{ año_seleccionado }}{% endblock %}
-
-{% block extra_css %}
-<style>
-    .stats-card {
-        border-radius: 10px;
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    .stats-number {
-        font-size: 2.5rem;
-        font-weight: bold;
-        margin: 0;
-    }
-    
-    .stats-label {
-        font-size: 0.9rem;
-        color: #6c757d;
-        margin-top: 0.5rem;
-    }
-    
-    .progress-custom {
-        height: 25px;
-        border-radius: 10px;
-        background-color: #e9ecef;
-    }
-    
-    .progress-bar-custom {
-        font-size: 0.9rem;
-        font-weight: 600;
-        line-height: 25px;
-    }
-    
-    .table-planificaciones {
-        font-size: 0.95rem;
-    }
-    
-    .badge-responsable {
-        font-size: 0.85rem;
-        padding: 0.35em 0.65em;
-    }
-    
-    .btn-action {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.875rem;
-    }
-    
-    .notificaciones-info {
-        font-size: 0.85rem;
-        color: #6c757d;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="container-fluid py-4">
-    
+<div class="container py-4">
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'planta_docente:dashboard_asignaturas' %}">Dashboard</a></li>
-            <li class="breadcrumb-item active">Planificaciones Anuales</li>
+            <li class="breadcrumb-item"><a href="{% url 'planta_docente:dashboard_planificaciones' %}">Planificaciones</a></li>
+            <li class="breadcrumb-item active">Subir Planificación</li>
         </ol>
     </nav>
     
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>
-            <i class="bi bi-calendar-check text-primary"></i> 
-            Planificaciones Anuales
+            <i class="bi bi-upload text-primary"></i>
+            Subir Planificación
         </h2>
-        
-        <!-- Selector de Año -->
-        <div class="d-flex align-items-center gap-3">
-            <select class="form-select" id="selectorAño" style="width: 150px;">
-                {% for año in años_disponibles %}
-                <option value="{{ año }}" {% if año == año_seleccionado %}selected{% endif %}>
-                    {{ año }}
-                </option>
-                {% endfor %}
-            </select>
-            
-            <button class="btn btn-primary" id="btnNotificarTodos">
-                <i class="bi bi-envelope-fill"></i> Notificar Todos
-            </button>
+    </div>
+    
+    <!-- Info Asignatura -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">{{ asignatura.nombre }}</h5>
+            <p class="text-muted mb-0">Año Lectivo: {{ año }}</p>
         </div>
     </div>
     
-    <!-- Estadísticas -->
-    <div class="row mb-4">
-        <!-- Total Asignaturas -->
-        <div class="col-md-3">
-            <div class="stats-card bg-light">
-                <p class="stats-number text-secondary">{{ stats.total_asignaturas }}</p>
-                <p class="stats-label">Total Asignaturas</p>
-            </div>
-        </div>
-        
-        <!-- Con Planificación -->
-        <div class="col-md-3">
-            <div class="stats-card bg-success bg-opacity-10">
-                <p class="stats-number text-success">{{ stats.con_planificacion }}</p>
-                <p class="stats-label">Con Planificación</p>
-            </div>
-        </div>
-        
-        <!-- Pendientes -->
-        <div class="col-md-3">
-            <div class="stats-card bg-warning bg-opacity-10">
-                <p class="stats-number text-warning">{{ stats.pendientes }}</p>
-                <p class="stats-label">Pendientes</p>
-            </div>
-        </div>
-        
-        <!-- Porcentaje -->
-        <div class="col-md-3">
-            <div class="stats-card bg-info bg-opacity-10">
-                <p class="stats-number text-info">{{ stats.porcentaje_completado }}%</p>
-                <p class="stats-label">Completado</p>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Barra de Progreso -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="progress progress-custom">
-                <div class="progress-bar progress-bar-custom bg-success" 
-                     role="progressbar" 
-                     style="width: {{ stats.porcentaje_completado }}%">
-                    {{ stats.con_planificacion }} de {{ stats.total_asignaturas }}
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Pestañas -->
-    <ul class="nav nav-tabs mb-4" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pendientes">
-                Pendientes ({{ stats.pendientes }})
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#recientes">
-                Recibidas Recientemente
-            </button>
-        </li>
-    </ul>
-    
-    <!-- Contenido de Pestañas -->
-    <div class="tab-content">
-        
-        <!-- Tab: Pendientes -->
-        <div class="tab-pane fade show active" id="pendientes">
-            
-            {% if page_obj %}
-            <div class="table-responsive">
-                <table class="table table-hover table-planificaciones">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="width: 30%;">Asignatura</th>
-                            <th style="width: 15%;">Departamento</th>
-                            <th style="width: 20%;">Responsable</th>
-                            <th style="width: 15%;">Estado</th>
-                            <th style="width: 10%;">Notif.</th>
-                            <th style="width: 10%;">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in page_obj %}
-                        <tr>
-                            <!-- Asignatura -->
-                            <td>
-                                <strong>{{ item.asignatura.nombre|title }}</strong><br>
-                                <small class="text-muted">
-                                    {{ item.asignatura.get_nivel_display }} - 
-                                    {% if item.asignatura.obligatoria %}
-                                        <span class="badge bg-primary">Obligatoria</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Optativa</span>
-                                    {% endif %}
-                                </small>
-                            </td>
-                            
-                            <!-- Departamento -->
-                            <td>{{ item.asignatura.get_departamento_display }}</td>
-                            
-                            <!-- Responsable -->
-                            <td>
-                                {% if item.responsable_cargo %}
-                                    <span class="badge badge-responsable bg-info">
-                                        {{ item.responsable_cargo.get_categoria_display|upper }}
-                                    </span><br>
-                                    <small>{{ item.responsable_nombre }}</small><br>
-                                    {% if item.responsable_email %}
-                                        <small class="text-muted">
-                                            <i class="bi bi-envelope"></i> {{ item.responsable_email }}
-                                        </small>
-                                    {% else %}
-                                        <small class="text-danger">
-                                            <i class="bi bi-exclamation-triangle"></i> Sin email
-                                        </small>
-                                    {% endif %}
-                                {% else %}
-                                    <span class="badge bg-warning">Sin responsable</span>
-                                {% endif %}
-                            </td>
-                            
-                            <!-- Estado -->
-                            <td>
-                                {% if item.planificacion.estado == 'pendiente' %}
-                                    <span class="badge bg-secondary">Pendiente</span>
-                                {% elif item.planificacion.estado == 'enviada' %}
-                                    <span class="badge bg-primary">Notificación enviada</span>
-                                {% endif %}
-                            </td>
-                            
-                            <!-- Notificaciones -->
-                            <td>
-                                <span class="badge bg-light text-dark">
-                                    {{ item.planificacion.cantidad_notificaciones }}
-                                </span>
-                                {% if item.planificacion.fecha_ultima_notificacion %}
-                                    <br><small class="notificaciones-info">
-                                        {{ item.planificacion.dias_desde_ultima_notificacion }} días
-                                    </small>
-                                {% endif %}
-                            </td>
-                            
-                            <!-- Acciones -->
-                            <td>
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <!-- Subir -->
-                                    <a href="{% url 'planta_docente:subir_planificacion' item.asignatura.id %}?año={{ año_seleccionado }}" 
-                                       class="btn btn-outline-success btn-action"
-                                       data-bs-toggle="tooltip"
-                                       title="Subir planificación">
-                                        <i class="bi bi-upload"></i>
-                                    </a>
-                                    
-                                    <!-- Notificar -->
-                                    {% if item.responsable_email %}
-                                    <button type="button"
-                                            class="btn btn-outline-primary btn-action btn-notificar"
-                                            data-planificacion-id="{{ item.planificacion.id }}"
-                                            data-asignatura="{{ item.asignatura.nombre }}"
-                                            data-bs-toggle="tooltip"
-                                            title="Enviar notificación">
-                                        <i class="bi bi-envelope"></i>
-                                    </button>
-                                    {% else %}
-                                    <button type="button"
-                                            class="btn btn-outline-secondary btn-action"
-                                            disabled
-                                            data-bs-toggle="tooltip"
-                                            title="Sin email configurado">
-                                        <i class="bi bi-envelope-slash"></i>
-                                    </button>
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Paginación -->
-            {% if page_obj.has_other_pages %}
-            <nav>
-                <ul class="pagination justify-content-center">
-                    {% if page_obj.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?año={{ año_seleccionado }}&page={{ page_obj.previous_page_number }}">
-                            Anterior
-                        </a>
-                    </li>
+    <!-- Formulario -->
+    <div class="card">
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="{{ form.archivo.id_for_label }}" class="form-label">
+                        Archivo de Planificación <span class="text-danger">*</span>
+                    </label>
+                    {{ form.archivo }}
+                    {% if form.archivo.errors %}
+                        <div class="text-danger">{{ form.archivo.errors }}</div>
                     {% endif %}
-                    
-                    {% for num in page_obj.paginator.page_range %}
-                        {% if page_obj.number == num %}
-                        <li class="page-item active">
-                            <span class="page-link">{{ num }}</span>
-                        </li>
-                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                        <li class="page-item">
-                            <a class="page-link" href="?año={{ año_seleccionado }}&page={{ num }}">{{ num }}</a>
-                        </li>
-                        {% endif %}
-                    {% endfor %}
-                    
-                    {% if page_obj.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?año={{ año_seleccionado }}&page={{ page_obj.next_page_number }}">
-                            Siguiente
-                        </a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </nav>
-            {% endif %}
-            
-            {% else %}
-            <div class="alert alert-success">
-                <i class="bi bi-check-circle"></i>
-                <strong>¡Excelente!</strong> Todas las asignaturas tienen su planificación para {{ año_seleccionado }}.
-            </div>
-            {% endif %}
-            
-        </div>
-        
-        <!-- Tab: Recientes -->
-        <div class="tab-pane fade" id="recientes">
-            {% if recientes %}
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Asignatura</th>
-                            <th>Responsable</th>
-                            <th>Fecha de Subida</th>
-                            <th>Tamaño</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for plan in recientes %}
-                        <tr>
-                            <td>
-                                <strong>{{ plan.asignatura.nombre|title }}</strong><br>
-                                <small class="text-muted">{{ plan.asignatura.get_departamento_display }}</small>
-                            </td>
-                            <td>
-                                {% if plan.docente_responsable %}
-                                    {{ plan.docente_responsable.get_full_name }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                            <td>{{ plan.fecha_subida|date:"d/m/Y H:i" }}</td>
-                            <td>{{ plan.tamaño_archivo_mb }} MB</td>
-                            <td>
-                                <a href="{% url 'planta_docente:descargar_planificacion' plan.id %}" 
-                                   class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-download"></i> Descargar
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle"></i>
-                No hay planificaciones recibidas para {{ año_seleccionado }}.
-            </div>
-            {% endif %}
-        </div>
-        
-    </div>
-    
-</div>
-
-<!-- Modal: Notificar Individual -->
-<div class="modal fade" id="modalNotificar" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="bi bi-envelope"></i> Enviar Solicitud de Planificación
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="modalNotificarBody">
-                <div class="text-center">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Cargando...</span>
-                    </div>
+                    <small class="text-muted">Formatos aceptados: PDF, DOC, DOCX</small>
                 </div>
-            </div>
+                
+                <div class="mb-3">
+                    <label for="{{ form.observaciones.id_for_label }}" class="form-label">
+                        Observaciones
+                    </label>
+                    {{ form.observaciones }}
+                    {% if form.observaciones.errors %}
+                        <div class="text-danger">{{ form.observaciones.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload"></i> Subir Planificación
+                    </button>
+                    <a href="{% url 'planta_docente:dashboard_planificaciones' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-lg"></i> Cancelar
+                    </a>
+                </div>
+            </form>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    // Cambio de año
-    document.getElementById('selectorAño').addEventListener('change', function() {
-        window.location.href = '?año=' + this.value;
-    });
-    
-    // Tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-    
-    // Botones notificar individual
-    document.querySelectorAll('.btn-notificar').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const planificacionId = this.dataset.planificacionId;
-            const asignatura = this.dataset.asignatura;
-            
-            // Mostrar modal
-            const modal = new bootstrap.Modal(document.getElementById('modalNotificar'));
-            modal.show();
-            
-            // Cargar contenido via AJAX (implementar en siguiente fase)
-            document.getElementById('modalNotificarBody').innerHTML = `
-                <p>Funcionalidad de notificación para <strong>${asignatura}</strong> será implementada en la siguiente fase.</p>
-                <p class="text-muted">Planificación ID: ${planificacionId}</p>
-            `;
-        });
-    });
-    
-    // Notificar todos
-    document.getElementById('btnNotificarTodos').addEventListener('click', function() {
-        if (confirm('¿Enviar notificación a todas las asignaturas pendientes?')) {
-            alert('Funcionalidad será implementada en la siguiente fase.');
-        }
-    });
-</script>
 {% endblock %}
