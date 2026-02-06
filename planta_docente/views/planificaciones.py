@@ -111,29 +111,21 @@ def dashboard_planificaciones(request):
 @login_required
 @staff_member_required
 def subir_planificacion(request, asignatura_id):
-    """
-    Vista para subir una planificación manualmente.
-    """
-    asignatura = get_object_or_404(Asignatura, pk=asignatura_id)
-
-    # Año por defecto
-    año_default = timezone.now().year
-    año = request.GET.get('año', año_default)
+    """Vista para subir una planificación anual."""
+    asignatura = get_object_or_404(Asignatura, id=asignatura_id)
+    año_actual = timezone.now().year
+    año = request.GET.get('año', año_actual)
 
     try:
         año = int(año)
     except (ValueError, TypeError):
-        año = año_default
+        año = año_actual
 
     # Obtener o crear planificación
     planificacion, created = PlanificacionAnual.objects.get_or_create(
         asignatura=asignatura,
         año=año,
-        defaults={
-            'estado': 'pendiente',
-            'docente_responsable': obtener_responsable_planificacion(asignatura).docente
-            if obtener_responsable_planificacion(asignatura) else None
-        }
+        defaults={'estado': 'pendiente'}
     )
 
     if request.method == 'POST':
@@ -143,17 +135,19 @@ def subir_planificacion(request, asignatura_id):
         if form.is_valid():
             planificacion = form.save(commit=False)
             planificacion.subido_por = request.user
-            planificacion.estado = 'recibida'
+            planificacion.fecha_subida = timezone.now()
+            planificacion.estado = 'recibida'  # ✅ Cambiar estado
+
+            # Guardar archivo
+            if 'archivo' in request.FILES:
+                planificacion.archivo = request.FILES['archivo']
+                planificacion.archivo_nombre_original = request.FILES['archivo'].name
+
             planificacion.save()
 
             messages.success(
-                request,
-                f'✓ Planificación de "{asignatura.nombre}" subida correctamente.'
-            )
+                request, f'Planificación de {asignatura.nombre} subida correctamente.')
             return redirect('planta_docente:dashboard_planificaciones')
-        else:
-            messages.error(
-                request, 'Por favor corrige los errores del formulario.')
     else:
         form = PlanificacionUploadForm(instance=planificacion)
 
