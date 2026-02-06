@@ -833,7 +833,7 @@ def obtener_planificaciones_faltantes(año):
 
 def obtener_estadisticas_planificaciones(año):
     """Obtiene estadísticas de planificaciones anuales para un año lectivo específico."""
-
+    
     from planta_docente.models import Asignatura, PlanificacionAnual, AsignaturaAnual
 
     # Contar asignaturas deshabilitadas para este año
@@ -844,32 +844,33 @@ def obtener_estadisticas_planificaciones(año):
 
     total_deshabilitadas = len(asignaturas_deshabilitadas_ids)
 
-    base_queryset = PlanificacionAnual.objects.filter(año=año)
+    # Filtrar planificaciones excluyendo asignaturas deshabilitadas
+    base_queryset = PlanificacionAnual.objects.filter(año=año).exclude(
+        asignatura_id__in=asignaturas_deshabilitadas_ids
+    )
 
-    # Recibidas = las que tienen archivo subido
+    # Recibidas = las que tienen archivo subido (solo asignaturas activas)
     con_planificacion = base_queryset.filter(
         archivo__isnull=False).exclude(archivo='').count()
     aprobadas = base_queryset.filter(estado='aprobada').count()
     rechazadas = base_queryset.filter(estado='rechazada').count()
 
-    # Notificadas pendientes = tienen registro pero sin archivo
+    # Notificadas pendientes = tienen registro pero sin archivo (solo asignaturas activas)
     notificadas_pendientes = base_queryset.filter(
-        fecha_ultima_notificacion__isnull=False
-    ).filter(archivo='').count()
+        fecha_ultima_notificacion__isnull=False,
+        archivo=''
+    ).count()
 
-    # Total efectivo
+    # Total efectivo (asignaturas activas)
     total_asignaturas = Asignatura.objects.count()
     total_efectivo = total_asignaturas - total_deshabilitadas
 
-    # Asignaturas con registro (excluyendo deshabilitadas)
-    asignaturas_con_registro = base_queryset.exclude(
-        asignatura_id__in=asignaturas_deshabilitadas_ids
-    ).values_list('asignatura_id', flat=True)
-
-    # Sin notificar = asignaturas activas sin registro
+    # Sin notificar = asignaturas activas sin registro en PlanificacionAnual
+    asignaturas_con_registro = base_queryset.values_list(
+        'asignatura_id', flat=True)
     sin_notificar = total_efectivo - len(set(asignaturas_con_registro))
 
-    # Faltantes = total sin archivo
+    # Faltantes = total sin archivo (solo asignaturas activas)
     faltantes = total_efectivo - con_planificacion
 
     # Porcentaje

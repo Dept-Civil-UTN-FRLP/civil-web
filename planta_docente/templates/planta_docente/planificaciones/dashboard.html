@@ -227,7 +227,6 @@
                     data-bs-target="#modalResponsable"
                     data-asignatura-id="{{ item.asignatura.id }}"
                     data-asignatura-nombre="{{ item.asignatura.nombre }}"
-                    data-cargos='{{ item.cargos_json|safe }}'>
                 <i class="bi bi-pencil"></i>
             </button>
         </div>
@@ -240,11 +239,11 @@
                     data-bs-target="#modalResponsable"
                     data-asignatura-id="{{ item.asignatura.id }}"
                     data-asignatura-nombre="{{ item.asignatura.nombre }}"
-                    data-cargos='{{ item.cargos_json|safe }}'>
                 <i class="bi bi-pencil"></i>
             </button>
         </div>
     {% endif %}
+    {{ item.cargos_json|json_script:"cargos-data-"|add:item.asignatura.id }}
 </td>
                             
                             <!-- Estado -->
@@ -606,21 +605,41 @@
 
 
 <script>
+// ✅ Función global para eliminar
+function confirmarEliminar(planificacionId, asignaturaNombre) {
+    if (confirm(`¿Eliminar planificación de ${asignaturaNombre}?\n\nEsta acción eliminará el archivo permanentemente.`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/planta/planificaciones/${planificacionId}/eliminar/`;
+        
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = 'csrfmiddlewaretoken';
+        csrf.value = '{{ csrf_token }}';
+        form.appendChild(csrf);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Modal de responsable + Botones crear-notificar
 document.addEventListener('DOMContentLoaded', function() {
+    // ========== MODAL RESPONSABLE ==========
     const modalResponsable = document.getElementById('modalResponsable');
     let asignaturaIdActual = null;
     
-    // Al abrir modal
     if (modalResponsable) {
         modalResponsable.addEventListener('show.bs.modal', function(event) {
             const button = event.relatedTarget;
             asignaturaIdActual = button.getAttribute('data-asignatura-id');
             const asignaturaNombre = button.getAttribute('data-asignatura-nombre');
-            const cargos = JSON.parse(button.getAttribute('data-cargos'));
+            const cargosDataId = button.getAttribute('data-cargos-id');
+            
+            const cargos = JSON.parse(document.getElementById(cargosDataId).textContent);
             
             document.getElementById('modalAsignaturaNombre').textContent = asignaturaNombre;
             
-            // Construir lista de cargos
             const listaCargos = document.getElementById('listaCargos');
             listaCargos.innerHTML = '';
             
@@ -649,7 +668,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
-        // Guardar cambios
         document.getElementById('btnGuardarResponsable').addEventListener('click', function() {
             const cargoId = document.querySelector('input[name="cargo_responsable"]:checked')?.value;
             
@@ -667,20 +685,13 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Actualizar texto en tabla
                     const responsableSpan = document.getElementById(`responsable-${asignaturaIdActual}`);
                     if (responsableSpan) {
                         responsableSpan.textContent = data.responsable;
                     }
                     
-                    // Cerrar modal
                     bootstrap.Modal.getInstance(modalResponsable).hide();
-                    
-                    // Mostrar mensaje de éxito
                     alert('Responsable actualizado correctamente');
-                    
-                    // Opcional: recargar página
-                    // location.reload();
                 } else {
                     alert('Error: ' + data.error);
                 }
@@ -690,24 +701,58 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Error al guardar cambios');
             });
         });
-    };
-});
-    function confirmarEliminar(planificacionId, asignaturaNombre) {
-    if (confirm(`¿Eliminar planificación de ${asignaturaNombre}?\n\nEsta acción eliminará el archivo permanentemente.`)) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/planta/planificaciones/${planificacionId}/eliminar/`;
-        
-        const csrf = document.createElement('input');
-        csrf.type = 'hidden';
-        csrf.name = 'csrfmiddlewaretoken';
-        csrf.value = '{{ csrf_token }}';
-        form.appendChild(csrf);
-        
-        document.body.appendChild(form);
-        form.submit();
     }
-}
-
+    
+    // ========== BOTONES CREAR-NOTIFICAR ==========
+    const botonesCrearNotificar = document.querySelectorAll('.btn-crear-notificar');
+    
+    botonesCrearNotificar.forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const asignaturaId = this.getAttribute('data-asignatura-id');
+            const asignaturaNombre = this.getAttribute('data-asignatura-nombre');
+            const año = this.getAttribute('data-año');
+            
+            if (!confirm(`¿Crear registro de planificación y notificar?\n\nAsignatura: ${asignaturaNombre}\nAño: ${año}`)) {
+                return;
+            }
+            
+            // Deshabilitar botón
+            this.disabled = true;
+            this.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+            
+            // Crear formulario
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{% url "planta_docente:crear_y_notificar" %}';
+            
+            // CSRF Token
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = '{{ csrf_token }}';
+            form.appendChild(csrfInput);
+            
+            // Asignatura ID
+            const asignaturaInput = document.createElement('input');
+            asignaturaInput.type = 'hidden';
+            asignaturaInput.name = 'asignatura_id';
+            asignaturaInput.value = asignaturaId;
+            form.appendChild(asignaturaInput);
+            
+            // Año
+            const añoInput = document.createElement('input');
+            añoInput.type = 'hidden';
+            añoInput.name = 'año';
+            añoInput.value = año;
+            form.appendChild(añoInput);
+            
+            // Agregar al DOM y enviar
+            document.body.appendChild(form);
+            form.submit();
+        });
+    });
+});
 </script>
 {% endblock %}

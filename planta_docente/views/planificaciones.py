@@ -567,6 +567,7 @@ def toggle_asignatura_año(request):
 # En planta_docente/views/planificaciones.py
 
 @login_required
+@staff_member_required
 def cambiar_responsable_planificacion(request):
     """Cambia el responsable de planificación de una asignatura."""
     if request.method != 'POST':
