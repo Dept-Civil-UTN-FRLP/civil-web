@@ -766,21 +766,23 @@ def obtener_responsable_planificacion(asignatura):
     """
     Obtiene el docente responsable de la planificación de una asignatura.
     
-    Prioridad: Titular → Asociado → Adjunto
-    
-    Args:
-        asignatura (Asignatura): Asignatura para la cual obtener responsable
-    
-    Returns:
-        Cargo|None: Cargo activo del docente responsable, o None si no hay
-    
-    Example:
-        >>> responsable = obtener_responsable_planificacion(asignatura)
-        >>> if responsable:
-        >>>     print(f"Responsable: {responsable.docente.get_full_name()}")
+    Prioridad:
+    1. Cargo marcado manualmente como responsable
+    2. Jerarquía automática: Titular → Asociado → Adjunto
     """
     from planta_docente.models import Cargo
 
+    # 1. Buscar cargo marcado manualmente
+    cargo_manual = Cargo.objects.filter(
+        asignatura=asignatura,
+        estado='activo',
+        es_responsable_planificacion=True
+    ).select_related('docente').first()
+
+    if cargo_manual and cargo_manual.docente and cargo_manual.docente.email:
+        return cargo_manual
+
+    # 2. Fallback a jerarquía automática
     ORDEN_PRIORIDAD = ['tit', 'aso', 'adj']
 
     for categoria in ORDEN_PRIORIDAD:
@@ -790,7 +792,6 @@ def obtener_responsable_planificacion(asignatura):
             categoria=categoria
         ).select_related('docente').first()
 
-        # Validar que el docente tenga email
         if cargo and cargo.docente and cargo.docente.email:
             return cargo
 
@@ -831,63 +832,58 @@ def obtener_planificaciones_faltantes(año):
 
 
 def obtener_estadisticas_planificaciones(año):
-    """
-    Calcula estadísticas de planificaciones considerando asignaturas deshabilitadas.
-    
-    Args:
-        año: Año lectivo
-        
-    Returns:
-        dict: Diccionario con estadísticas:
-            - total_asignaturas: Total de asignaturas en el sistema
-            - deshabilitadas: Asignaturas inactivas para este año
-            - asignaturas_efectivas: Base real (total - deshabilitadas)
-            - recibidas: Planificaciones ya entregadas
-            - notificadas: Notificaciones enviadas sin respuesta
-            - pendientes: Asignaturas sin notificar
-            - porcentaje_recibidas: % de cumplimiento
-    """
+    """Obtiene estadísticas de planificaciones anuales para un año lectivo específico."""
+
     from planta_docente.models import Asignatura, PlanificacionAnual, AsignaturaAnual
 
-    # Total de asignaturas
-    total_asignaturas = Asignatura.objects.count()
+    # Contar asignaturas deshabilitadas para este año
+    asignaturas_deshabilitadas_ids = list(AsignaturaAnual.objects.filter(
+        año=año,
+        activa=False
+    ).values_list('asignatura_id', flat=True))
 
-    base_queryset = PlanificacionAnual.objects.filter(año=año_lectivo)
+    total_deshabilitadas = len(asignaturas_deshabilitadas_ids)
 
-    # Planificaciones RECIBIDAS (con archivo)
+    base_queryset = PlanificacionAnual.objects.filter(año=año)
+
+    # Recibidas = las que tienen archivo subido
     con_planificacion = base_queryset.filter(
-        estado__in=['recibida', 'aprobada']
-    ).exclude(
-        Q(archivo='') | Q(archivo__isnull=True)
-    ).values('asignatura_id').distinct().count()
+        archivo__isnull=False).exclude(archivo='').count()
+    aprobadas = base_queryset.filter(estado='aprobada').count()
+    rechazadas = base_queryset.filter(estado='rechazada').count()
 
-    # Notificaciones ENVIADAS (esperando respuesta)
+    # Notificadas pendientes = tienen registro pero sin archivo
     notificadas_pendientes = base_queryset.filter(
-        estado='enviada'
-    ).filter(
-        Q(archivo='') | Q(archivo__isnull=True)
-    ).values('asignatura_id').distinct().count()
+        fecha_ultima_notificacion__isnull=False
+    ).filter(archivo='').count()
 
-    # Sin notificar
-    sin_notificar = base_queryset.filter(
-        estado='pendiente'
-    ).values('asignatura_id').distinct().count()
+    # Total efectivo
+    total_asignaturas = Asignatura.objects.count()
+    total_efectivo = total_asignaturas - total_deshabilitadas
 
-    # O que ni siquiera tienen registro
-    asignaturas_con_registro = base_queryset.values(
-        'asignatura_id'
-    ).distinct().count()
-    sin_registro = max(total_asignaturas - asignaturas_con_registro, 0)
+    # Asignaturas con registro (excluyendo deshabilitadas)
+    asignaturas_con_registro = base_queryset.exclude(
+        asignatura_id__in=asignaturas_deshabilitadas_ids
+    ).values_list('asignatura_id', flat=True)
 
-    pendientes = max(total_asignaturas - con_planificacion, 0)
+    # Sin notificar = asignaturas activas sin registro
+    sin_notificar = total_efectivo - len(set(asignaturas_con_registro))
 
-    porcentaje = (con_planificacion / total_asignaturas * 100) if total_asignaturas > 0 else 0
+    # Faltantes = total sin archivo
+    faltantes = total_efectivo - con_planificacion
+
+    # Porcentaje
+    porcentaje = round((con_planificacion / total_efectivo *
+                       100), 1) if total_efectivo > 0 else 0
+
     return {
-        'total_asignaturas': total_asignaturas,
-        'deshabilitadas': deshabilitadas,
-        'asignaturas_efectivas': asignaturas_efectivas,
-        'recibidas': recibidas,
-        'notificadas': notificadas,
-        'sin_notificar': pendientes,
-        'porcentaje_recibidas': porcentaje,
+        'total_asignaturas': total_efectivo,
+        'con_planificacion': con_planificacion,
+        'notificadas_pendientes': notificadas_pendientes,
+        'sin_notificar': sin_notificar,
+        'pendientes': faltantes,
+        'porcentaje_completado': porcentaje,
+        'aprobadas': aprobadas,
+        'rechazadas': rechazadas,
+        'deshabilitadas': total_deshabilitadas,
     }

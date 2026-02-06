@@ -579,6 +579,10 @@ class Cargo(models.Model):
         verbose_name="Cantidad de Comisiones",
         help_text="Número de comisiones que atiende este cargo"
     )
+    es_responsable_planificacion = models.BooleanField(
+        default=False,
+        help_text="Marca este cargo como responsable de recibir notificaciones de planificación"
+    )
     objects = CargoManager()
 
     def solicitar_renovacion(self, usuario):
@@ -1410,6 +1414,13 @@ class Cargo(models.Model):
     class Meta:
         verbose_name = "Cargo"
         verbose_name_plural = "Cargos"
+        constraints = [
+            models.UniqueConstraint(
+                fields=['asignatura'],
+                condition=models.Q(es_responsable_planificacion=True),
+                name='unique_responsable_planificacion_por_asignatura_año'
+            )
+        ]
         # Agregar índices
         indexes = [
             # Índice para filtrar por docente
