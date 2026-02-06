@@ -403,11 +403,22 @@
                             <td>{{ plan.fecha_subida|date:"d/m/Y H:i" }}</td>
                             <td>{{ plan.tamaño_archivo_mb }} MB</td>
                             <td>
-                                <a href="{% url 'planta_docente:descargar_planificacion' plan.id %}" 
-                                   class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-download"></i> Descargar
-                                </a>
-                            </td>
+    <div class="btn-group" role="group">
+        <a href="{% url 'planta_docente:descargar_planificacion' plan.id %}" 
+           class="btn btn-sm btn-outline-primary"
+           data-bs-toggle="tooltip"
+           title="Descargar">
+            <i class="bi bi-download"></i>
+        </a>
+        <button type="button" 
+                class="btn btn-sm btn-outline-danger"
+                onclick="confirmarEliminar({{ plan.id }}, '{{ plan.asignatura.nombre|escapejs }}')"
+                data-bs-toggle="tooltip"
+                title="Eliminar">
+            <i class="bi bi-trash"></i>
+        </button>
+    </div>
+</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -679,7 +690,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Error al guardar cambios');
             });
         });
-    }
+    };
 });
+    function confirmarEliminar(planificacionId, asignaturaNombre) {
+    if (confirm(`¿Eliminar planificación de ${asignaturaNombre}?\n\nEsta acción eliminará el archivo permanentemente.`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/planta/planificaciones/${planificacionId}/eliminar/`;
+        
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = 'csrfmiddlewaretoken';
+        csrf.value = '{{ csrf_token }}';
+        form.appendChild(csrf);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
 </script>
 {% endblock %}
