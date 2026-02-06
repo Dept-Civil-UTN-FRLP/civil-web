@@ -227,7 +227,6 @@
                     data-bs-target="#modalResponsable"
                     data-asignatura-id="{{ item.asignatura.id }}"
                     data-asignatura-nombre="{{ item.asignatura.nombre }}"
-                    data-cargos='{{ item.cargos_json|safe }}'>
                 <i class="bi bi-pencil"></i>
             </button>
         </div>
@@ -240,11 +239,11 @@
                     data-bs-target="#modalResponsable"
                     data-asignatura-id="{{ item.asignatura.id }}"
                     data-asignatura-nombre="{{ item.asignatura.nombre }}"
-                    data-cargos='{{ item.cargos_json|safe }}'>
                 <i class="bi bi-pencil"></i>
             </button>
         </div>
     {% endif %}
+    {{ item.cargos_json|json_script:"cargos-data-"|add:item.asignatura.id }}
 </td>
                             
                             <!-- Estado -->
@@ -617,6 +616,7 @@ document.addEventListener('DOMContentLoaded', function() {
             asignaturaIdActual = button.getAttribute('data-asignatura-id');
             const asignaturaNombre = button.getAttribute('data-asignatura-nombre');
             const cargos = JSON.parse(button.getAttribute('data-cargos'));
+            const cargos = JSON.parse(document.getElementById(cargosDataId).textContent);
             
             document.getElementById('modalAsignaturaNombre').textContent = asignaturaNombre;
             
