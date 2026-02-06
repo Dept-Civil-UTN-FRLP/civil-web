@@ -9,15 +9,17 @@ from django.db.models import Count, Q
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+import json
 
 from planta_docente.forms import PlanificacionUploadForm, NotificacionForm
-from planta_docente.models import Asignatura, PlanificacionAnual
+from planta_docente.models import Asignatura, PlanificacionAnual, Cargo
 from planta_docente.utils import (
     obtener_estadisticas_planificaciones,
     obtener_planificaciones_faltantes,
     obtener_responsable_planificacion,
 )
 from planta_docente.services.email_service import PlanificacionEmailService
+
 
 @login_required
 @staff_member_required
@@ -59,12 +61,26 @@ def dashboard_planificaciones(request):
                 docente_responsable=responsable_cargo.docente if responsable_cargo else None
             )
 
+        cargos_activos = Cargo.objects.filter(
+            asignatura=asignatura,
+            estado='activo'
+        ).select_related('docente')
+
+        # Serializar cargos a JSON
+        cargos_json = json.dumps([{
+            'id': cargo.id,
+            'docente': cargo.docente.get_full_name(),
+            'categoria': cargo.get_categoria_display(),
+            'es_responsable': cargo.es_responsable_planificacion
+        } for cargo in cargos_activos])
+
         faltantes_data.append({
             'asignatura': asignatura,
             'planificacion': planificacion,
             'responsable_cargo': responsable_cargo,
             'responsable_nombre': responsable_cargo.docente.get_full_name() if responsable_cargo else 'Sin responsable',
             'responsable_email': responsable_cargo.docente.email if responsable_cargo else None,
+            'cargos_json': cargos_json,  # ✅ NUEVO
         })
 
     # Paginación
@@ -95,29 +111,21 @@ def dashboard_planificaciones(request):
 @login_required
 @staff_member_required
 def subir_planificacion(request, asignatura_id):
-    """
-    Vista para subir una planificación manualmente.
-    """
-    asignatura = get_object_or_404(Asignatura, pk=asignatura_id)
-
-    # Año por defecto
-    año_default = timezone.now().year
-    año = request.GET.get('año', año_default)
+    """Vista para subir una planificación anual."""
+    asignatura = get_object_or_404(Asignatura, id=asignatura_id)
+    año_actual = timezone.now().year
+    año = request.GET.get('año', año_actual)
 
     try:
         año = int(año)
     except (ValueError, TypeError):
-        año = año_default
+        año = año_actual
 
     # Obtener o crear planificación
     planificacion, created = PlanificacionAnual.objects.get_or_create(
         asignatura=asignatura,
         año=año,
-        defaults={
-            'estado': 'pendiente',
-            'docente_responsable': obtener_responsable_planificacion(asignatura).docente
-            if obtener_responsable_planificacion(asignatura) else None
-        }
+        defaults={'estado': 'pendiente'}
     )
 
     if request.method == 'POST':
@@ -127,17 +135,19 @@ def subir_planificacion(request, asignatura_id):
         if form.is_valid():
             planificacion = form.save(commit=False)
             planificacion.subido_por = request.user
-            planificacion.estado = 'recibida'
+            planificacion.fecha_subida = timezone.now()
+            planificacion.estado = 'recibida'  # ✅ Cambiar estado
+
+            # Guardar archivo
+            if 'archivo' in request.FILES:
+                planificacion.archivo = request.FILES['archivo']
+                planificacion.archivo_nombre_original = request.FILES['archivo'].name
+
             planificacion.save()
 
             messages.success(
-                request,
-                f'✓ Planificación de "{asignatura.nombre}" subida correctamente.'
-            )
+                request, f'Planificación de {asignatura.nombre} subida correctamente.')
             return redirect('planta_docente:dashboard_planificaciones')
-        else:
-            messages.error(
-                request, 'Por favor corrige los errores del formulario.')
     else:
         form = PlanificacionUploadForm(instance=planificacion)
 
@@ -324,13 +334,11 @@ def notificar_masivo(request):
     cuerpo_personalizado = request.POST.get(
         'cuerpo_personalizado', '') if tipo_mensaje == 'personalizado' else None
 
-    # Obtener archivos adicionales
     archivos_adicionales = request.FILES.getlist('archivos_adicionales')
 
-    # Validar tamaño de archivos
     if archivos_adicionales:
-        max_size = 10 * 1024 * 1024  # 10MB por archivo
-        max_total = 25 * 1024 * 1024  # 25MB total
+        max_size = 10 * 1024 * 1024
+        max_total = 25 * 1024 * 1024
         total_size = sum(f.size for f in archivos_adicionales)
 
         if any(f.size > max_size for f in archivos_adicionales):
@@ -343,12 +351,10 @@ def notificar_masivo(request):
                 request, 'El tamaño total de los archivos supera el límite de 25 MB.')
             return redirect('planta_docente:dashboard_planificaciones')
 
-    # Validar mensaje personalizado
     if tipo_mensaje == 'personalizado' and not cuerpo_personalizado:
         messages.error(request, 'Debe escribir un mensaje personalizado.')
         return redirect('planta_docente:dashboard_planificaciones')
 
-    # Obtener asignaturas pendientes (sin notificar)
     faltantes = obtener_planificaciones_faltantes(año)
 
     resultados = {
@@ -361,14 +367,12 @@ def notificar_masivo(request):
     for asignatura in faltantes:
         responsable_cargo = obtener_responsable_planificacion(asignatura)
 
-        # Saltar si no hay responsable
         if not responsable_cargo:
             resultados['sin_responsable'] += 1
             resultados['errores'].append(
                 f"{asignatura.nombre}: Sin responsable con email")
             continue
 
-        # Crear o recuperar PlanificacionAnual
         planificacion, created = PlanificacionAnual.objects.get_or_create(
             asignatura=asignatura,
             año=año,
@@ -378,16 +382,12 @@ def notificar_masivo(request):
             }
         )
 
-        # Saltar si ya fue notificada
-        if planificacion.estado == 'enviada':
-            continue
-
-        # Enviar notificación
+        # Enviar notificación (sin validar si ya fue enviada)
         if tipo_mensaje == 'generico':
             exito, mensaje = PlanificacionEmailService.enviar_solicitud_generica(
                 planificacion,
                 adjuntar_ficha=adjuntar_ficha,
-                archivos_adicionales=archivos_adicionales,  # ✅ NUEVO
+                archivos_adicionales=archivos_adicionales,
                 usuario=request.user
             )
         else:
@@ -395,7 +395,7 @@ def notificar_masivo(request):
                 planificacion,
                 cuerpo_personalizado,
                 adjuntar_ficha=adjuntar_ficha,
-                archivos_adicionales=archivos_adicionales,  # ✅ NUEVO
+                archivos_adicionales=archivos_adicionales,
                 usuario=request.user
             )
 
@@ -405,7 +405,6 @@ def notificar_masivo(request):
             resultados['fallidos'] += 1
             resultados['errores'].append(f"{asignatura.nombre}: {mensaje}")
 
-    # Mensajes de resultado
     total_procesadas = resultados['exitosos'] + \
         resultados['fallidos'] + resultados['sin_responsable']
 
@@ -426,7 +425,6 @@ def notificar_masivo(request):
             request,
             f'❌ {resultados["fallidos"]} fallos al enviar'
         )
-        # Mostrar primeros 3 errores
         for error in resultados['errores'][:3]:
             messages.error(request, error)
 
@@ -564,3 +562,40 @@ def toggle_asignatura_año(request):
             'success': False,
             'error': str(e)
         }, status=400)
+
+
+# En planta_docente/views/planificaciones.py
+
+@login_required
+def cambiar_responsable_planificacion(request):
+    """Cambia el responsable de planificación de una asignatura."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+    asignatura_id = request.POST.get('asignatura_id')
+    cargo_id = request.POST.get('cargo_id')
+
+    try:
+        asignatura = Asignatura.objects.get(id=asignatura_id)
+
+        # Desmarcar todos los cargos de esta asignatura
+        Cargo.objects.filter(
+            asignatura=asignatura,
+            es_responsable_planificacion=True
+        ).update(es_responsable_planificacion=False)
+
+        # Marcar el nuevo responsable
+        if cargo_id:
+            cargo = Cargo.objects.get(id=cargo_id, asignatura=asignatura)
+            cargo.es_responsable_planificacion = True
+            cargo.save()
+
+            return JsonResponse({
+                'success': True,
+                'responsable': f"{cargo.docente.get_full_name()} ({cargo.get_categoria_display()})"
+            })
+
+        return JsonResponse({'success': True, 'responsable': 'Sin responsable'})
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

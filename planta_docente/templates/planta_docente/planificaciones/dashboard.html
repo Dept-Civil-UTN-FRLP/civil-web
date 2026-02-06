@@ -85,15 +85,15 @@
         </select>
         
         <!-- Botón Notificar Todos -->
-        {% if stats.sin_notificar > 0 %}
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNotificarMasivo">
-            <i class="bi bi-envelope-fill"></i> Notificar Todos ({{ stats.sin_notificar }})
-        </button>
-        {% else %}
-        <button type="button" class="btn btn-secondary" disabled>
-            <i class="bi bi-check-circle"></i> Todos Notificados
-        </button>
-        {% endif %}
+        {% if stats.pendientes > 0 %}
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNotificarMasivo">
+    <i class="bi bi-envelope-fill"></i> Notificar Todos ({{ stats.pendientes }})
+</button>
+{% else %}
+<button type="button" class="btn btn-secondary" disabled>
+    <i class="bi bi-check-circle"></i> Todas Recibidas
+</button>
+{% endif %}
     </div>
 </div>
     
@@ -215,24 +215,37 @@
                             
                             <!-- Responsable -->
                             <td>
-                                {% if item.responsable_cargo %}
-                                    <span class="badge badge-responsable bg-info">
-                                        {{ item.responsable_cargo.get_categoria_display|upper }}
-                                    </span><br>
-                                    <small>{{ item.responsable_nombre }}</small><br>
-                                    {% if item.responsable_email %}
-                                        <small class="text-muted">
-                                            <i class="bi bi-envelope"></i> {{ item.responsable_email }}
-                                        </small>
-                                    {% else %}
-                                        <small class="text-danger">
-                                            <i class="bi bi-exclamation-triangle"></i> Sin email
-                                        </small>
-                                    {% endif %}
-                                {% else %}
-                                    <span class="badge bg-warning">Sin responsable</span>
-                                {% endif %}
-                            </td>
+    {% if item.responsable_cargo %}
+        <div class="d-flex align-items-center justify-content-between">
+            <span id="responsable-{{ item.asignatura.id }}">
+                {{ item.responsable_nombre }}</br>
+                <small class="text-muted">( {{ item.responsable_cargo.get_categoria_display }} )</small>
+            </span>
+            <button type="button" 
+                    class="btn btn-sm btn-outline-primary" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#modalResponsable"
+                    data-asignatura-id="{{ item.asignatura.id }}"
+                    data-asignatura-nombre="{{ item.asignatura.nombre }}"
+                    data-cargos='{{ item.cargos_json|safe }}'>
+                <i class="bi bi-pencil"></i>
+            </button>
+        </div>
+    {% else %}
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-muted">Sin responsable</span>
+            <button type="button" 
+                    class="btn btn-sm btn-outline-primary" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#modalResponsable"
+                    data-asignatura-id="{{ item.asignatura.id }}"
+                    data-asignatura-nombre="{{ item.asignatura.nombre }}"
+                    data-cargos='{{ item.cargos_json|safe }}'>
+                <i class="bi bi-pencil"></i>
+            </button>
+        </div>
+    {% endif %}
+</td>
                             
                             <!-- Estado -->
                             <td>
@@ -390,11 +403,22 @@
                             <td>{{ plan.fecha_subida|date:"d/m/Y H:i" }}</td>
                             <td>{{ plan.tamaño_archivo_mb }} MB</td>
                             <td>
-                                <a href="{% url 'planta_docente:descargar_planificacion' plan.id %}" 
-                                   class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-download"></i> Descargar
-                                </a>
-                            </td>
+    <div class="btn-group" role="group">
+        <a href="{% url 'planta_docente:descargar_planificacion' plan.id %}" 
+           class="btn btn-sm btn-outline-primary"
+           data-bs-toggle="tooltip"
+           title="Descargar">
+            <i class="bi bi-download"></i>
+        </a>
+        <button type="button" 
+                class="btn btn-sm btn-outline-danger"
+                onclick="confirmarEliminar({{ plan.id }}, '{{ plan.asignatura.nombre|escapejs }}')"
+                data-bs-toggle="tooltip"
+                title="Eliminar">
+            <i class="bi bi-trash"></i>
+        </button>
+    </div>
+</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -456,8 +480,7 @@
                     <div class="alert alert-info">
                         <h6><i class="bi bi-info-circle"></i> Información</h6>
                         <p class="mb-1">
-                            Se enviará notificación a <strong>{{ stats.sin_notificar }}</strong> asignaturas 
-                            que aún no han sido notificadas para el año <strong>{{ año_seleccionado }}</strong>.
+                            Se enviarán notificaciones a <strong>{{ stats.pendientes }} asignaturas</strong> sin planificación.
                         </p>
                         <p class="mb-0">
                             <small>Solo se notificarán asignaturas con docente responsable y email configurado.</small>
@@ -548,242 +571,143 @@
     </div>
 </div>
 
+<!-- Modal Cambiar Responsable -->
+<div class="modal fade" id="modalResponsable" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-person-check"></i> 
+                    Cambiar Responsable de Planificación
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">Asignatura: <strong id="modalAsignaturaNombre"></strong></p>
+                
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    El responsable recibirá las notificaciones de planificación. Si no seleccionas ninguno, se usará la jerarquía automática.
+                </div>
+                
+                <div class="list-group" id="listaCargos">
+                    <!-- Se llena dinámicamente -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardarResponsable">
+                    <i class="bi bi-check-lg"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        
-        // ============================================================
-        // CAMBIO DE AÑO
-        // ============================================================
-        const selectorAño = document.getElementById('selectorAño');
-        if (selectorAño) {
-            selectorAño.addEventListener('change', function() {
-                window.location.href = '?año=' + this.value;
-            });
-        }
-        
-        // ============================================================
-        // TOOLTIPS
-        // ============================================================
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-        
-        // ============================================================
-        // BOTONES CREAR Y NOTIFICAR (AMARILLOS)
-        // ============================================================
-        const botonesCrearNotificar = document.querySelectorAll('.btn-crear-notificar');
-        console.log('Botones crear-notificar encontrados:', botonesCrearNotificar.length);
-        
-        botonesCrearNotificar.forEach(function(btn) {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                
-                const asignaturaId = this.getAttribute('data-asignatura-id');
-                const asignaturaNombre = this.getAttribute('data-asignatura-nombre');
-                const año = this.getAttribute('data-año');
-                
-                console.log('Click detectado:', {
-                    id: asignaturaId,
-                    nombre: asignaturaNombre,
-                    año: año
-                });
-                
-                if (!confirm(`¿Crear registro de planificación y notificar?\n\nAsignatura: ${asignaturaNombre}\nAño: ${año}`)) {
-                    return;
-                }
-                
-                // Deshabilitar botón
-                this.disabled = true;
-                this.innerHTML = '<i class="bi bi-hourglass-split"></i>';
-                
-                // Crear formulario
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '{% url "planta_docente:crear_y_notificar" %}';
-                
-                // CSRF Token
-                const csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = 'csrfmiddlewaretoken';
-                csrfInput.value = '{{ csrf_token }}';
-                form.appendChild(csrfInput);
-                
-                // Asignatura ID
-                const asignaturaInput = document.createElement('input');
-                asignaturaInput.type = 'hidden';
-                asignaturaInput.name = 'asignatura_id';
-                asignaturaInput.value = asignaturaId;
-                form.appendChild(asignaturaInput);
-                
-                // Año
-                const añoInput = document.createElement('input');
-                añoInput.type = 'hidden';
-                añoInput.name = 'año';
-                añoInput.value = año;
-                form.appendChild(añoInput);
-                
-                console.log('Enviando formulario...');
-                
-                // Agregar al DOM y enviar
-                document.body.appendChild(form);
-                form.submit();
-            });
-        });
-        
-        // ============================================================
-        // MODAL NOTIFICAR MASIVO - Toggle mensaje personalizado
-        // ============================================================
-        const radioGenericoMasivo = document.getElementById('tipoGenericoMasivo');
-        const radioPersonalizadoMasivo = document.getElementById('tipoPersonalizadoMasivo');
-        const containerMasivo = document.getElementById('mensajePersonalizadoMasivoContainer');
-        const textareaMasivo = document.getElementById('cuerpoPersonalizadoMasivo');
-        
-        if (radioGenericoMasivo && radioPersonalizadoMasivo) {
-            radioGenericoMasivo.addEventListener('change', function() {
-                containerMasivo.style.display = 'none';
-                textareaMasivo.required = false;
-            });
+document.addEventListener('DOMContentLoaded', function() {
+    const modalResponsable = document.getElementById('modalResponsable');
+    let asignaturaIdActual = null;
+    
+    // Al abrir modal
+    if (modalResponsable) {
+        modalResponsable.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            asignaturaIdActual = button.getAttribute('data-asignatura-id');
+            const asignaturaNombre = button.getAttribute('data-asignatura-nombre');
+            const cargos = JSON.parse(button.getAttribute('data-cargos'));
             
-            radioPersonalizadoMasivo.addEventListener('change', function() {
-                containerMasivo.style.display = 'block';
-                textareaMasivo.required = true;
-            });
-        }
-        
-        // ============================================================
-        // PREVIEW DE ARCHIVOS ADICIONALES EN MODAL MASIVO
-        // ============================================================
-        const inputArchivosMasivo = document.getElementById('archivosAdicionalesMasivo');
-        const previewContainerMasivo = document.getElementById('archivosPreviewMasivo');
-        
-        if (inputArchivosMasivo) {
-            inputArchivosMasivo.addEventListener('change', function(e) {
-                previewContainerMasivo.innerHTML = '';
+            document.getElementById('modalAsignaturaNombre').textContent = asignaturaNombre;
+            
+            // Construir lista de cargos
+            const listaCargos = document.getElementById('listaCargos');
+            listaCargos.innerHTML = '';
+            
+            cargos.forEach(cargo => {
+                const item = document.createElement('label');
+                item.className = 'list-group-item list-group-item-action';
+                item.style.cursor = 'pointer';
                 
-                const files = Array.from(e.target.files);
+                const radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = 'cargo_responsable';
+                radio.value = cargo.id;
+                radio.className = 'form-check-input me-2';
+                if (cargo.es_responsable) radio.checked = true;
                 
-                if (files.length === 0) {
-                    return;
-                }
+                item.appendChild(radio);
+                item.appendChild(document.createTextNode(
+                    `${cargo.docente} (${cargo.categoria})`
+                ));
                 
-                // Validar tamaño
-                const maxSizeMB = 10;
-                const maxTotalMB = 25;
-                let totalSize = 0;
-                let hasError = false;
+                listaCargos.appendChild(item);
                 
-                const filesList = document.createElement('div');
-                filesList.className = 'alert alert-info';
-                filesList.innerHTML = '<strong>Archivos a adjuntar en TODOS los emails:</strong><ul class="mb-0 mt-2">';
-                
-                files.forEach((file) => {
-                    const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-                    totalSize += file.size;
-                    
-                    const li = document.createElement('li');
-                    
-                    if (file.size > maxSizeMB * 1024 * 1024) {
-                        li.innerHTML = `<span class="text-danger"><strong>${file.name}</strong> (${sizeMB} MB) - ⚠️ Demasiado grande</span>`;
-                        hasError = true;
-                    } else {
-                        li.innerHTML = `${file.name} (${sizeMB} MB)`;
-                    }
-                    
-                    filesList.querySelector('ul').appendChild(li);
+                item.addEventListener('click', function() {
+                    radio.checked = true;
                 });
-                
-                filesList.innerHTML += '</ul>';
-                
-                // Validar tamaño total
-                const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(2);
-                
-                if (totalSize > maxTotalMB * 1024 * 1024) {
-                    const warning = document.createElement('div');
-                    warning.className = 'alert alert-danger mt-2';
-                    warning.innerHTML = `<strong>⚠️ Tamaño total: ${totalSizeMB} MB</strong><br>Máximo permitido: ${maxTotalMB} MB`;
-                    previewContainerMasivo.appendChild(warning);
-                    hasError = true;
+            });
+        });
+        
+        // Guardar cambios
+        document.getElementById('btnGuardarResponsable').addEventListener('click', function() {
+            const cargoId = document.querySelector('input[name="cargo_responsable"]:checked')?.value;
+            
+            fetch("{% url 'planta_docente:cambiar_responsable_planificacion' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: new URLSearchParams({
+                    'asignatura_id': asignaturaIdActual,
+                    'cargo_id': cargoId || ''
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Actualizar texto en tabla
+                    const responsableSpan = document.getElementById(`responsable-${asignaturaIdActual}`);
+                    if (responsableSpan) {
+                        responsableSpan.textContent = data.responsable;
+                    }
+                    
+                    // Cerrar modal
+                    bootstrap.Modal.getInstance(modalResponsable).hide();
+                    
+                    // Mostrar mensaje de éxito
+                    alert('Responsable actualizado correctamente');
+                    
+                    // Opcional: recargar página
+                    // location.reload();
                 } else {
-                    const info = document.createElement('small');
-                    info.className = 'text-muted';
-                    info.textContent = `Tamaño total: ${totalSizeMB} MB de ${maxTotalMB} MB permitidos`;
-                    filesList.appendChild(info);
+                    alert('Error: ' + data.error);
                 }
-                
-                previewContainerMasivo.appendChild(filesList);
-                
-                // Deshabilitar botón si hay error
-                const btnEnviar = document.getElementById('btnEnviarMasivo');
-                if (btnEnviar) {
-                    btnEnviar.disabled = hasError;
-                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al guardar cambios');
             });
-        }
+        });
+    };
+});
+    function confirmarEliminar(planificacionId, asignaturaNombre) {
+    if (confirm(`¿Eliminar planificación de ${asignaturaNombre}?\n\nEsta acción eliminará el archivo permanentemente.`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/planta/planificaciones/${planificacionId}/eliminar/`;
         
-        // ============================================================
-        // MODAL NOTIFICAR MASIVO - Validación y submit
-        // ============================================================
-        const formMasivo = document.getElementById('formNotificarMasivo');
-        if (formMasivo) {
-            formMasivo.addEventListener('submit', function(e) {
-                const tipoPersonalizado = radioPersonalizadoMasivo?.checked;
-                const mensaje = textareaMasivo?.value.trim();
-                
-                // Validar mensaje personalizado
-                if (tipoPersonalizado && !mensaje) {
-                    e.preventDefault();
-                    alert('Por favor escribe un mensaje personalizado.');
-                    return false;
-                }
-                
-                // Validar archivos
-                if (inputArchivosMasivo && inputArchivosMasivo.files.length > 0) {
-                    const files = inputArchivosMasivo.files;
-                    const maxSizeMB = 10;
-                    const maxTotalMB = 25;
-                    let totalSize = 0;
-                    
-                    for (let file of files) {
-                        if (file.size > maxSizeMB * 1024 * 1024) {
-                            e.preventDefault();
-                            alert(`El archivo "${file.name}" es demasiado grande (máx. ${maxSizeMB} MB).`);
-                            return false;
-                        }
-                        totalSize += file.size;
-                    }
-                    
-                    if (totalSize > maxTotalMB * 1024 * 1024) {
-                        e.preventDefault();
-                        alert(`El tamaño total de los archivos supera el límite de ${maxTotalMB} MB.`);
-                        return false;
-                    }
-                }
-                
-                // Confirmación
-                const count = {{ stats.sin_notificar|default:0 }};
-                if (!confirm(`¿Enviar notificación a ${count} asignaturas?\n\nEsto puede tardar varios minutos.`)) {
-                    e.preventDefault();
-                    return false;
-                }
-                
-                // Deshabilitar botón y mostrar loading
-                const btn = document.getElementById('btnEnviarMasivo');
-                if (btn) {
-                    btn.disabled = true;
-                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando...';
-                }
-                
-                // Cerrar modal después de un momento
-                setTimeout(function() {
-                    bootstrap.Modal.getInstance(document.getElementById('modalNotificarMasivo'))?.hide();
-                }, 500);
-            });
-        }
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = 'csrfmiddlewaretoken';
+        csrf.value = '{{ csrf_token }}';
+        form.appendChild(csrf);
         
-        console.log('✅ Scripts de planificaciones cargados correctamente');
-        console.log('✅ Scripts de notificación masiva con adjuntos cargados');
-    });
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
 </script>
 {% endblock %}

@@ -766,21 +766,23 @@ def obtener_responsable_planificacion(asignatura):
     """
     Obtiene el docente responsable de la planificación de una asignatura.
     
-    Prioridad: Titular → Asociado → Adjunto
-    
-    Args:
-        asignatura (Asignatura): Asignatura para la cual obtener responsable
-    
-    Returns:
-        Cargo|None: Cargo activo del docente responsable, o None si no hay
-    
-    Example:
-        >>> responsable = obtener_responsable_planificacion(asignatura)
-        >>> if responsable:
-        >>>     print(f"Responsable: {responsable.docente.get_full_name()}")
+    Prioridad:
+    1. Cargo marcado manualmente como responsable
+    2. Jerarquía automática: Titular → Asociado → Adjunto
     """
     from planta_docente.models import Cargo
 
+    # 1. Buscar cargo marcado manualmente
+    cargo_manual = Cargo.objects.filter(
+        asignatura=asignatura,
+        estado='activo',
+        es_responsable_planificacion=True
+    ).select_related('docente').first()
+
+    if cargo_manual and cargo_manual.docente and cargo_manual.docente.email:
+        return cargo_manual
+
+    # 2. Fallback a jerarquía automática
     ORDEN_PRIORIDAD = ['tit', 'aso', 'adj']
 
     for categoria in ORDEN_PRIORIDAD:
@@ -790,7 +792,6 @@ def obtener_responsable_planificacion(asignatura):
             categoria=categoria
         ).select_related('docente').first()
 
-        # Validar que el docente tenga email
         if cargo and cargo.docente and cargo.docente.email:
             return cargo
 
@@ -832,36 +833,57 @@ def obtener_planificaciones_faltantes(año):
 
 def obtener_estadisticas_planificaciones(año):
     """Obtiene estadísticas de planificaciones anuales para un año lectivo específico."""
-    
-    from planta_docente.models import PlanificacionAnual, AsignaturaAnual, Asignatura
+
+    from planta_docente.models import Asignatura, PlanificacionAnual, AsignaturaAnual
 
     # Contar asignaturas deshabilitadas para este año
-    asignaturas_deshabilitadas = AsignaturaAnual.objects.filter(
+    asignaturas_deshabilitadas_ids = list(AsignaturaAnual.objects.filter(
         año=año,
         activa=False
-    ).values_list('asignatura_id', flat=True)
+    ).values_list('asignatura_id', flat=True))
 
-    total_deshabilitadas = len(asignaturas_deshabilitadas)
+    total_deshabilitadas = len(asignaturas_deshabilitadas_ids)
 
     base_queryset = PlanificacionAnual.objects.filter(año=año)
 
-    total = base_queryset.count()
+    # Recibidas = las que tienen archivo subido
+    con_planificacion = base_queryset.filter(
+        archivo__isnull=False).exclude(archivo='').count()
     aprobadas = base_queryset.filter(estado='aprobada').count()
     rechazadas = base_queryset.filter(estado='rechazada').count()
-    sin_notificar = base_queryset.filter(
-        fecha_ultima_notificacion__isnull=True).count()
 
-    # Ajustar total efectivo
+    # Notificadas pendientes = tienen registro pero sin archivo
+    notificadas_pendientes = base_queryset.filter(
+        fecha_ultima_notificacion__isnull=False
+    ).filter(archivo='').count()
+
+    # Total efectivo
     total_asignaturas = Asignatura.objects.count()
     total_efectivo = total_asignaturas - total_deshabilitadas
-    faltantes = total_efectivo - total
+
+    # Asignaturas con registro (excluyendo deshabilitadas)
+    asignaturas_con_registro = base_queryset.exclude(
+        asignatura_id__in=asignaturas_deshabilitadas_ids
+    ).values_list('asignatura_id', flat=True)
+
+    # Sin notificar = asignaturas activas sin registro
+    sin_notificar = total_efectivo - len(set(asignaturas_con_registro))
+
+    # Faltantes = total sin archivo
+    faltantes = total_efectivo - con_planificacion
+
+    # Porcentaje
+    porcentaje = round((con_planificacion / total_efectivo *
+                       100), 1) if total_efectivo > 0 else 0
 
     return {
-        'total': total,
+        'total_asignaturas': total_efectivo,
+        'con_planificacion': con_planificacion,
+        'notificadas_pendientes': notificadas_pendientes,
+        'sin_notificar': sin_notificar,
+        'pendientes': faltantes,
+        'porcentaje_completado': porcentaje,
         'aprobadas': aprobadas,
         'rechazadas': rechazadas,
-        'sin_notificar': sin_notificar,
-        'faltantes': faltantes,
-        'total_efectivo': total_efectivo,
         'deshabilitadas': total_deshabilitadas,
     }
