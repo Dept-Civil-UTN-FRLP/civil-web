@@ -125,4 +125,6 @@ urlpatterns = [
     # En planta_docente/urls.py
     path('planificaciones/cambiar-responsable/',
          views.cambiar_responsable_planificacion, name='cambiar_responsable_planificacion'),
+    path('planificaciones/<int:pk>/aprobar-observar/',
+         views.aprobar_observar_planificacion, name='aprobar_observar_planificacion'),
 ]

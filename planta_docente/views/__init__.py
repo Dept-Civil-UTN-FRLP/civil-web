@@ -51,5 +51,6 @@ __all__ = [
     'notificar_masivo',
     'crear_y_notificar',
     'gestionar_asignaturas_año',
-    'toggle_asignatura_año'
+    'toggle_asignatura_año',
+    'aprobar_observar_planificacion',
 ]
