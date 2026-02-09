@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Observaciones en Planificación</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .content {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 0 0 10px 10px;
+        }
+        .warning-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .info-box {
+            background: white;
+            padding: 20px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .info-row {
+            margin: 10px 0;
+        }
+        .label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .motivo-box {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #ff9800;
+        }
+        .action-box {
+            background: #d1ecf1;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #0dcaf0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="warning-icon">📋</div>
+        <h1 style="margin: 0;">Observaciones en Planificación</h1>
+    </div>
+    
+    <div class="content">
+        <p>Estimado/a <strong>{{ docente.get_full_name }}</strong>,</p>
+        
+        <p>Le informamos que el Consejo Departamental ha realizado <strong>observaciones</strong> sobre su planificación anual que requieren su atención.</p>
+        
+        <div class="info-box">
+            <div class="info-row">
+                <span class="label">Asignatura:</span> {{ asignatura.nombre|title }}
+            </div>
+            <div class="info-row">
+                <span class="label">Año lectivo:</span> {{ año }}
+            </div>
+            <div class="info-row">
+                <span class="label">Observado por:</span> {{ observado_por }}
+            </div>
+            <div class="info-row">
+                <span class="label">Fecha:</span> {% now "d/m/Y H:i" %}
+            </div>
+        </div>
+        
+        <div class="motivo-box">
+            <p style="margin: 0 0 10px 0;"><strong>Motivo de las observaciones:</strong></p>
+            <p style="margin: 0; white-space: pre-line;">{{ motivo }}</p>
+        </div>
+        
+        <div class="action-box">
+            <p style="margin: 0;"><strong>Próximos pasos:</strong></p>
+            <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                <li>Revise las observaciones realizadas</li>
+                <li>Realice los ajustes necesarios en su planificación</li>
+                <li>Vuelva a subir la planificación corregida al sistema</li>
+            </ul>
+        </div>
+        
+        <p>Para cualquier consulta, puede comunicarse con el Departamento de Ingeniería Civil.</p>
+        
+        <p style="margin-top: 25px;">Saludos cordiales,</p>
+    </div>
+    
+    <div class="footer">
+        <p><strong>Departamento de Ingeniería Civil</strong><br>
+        Facultad Regional La Plata - UTN<br>
+        📧 dicivil@frlp.utn.edu.ar</p>
+        <p style="font-size: 0.85em; color: #adb5bd;">
+            Este es un mensaje automático del sistema de gestión de planificaciones anuales.
+        </p>
+    </div>
+</body>
+</html>
