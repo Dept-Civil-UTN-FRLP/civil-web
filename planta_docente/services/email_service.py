@@ -352,3 +352,113 @@ class PlanificacionEmailService:
             import traceback
             traceback.print_exc()
             return None
+    
+    
+    @staticmethod
+    def enviar_notificacion_aprobacion(planificacion, usuario, observaciones=None):
+        """
+        Envía email notificando aprobación de planificación.
+        
+        Args:
+            planificacion (PlanificacionAnual): Planificación aprobada
+            usuario (User): Usuario que aprueba
+            observaciones (str): Observaciones opcionales de aprobación
+        
+        Returns:
+            tuple: (bool exito, str mensaje)
+        """
+        if not planificacion.docente_responsable:
+            return False, "No hay docente responsable asignado"
+    
+        if not planificacion.docente_responsable.email:
+            return False, f"El docente {planificacion.docente_responsable.get_full_name()} no tiene email configurado"
+    
+        # Contexto para el template
+        contexto = {
+            'docente': planificacion.docente_responsable,
+            'asignatura': planificacion.asignatura,
+            'año': planificacion.año,
+            'observaciones': observaciones,
+            'aprobado_por': usuario.get_full_name() if hasattr(usuario, 'get_full_name') else str(usuario),
+        }
+    
+        # Renderizar HTML
+        asunto = f"✅ Planificación Aprobada - {planificacion.asignatura.nombre} ({planificacion.año})"
+        cuerpo_html = render_to_string(
+            'planta_docente/emails/aprobacion_planificacion.html',
+            contexto
+        )
+    
+        # Crear email
+        email = EmailMessage(
+            subject=asunto,
+            body=cuerpo_html,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[planificacion.docente_responsable.email],
+            reply_to=[settings.PLANTA_DOCENTE_EMAIL],
+        )
+        email.content_subtype = "html"
+    
+        # Intentar enviar
+        try:
+            email.send()
+            return True, "Email de aprobación enviado exitosamente"
+        except Exception as e:
+            return False, f"Error al enviar email: {str(e)}"
+    
+    
+    @staticmethod
+    def enviar_notificacion_observaciones(planificacion, motivo, usuario):
+        """
+        Envía email notificando observaciones en planificación.
+        
+        Args:
+            planificacion (PlanificacionAnual): Planificación observada
+            motivo (str): Motivo de las observaciones (requerido)
+            usuario (User): Usuario que observa
+        
+        Returns:
+            tuple: (bool exito, str mensaje)
+        """
+        if not planificacion.docente_responsable:
+            return False, "No hay docente responsable asignado"
+    
+        if not planificacion.docente_responsable.email:
+            return False, f"El docente {planificacion.docente_responsable.get_full_name()} no tiene email configurado"
+    
+        if not motivo:
+            return False, "El motivo de observaciones es obligatorio"
+    
+        # Contexto para el template
+        contexto = {
+            'docente': planificacion.docente_responsable,
+            'asignatura': planificacion.asignatura,
+            'año': planificacion.año,
+            'motivo': motivo,
+            'observado_por': usuario.get_full_name() if hasattr(usuario, 'get_full_name') else str(usuario),
+        }
+    
+        # Renderizar HTML
+        asunto = f"📋 Observaciones en Planificación - {planificacion.asignatura.nombre} ({planificacion.año})"
+        cuerpo_html = render_to_string(
+            'planta_docente/emails/observaciones_planificacion.html',
+            contexto
+        )
+    
+        # Crear email
+        email = EmailMessage(
+            subject=asunto,
+            body=cuerpo_html,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[planificacion.docente_responsable.email],
+            reply_to=[settings.PLANTA_DOCENTE_EMAIL],
+        )
+        email.content_subtype = "html"
+    
+        # Intentar enviar
+        try:
+            email.send()
+            return True, "Email de observaciones enviado exitosamente"
+        except Exception as e:
+            return False, f"Error al enviar email: {str(e)}"
+    

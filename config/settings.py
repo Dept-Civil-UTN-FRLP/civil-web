@@ -135,7 +135,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_URL = "/admin/login/"
 
-
 # Email Configuration
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.office365.com"
@@ -145,6 +144,10 @@ EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("SMTP_PASS")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
+
+# Email Configuration - TESTING MODE
+#EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+#DEFAULT_FROM_EMAIL = config("EMAIL_HOST_USER", default="noreply@frlp.utn.edu.ar")
 
 # Configuración para archivos subidos por el usuario (Media Files)
 MEDIA_URL = "/media/"
@@ -215,4 +218,4 @@ ALLOWED_PLANIFICACION_EXTENSIONS = ['.pdf', '.docx']
 
 # Email específico para notificaciones de planificaciones
 PLANTA_DOCENTE_EMAIL = config(
-    "PLANTA_DOCENTE_EMAIL", default="plantadocente@frlp.utn.edu.ar")
+    "PLANTA_DOCENTE_EMAIL", default="dicivil@frlp.utn.edu.ar")

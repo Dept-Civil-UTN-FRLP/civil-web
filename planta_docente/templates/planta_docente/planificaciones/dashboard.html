@@ -409,6 +409,18 @@
            title="Descargar">
             <i class="bi bi-download"></i>
         </a>
+        
+        {% if plan.estado == 'recibida' %}
+        <button type="button" 
+                class="btn btn-sm btn-outline-success btn-aprobar-observar"
+                data-planificacion-id="{{ plan.id }}"
+                data-asignatura-nombre="{{ plan.asignatura.nombre }}"
+                data-bs-toggle="tooltip"
+                title="Aprobar/Observar">
+            <i class="bi bi-check-circle"></i>
+        </button>
+        {% endif %}
+        
         <button type="button" 
                 class="btn btn-sm btn-outline-danger"
                 onclick="confirmarEliminar({{ plan.id }}, '{{ plan.asignatura.nombre|escapejs }}')"
@@ -603,6 +615,53 @@
     </div>
 </div>
 
+<!-- Modal Aprobar/Observar Planificación -->
+<div class="modal fade" id="modalAprobarObservar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalAprobarObservarTitle">
+                    <i class="bi bi-check-circle"></i> 
+                    Revisar Planificación
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">
+                    Asignatura: <strong id="modalPlanificacionAsignatura"></strong>
+                </p>
+                
+                <div class="mb-3">
+                    <label for="observacionesTexto" class="form-label">
+                        Observaciones <span id="observacionesLabel" class="text-muted">(opcional)</span>
+                    </label>
+                    <textarea 
+                        class="form-control" 
+                        id="observacionesTexto" 
+                        rows="4"
+                        placeholder="Ingrese observaciones o comentarios..."></textarea>
+                    <small class="text-muted">
+                        Las observaciones se enviarán por email al docente responsable.
+                    </small>
+                </div>
+                
+                <input type="hidden" id="planificacionIdModal">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-warning" id="btnObservar">
+                    <i class="bi bi-exclamation-triangle"></i> Observar
+                </button>
+                <button type="button" class="btn btn-success" id="btnAprobar">
+                    <i class="bi bi-check-lg"></i> Aprobar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <script>
 // ✅ Función global para eliminar
@@ -753,6 +812,127 @@ document.addEventListener('DOMContentLoaded', function() {
             form.submit();
         });
     });
+});
+
+// ========== MODAL APROBAR/OBSERVAR ==========
+const modalAprobarObservar = document.getElementById('modalAprobarObservar');
+const botonesAprobarObservar = document.querySelectorAll('.btn-aprobar-observar');
+
+botonesAprobarObservar.forEach(btn => {
+    btn.addEventListener('click', function() {
+        const planificacionId = this.getAttribute('data-planificacion-id');
+        const asignaturaNombre = this.getAttribute('data-asignatura-nombre');
+        
+        document.getElementById('planificacionIdModal').value = planificacionId;
+        document.getElementById('modalPlanificacionAsignatura').textContent = asignaturaNombre;
+        document.getElementById('observacionesTexto').value = '';
+        document.getElementById('observacionesLabel').textContent = '(opcional)';
+        
+        new bootstrap.Modal(modalAprobarObservar).show();
+    });
+});
+
+// Botón Aprobar
+document.getElementById('btnAprobar').addEventListener('click', function() {
+    const planificacionId = document.getElementById('planificacionIdModal').value;
+    const observaciones = document.getElementById('observacionesTexto').value.trim();
+    
+    if (!confirm('¿Aprobar esta planificación?\n\nSe enviará una notificación al docente.')) {
+        return;
+    }
+    
+    // Deshabilitar botones
+    this.disabled = true;
+    document.getElementById('btnObservar').disabled = true;
+    
+    fetch(`/planta/planificaciones/${planificacionId}/aprobar-observar/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: new URLSearchParams({
+            'accion': 'aprobar',
+            'observaciones': observaciones
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(modalAprobarObservar).hide();
+            alert('✅ Planificación aprobada exitosamente');
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+            this.disabled = false;
+            document.getElementById('btnObservar').disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al aprobar planificación');
+        this.disabled = false;
+        document.getElementById('btnObservar').disabled = false;
+    });
+});
+
+// Botón Observar
+document.getElementById('btnObservar').addEventListener('click', function() {
+    const planificacionId = document.getElementById('planificacionIdModal').value;
+    const observaciones = document.getElementById('observacionesTexto').value.trim();
+    
+    if (!observaciones) {
+        alert('⚠️ El motivo de las observaciones es obligatorio');
+        document.getElementById('observacionesTexto').focus();
+        return;
+    }
+    
+    if (!confirm('¿Marcar esta planificación con observaciones?\n\nSe enviará una notificación al docente con el motivo.')) {
+        return;
+    }
+    
+    // Deshabilitar botones
+    this.disabled = true;
+    document.getElementById('btnAprobar').disabled = true;
+    
+    fetch(`/planta/planificaciones/${planificacionId}/aprobar-observar/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: new URLSearchParams({
+            'accion': 'observar',
+            'observaciones': observaciones
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(modalAprobarObservar).hide();
+            alert('📋 Observaciones registradas exitosamente');
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+            this.disabled = false;
+            document.getElementById('btnAprobar').disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al registrar observaciones');
+        this.disabled = false;
+        document.getElementById('btnAprobar').disabled = false;
+    });
+});
+
+// Marcar observaciones como obligatorias al hacer foco en "Observar"
+document.getElementById('btnObservar').addEventListener('mouseenter', function() {
+    document.getElementById('observacionesLabel').innerHTML = '<span class="text-danger">(obligatorio)</span>';
+});
+
+document.getElementById('btnAprobar').addEventListener('mouseenter', function() {
+    document.getElementById('observacionesLabel').textContent = '(opcional)';
 });
 </script>
 {% endblock %}

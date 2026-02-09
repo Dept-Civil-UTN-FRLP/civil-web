@@ -600,3 +600,106 @@ def cambiar_responsable_planificacion(request):
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@staff_member_required
+def aprobar_observar_planificacion(request, pk):
+    """
+    Aprueba o marca con observaciones una planificación.
+    
+    POST params:
+        - accion: 'aprobar' o 'observar'
+        - observaciones: texto opcional para aprobar, obligatorio para observar
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+    planificacion = get_object_or_404(PlanificacionAnual, pk=pk)
+    accion = request.POST.get('accion')
+    observaciones = request.POST.get('observaciones', '').strip()
+
+    # Validar que tenga archivo
+    if not planificacion.archivo:
+        return JsonResponse({
+            'success': False,
+            'error': 'No se puede aprobar/observar una planificación sin archivo'
+        }, status=400)
+
+    try:
+        if accion == 'aprobar':
+            # Cambiar estado a aprobada
+            planificacion.estado = 'aprobada'
+            planificacion.fecha_aprobacion = timezone.now()
+            planificacion.aprobado_por = request.user
+
+            # Guardar observaciones si hay
+            if observaciones:
+                planificacion.observaciones = observaciones
+
+            planificacion.save()
+
+            # Enviar email de aprobación
+            exito, mensaje = PlanificacionEmailService.enviar_notificacion_aprobacion(
+                planificacion,
+                request.user,
+                observaciones
+            )
+
+            if not exito:
+                messages.warning(
+                    request, f'Planificación aprobada pero error al enviar email: {mensaje}')
+            else:
+                messages.success(
+                    request, f'✅ Planificación aprobada y notificación enviada a {planificacion.docente_responsable.get_full_name()}')
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Planificación aprobada exitosamente',
+                'estado': 'aprobada'
+            })
+
+        elif accion == 'observar':
+            # Validar que tenga motivo
+            if not observaciones:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'El motivo de las observaciones es obligatorio'
+                }, status=400)
+
+            # Cambiar estado a observada
+            planificacion.estado = 'observada'
+            planificacion.observaciones = observaciones
+            planificacion.save()
+
+            # Enviar email de observaciones
+            exito, mensaje = PlanificacionEmailService.enviar_notificacion_observaciones(
+                planificacion,
+                observaciones,
+                request.user
+            )
+
+            if not exito:
+                messages.warning(
+                    request, f'Planificación observada pero error al enviar email: {mensaje}')
+            else:
+                messages.success(
+                    request, f'📋 Observaciones registradas y notificación enviada a {planificacion.docente_responsable.get_full_name()}')
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Observaciones registradas exitosamente',
+                'estado': 'observada'
+            })
+
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'Acción no válida. Use "aprobar" u "observar"'
+            }, status=400)
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
