@@ -114,6 +114,17 @@ class Asignatura(models.Model):
         verbose_name="Número de Estudiantes",
         help_text="Promedio histórico de estudiantes en la asignatura"
     )
+    bibliografia_basica = models.TextField(
+        blank=True,
+        verbose_name="Bibliografía Básica",
+        help_text="Formato IEEE. Ejemplo: [1] A. Autor, \"Título del libro\", Editorial, Año. (un ítem por línea)"
+    )
+    
+    bibliografia_complementaria = models.TextField(
+        blank=True,
+        verbose_name="Bibliografía Complementaria",
+        help_text="Formato IEEE. Ejemplo: [1] A. Autor, \"Título del libro\", Editorial, Año. (un ítem por línea)"
+    )
 
     def __str__(self) -> str:
         return self.nombre.title()

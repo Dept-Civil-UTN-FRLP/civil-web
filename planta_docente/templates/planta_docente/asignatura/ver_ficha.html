@@ -259,18 +259,9 @@
                             <td class="fw-bold bg-light">Carga horaria semanal:</td>
                             <td>{{ asignatura.hora_semanal|default:"0" }}hs Catedras</td>
                             <td class="fw-bold bg-light">Carga Horaria total:</td>
-                            <td>{{ asignatura.hora_total|default:"0" }}Hs Catedras</td>
+                            <td>{{ asignatura.hora_total|default:"0" }}Hs reloj</td>
                         </tr>
 
-{% comment %}                         <!-- Fila 6: Carga horaria no presencial -->
-                        <tr>
-                            <td class="fw-bold bg-light">Carga horaria no presencial semanal (si correspondiese)</td>
-                            <td>{% if asignatura.hora_semanal_no_presencial %}{{ asignatura.hora_semanal_no_presencial }}hs{% else %}-{% endif %}</td>
-                            <td class="fw-bold bg-light">% horas no presenciales (si correspondiese)</td>
-                            <td>{% if asignatura.porcentaje_no_presencial %}{{ asignatura.porcentaje_no_presencial }}%{% else %}-{% endif %}</td>
-                        </tr> {% endcomment %}
-
-                        <!-- Fila 7: Profesores -->
 <tr>
     <td class="fw-bold bg-light">Profesores:</td>
     <td colspan="3">
@@ -397,6 +388,43 @@
         </div>
     </div>
     {% endif %}
+
+    <!-- Bibliografía Básica -->
+    {% if bibliografia_basica_lista %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3">
+                <i class="bi bi-book text-primary"></i> Bibliografía Básica
+            </h4>
+            <div class="contenidos-box">
+                <ol>
+                    {% for item in bibliografia_basica_lista %}
+                    <li style="margin-bottom: 0.5rem; line-height: 1.6;">{{ item }}</li>
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Bibliografía Complementaria -->
+    {% if bibliografia_complementaria_lista %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3">
+                <i class="bi bi-books text-secondary"></i> Bibliografía Complementaria
+            </h4>
+            <div class="contenidos-box">
+                <ol>
+                    {% for item in bibliografia_complementaria_lista %}
+                    <li style="margin-bottom: 0.5rem; line-height: 1.6;">{{ item }}</li>
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
 
     <!-- Botones de Acción Inferiores -->
     <div class="row mt-5 no-print">

@@ -330,6 +330,23 @@ def ver_ficha_asignatura(request, asignatura_id):
             for comp in asignatura.competencias.split('-')
             if comp.strip()
         ]
+     # Parsear bibliografía básica (uno por línea)
+    bibliografia_basica_lista = []
+    if asignatura.bibliografia_basica:
+        bibliografia_basica_lista = [
+            item.strip()
+            for item in asignatura.bibliografia_basica.split('\n')
+            if item.strip()
+        ]
+
+    # Parsear bibliografía complementaria (uno por línea)
+    bibliografia_complementaria_lista = []
+    if asignatura.bibliografia_complementaria:
+        bibliografia_complementaria_lista = [
+            item.strip()
+            for item in asignatura.bibliografia_complementaria.split('\n')
+            if item.strip()
+        ]
 
     context = {
         'asignatura': asignatura,
@@ -338,8 +355,10 @@ def ver_ficha_asignatura(request, asignatura_id):
         'objetivos_lista': objetivos_lista,
         'competencias_lista': competencias_lista,
         'contenidos_lista': contenidos_lista,
-        'profesores': profesores,  # ✅ NUEVO
-        'auxiliares': auxiliares,  # ✅ NUEVO
+        'profesores': profesores,
+        'auxiliares': auxiliares,
+        'bibliografia_basica_lista': bibliografia_basica_lista,
+        'bibliografia_complementaria_lista': bibliografia_complementaria_lista,
     }
 
     return render(request, 'planta_docente/asignatura/ver_ficha.html', context)

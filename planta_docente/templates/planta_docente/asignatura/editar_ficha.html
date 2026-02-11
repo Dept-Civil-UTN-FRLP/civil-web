@@ -310,6 +310,51 @@
                 </div>
             </div>
         </div>
+        <!-- Bibliografía -->
+        <div class="form-section">
+            <h3 class="form-section-title">
+                <i class="bi bi-book"></i> Bibliografía
+            </h3>
+            
+            <!-- Bibliografía Básica -->
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <label for="{{ form.bibliografia_basica.id_for_label }}" class="form-label">
+                        Bibliografía Básica
+                    </label>
+                    {{ form.bibliografia_basica }}
+                    <div class="form-help">
+                        <i class="bi bi-info-circle"></i>
+                        Formato IEEE, un ítem por línea. Ejemplo:<br>
+                        <code>[1] A. Autor, "Título del libro", Editorial, Año.</code>
+                    </div>
+                    {% if form.bibliografia_basica.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.bibliografia_basica.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Bibliografía Complementaria -->
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <label for="{{ form.bibliografia_complementaria.id_for_label }}" class="form-label">
+                        Bibliografía Complementaria
+                    </label>
+                    {{ form.bibliografia_complementaria }}
+                    <div class="form-help">
+                        <i class="bi bi-info-circle"></i>
+                        Formato IEEE, un ítem por línea.
+                    </div>
+                    {% if form.bibliografia_complementaria.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.bibliografia_complementaria.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
 
         <!-- Botones de Acción -->
         <div class="row mt-4">

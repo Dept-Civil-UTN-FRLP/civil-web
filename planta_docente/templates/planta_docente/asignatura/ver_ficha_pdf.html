@@ -218,6 +218,30 @@
     </div>
     {% endif %}
     
+    <!-- Bibliografía Básica -->
+    {% if bibliografia_basica_lista %}
+    <div class="section-title">Bibliografía Básica</div>
+    <div class="contenidos-box">
+        <ol>
+            {% for item in bibliografia_basica_lista %}
+            <li style="margin-bottom: 0.3cm; line-height: 1.5;">{{ item }}</li>
+            {% endfor %}
+        </ol>
+    </div>
+    {% endif %}
+
+    <!-- Bibliografía Complementaria -->
+    {% if bibliografia_complementaria_lista %}
+    <div class="section-title">Bibliografía Complementaria</div>
+    <div class="contenidos-box">
+        <ol>
+            {% for item in bibliografia_complementaria_lista %}
+            <li style="margin-bottom: 0.3cm; line-height: 1.5;">{{ item }}</li>
+            {% endfor %}
+        </ol>
+    </div>
+    {% endif %}
+
     <!-- Footer -->
     <div class="footer">
         Documento generado automáticamente

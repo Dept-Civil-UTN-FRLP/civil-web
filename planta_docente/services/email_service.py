@@ -322,6 +322,19 @@ class PlanificacionEmailService:
                     if obj.strip()
                 ]
 
+            # Parsear bibliografía
+            bibliografia_basica_lista = [
+                item.strip()
+                for item in asignatura.bibliografia_basica.split('\n')
+                if item.strip()
+            ] if asignatura.bibliografia_basica else []
+
+            bibliografia_complementaria_lista = [
+                item.strip()
+                for item in asignatura.bibliografia_complementaria.split('\n')
+                if item.strip()
+            ] if asignatura.bibliografia_complementaria else []
+
             # Contexto para el template
             context = {
                 'asignatura': asignatura,
@@ -333,6 +346,8 @@ class PlanificacionEmailService:
                 'contenidos_lista': contenidos_lista,
                 'profesores': profesores,
                 'auxiliares': auxiliares,
+                'bibliografia_basica_lista': bibliografia_basica_lista,
+                'bibliografia_complementaria_lista': bibliografia_complementaria_lista,
             }
 
             # Renderizar template

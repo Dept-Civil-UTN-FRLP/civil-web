@@ -151,6 +151,8 @@ class AsignaturaFichaForm(forms.ModelForm):
             'competencias',
             'objetivos',
             'contenidos_minimos',
+            'bibliografia_basica',
+            'bibliografia_complementaria',
         ]
 
         widgets = {
@@ -197,6 +199,16 @@ class AsignaturaFichaForm(forms.ModelForm):
                 'rows': 8,
                 'placeholder': 'Contenidos mínimos de la asignatura...'
             }),
+            'bibliografia_basica': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 5,
+                'placeholder': '[1] A. Autor, "Título", Editorial, Año.\n[2] A. Autor y B. Autor, "Título", Editorial, Año.',
+            }),
+            'bibliografia_complementaria': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 5,
+                'placeholder': '[1] A. Autor, "Título", Editorial, Año.',
+            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -208,6 +220,10 @@ class AsignaturaFichaForm(forms.ModelForm):
         self.fields['hora_total'].label = "Horas Reloj Total"
         self.fields['numero_comisiones'].label = "Cantidad de Comisiones"
         self.fields['numero_estudiantes'].label = "Cantidad Promedio de Estudiantes"
+        self.fields['bibliografia_basica'].label = "Bibliografía Básica"
+        self.fields['bibliografia_complementaria'].label = "Bibliografía Complementaria"
+        self.fields['bibliografia_basica'].help_text = "Formato IEEE, un ítem por línea."
+        self.fields['bibliografia_complementaria'].help_text = "Formato IEEE, un ítem por línea."
 
 
 class PlanificacionUploadForm(forms.ModelForm):
