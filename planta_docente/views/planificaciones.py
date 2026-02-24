@@ -94,8 +94,8 @@ def dashboard_planificaciones(request):
     # Obtener planificaciones recibidas recientes
     recientes = PlanificacionAnual.objects.filter(
         año=año_seleccionado,
-        estado__in=['recibida', 'aprobada']
-    ).select_related('asignatura', 'docente_responsable').order_by('-fecha_subida')[:5]
+        estado__in=['recibida']
+    ).select_related('asignatura', 'docente_responsable').order_by('asignatura__nombre')
 
     context = {
         'año_seleccionado': año_seleccionado,
