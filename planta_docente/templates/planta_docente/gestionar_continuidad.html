@@ -180,87 +180,177 @@
             </div>
 
             <!-- TAB: Finalizar Con Continuidad -->
-            <div class="tab-pane fade" id="con-continuidad" role="tabpanel">
-                <div class="card border-success">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0">
-                            <i class="bi bi-arrow-right-circle"></i> Finalizar Cargo Con Continuidad
-                        </h5>
+<div class="tab-pane fade" id="con-continuidad" role="tabpanel">
+    <div class="card border-success">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-arrow-right-circle"></i> Finalizar Cargo Con Continuidad
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                El cargo se vinculará con otro cargo del mismo docente, 
+                creando una cadena de continuidad.
+            </div>
+            
+            <form method="POST" id="formContinuidad">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="finalizar_con_continuidad">
+                
+                <!-- Selector: Cargo Existente o Nuevo -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">
+                        Opción de Continuidad <span class="text-danger">*</span>
+                    </label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="opcion_cargo" 
+                               id="opcionExistente" value="existente" checked>
+                        <label class="form-check-label" for="opcionExistente">
+                            Seleccionar cargo existente
+                        </label>
                     </div>
-                    <div class="card-body">
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i>
-                            El cargo se vinculará con otro cargo del mismo docente, 
-                            creando una cadena de continuidad.
-                        </div>
-                        
-                        <form method="POST">
-                            {% csrf_token %}
-                            <input type="hidden" name="accion" value="finalizar_con_continuidad">
-                            
-                            <div class="mb-3">
-                                <label for="cargo_siguiente_id" class="form-label">
-                                    Cargo Siguiente <span class="text-danger">*</span>
-                                </label>
-                                <select name="cargo_siguiente_id" 
-                                        id="cargo_siguiente_id" 
-                                        class="form-select" 
-                                        required>
-                                    <option value="">Seleccionar cargo...</option>
-                                    {% for cargo_pos in cargos_posibles %}
-                                    <option value="{{ cargo_pos.pk }}">
-                                        {{ cargo_pos.get_categoria_display }} 
-                                        {{ cargo_pos.get_dedicacion_display }} - 
-                                        {{ cargo_pos.asignatura.nombre|title }} 
-                                        ({{ cargo_pos.fecha_inicio|date:"d/m/Y" }})
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                                {% if not cargos_posibles %}
-                                <small class="form-text text-muted">
-                                    No hay otros cargos activos del docente disponibles para vincular.
-                                </small>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="tipo_continuidad" class="form-label">
-                                    Tipo de Continuidad <span class="text-danger">*</span>
-                                </label>
-                                <select name="tipo_continuidad" 
-                                        id="tipo_continuidad" 
-                                        class="form-select" 
-                                        required>
-                                    <option value="">Seleccionar...</option>
-                                    {% for value, text in tipo_continuidad_choices %}
-                                    <option value="{{ value }}">{{ text }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="observaciones_con" class="form-label">
-                                    Observaciones
-                                </label>
-                                <textarea name="observaciones" 
-                                          id="observaciones_con" 
-                                          class="form-control" 
-                                          rows="3"
-                                          placeholder="Información adicional sobre la continuidad..."></textarea>
-                            </div>
-                            
-                            <div class="d-grid">
-                                <button type="submit" 
-                                        class="btn btn-success btn-lg"
-                                        {% if not cargos_posibles %}disabled{% endif %}
-                                        onclick="return confirm('¿Confirma vincular este cargo con el cargo siguiente seleccionado?');">
-                                    <i class="bi bi-arrow-right-circle"></i> Finalizar Con Continuidad
-                                </button>
-                            </div>
-                        </form>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="opcion_cargo" 
+                               id="opcionNuevo" value="nuevo">
+                        <label class="form-check-label" for="opcionNuevo">
+                            Crear nuevo cargo
+                        </label>
                     </div>
                 </div>
-            </div>
+
+                <!-- Sección: Cargo Existente -->
+                <div id="seccionCargoExistente" class="mb-3">
+                    <label for="cargo_siguiente_id" class="form-label">
+                        Cargo Siguiente <span class="text-danger">*</span>
+                    </label>
+                    <select name="cargo_siguiente_id" 
+                            id="cargo_siguiente_id" 
+                            class="form-select">
+                        <option value="">Seleccionar cargo...</option>
+                        {% for cargo_pos in cargos_posibles %}
+                        <option value="{{ cargo_pos.pk }}">
+                            {{ cargo_pos.get_categoria_display }} 
+                            {{ cargo_pos.get_dedicacion_display }} - 
+                            {{ cargo_pos.asignatura.nombre|title }} 
+                            ({{ cargo_pos.fecha_inicio|date:"d/m/Y" }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if not cargos_posibles %}
+                    <small class="form-text text-muted">
+                        No hay otros cargos activos del docente disponibles para vincular.
+                    </small>
+                    {% endif %}
+                </div>
+
+                <!-- Sección: Crear Nuevo Cargo -->
+                <div id="seccionNuevoCargo" class="border rounded p-3 bg-light mb-3" style="display: none;">
+                    <h6 class="text-primary mb-3">
+                        <i class="bi bi-plus-circle"></i> Datos del Nuevo Cargo
+                    </h6>
+                    
+                    <div class="row">
+                        <!-- Asignatura (heredada) -->
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Asignatura</label>
+                            <input type="text" class="form-control" 
+                                   value="{{ cargo.asignatura.nombre|title }}" 
+                                   disabled>
+                            <small class="text-muted">
+                                Se hereda la misma asignatura del cargo anterior
+                            </small>
+                        </div>
+                        
+                        <!-- Categoría -->
+                        <div class="col-md-6 mb-3">
+                            <label for="nueva_categoria" class="form-label">
+                                Categoría <span class="text-danger">*</span>
+                            </label>
+                            <select name="nueva_categoria" id="nueva_categoria" class="form-select">
+                                <option value="">Seleccionar...</option>
+                                {% for value, text in categoria_choices %}
+                                <option value="{{ value }}">{{ text }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Dedicación -->
+                        <div class="col-md-6 mb-3">
+                            <label for="nueva_dedicacion" class="form-label">
+                                Dedicación <span class="text-danger">*</span>
+                            </label>
+                            <select name="nueva_dedicacion" id="nueva_dedicacion" class="form-select">
+                                <option value="">Seleccionar...</option>
+                                {% for value, text in dedicacion_choices %}
+                                <option value="{{ value }}">{{ text }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Tipo de Cargo -->
+                        <div class="col-md-6 mb-3">
+                            <label for="nuevo_tipo_cargo" class="form-label">
+                                Tipo de Cargo <span class="text-danger">*</span>
+                            </label>
+                            <select name="nuevo_tipo_cargo" id="nuevo_tipo_cargo" class="form-select">
+                                <option value="">Seleccionar...</option>
+                                {% for value, text in tipo_cargo_choices %}
+                                <option value="{{ value }}">{{ text }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Fecha de Designación -->
+                        <div class="col-md-6 mb-3">
+                            <label for="nueva_fecha_designacion" class="form-label">
+                                Fecha de Designación <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" name="nueva_fecha_designacion" 
+                                   id="nueva_fecha_designacion" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tipo de Continuidad -->
+                <div class="mb-3">
+                    <label for="tipo_continuidad" class="form-label">
+                        Tipo de Continuidad <span class="text-danger">*</span>
+                    </label>
+                    <select name="tipo_continuidad" 
+                            id="tipo_continuidad" 
+                            class="form-select" 
+                            required>
+                        <option value="">Seleccionar...</option>
+                        {% for value, text in tipo_continuidad_choices %}
+                        <option value="{{ value }}">{{ text }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Observaciones -->
+                <div class="mb-3">
+                    <label for="observaciones_con" class="form-label">
+                        Observaciones
+                    </label>
+                    <textarea name="observaciones" 
+                              id="observaciones_con" 
+                              class="form-control" 
+                              rows="3"
+                              placeholder="Información adicional sobre la continuidad..."></textarea>
+                </div>
+                
+                <div class="d-grid">
+                    <button type="submit" 
+                            class="btn btn-success btn-lg"
+                            id="btnFinalizarContinuidad">
+                        <i class="bi bi-arrow-right-circle"></i> Finalizar Con Continuidad
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
         </div>
         {% else %}
         <!-- Cargo ya finalizado -->
@@ -304,5 +394,55 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const opcionExistente = document.getElementById('opcionExistente');
+    const opcionNuevo = document.getElementById('opcionNuevo');
+    const seccionExistente = document.getElementById('seccionCargoExistente');
+    const seccionNuevo = document.getElementById('seccionNuevoCargo');
+    const cargoExistenteSelect = document.getElementById('cargo_siguiente_id');
+    const formContinuidad = document.getElementById('formContinuidad');
+    
+    // Toggle secciones
+    function toggleSecciones() {
+        if (opcionNuevo.checked) {
+            seccionExistente.style.display = 'none';
+            seccionNuevo.style.display = 'block';
+            cargoExistenteSelect.removeAttribute('required');
+            
+            // Hacer required los campos del nuevo cargo
+            document.getElementById('nueva_categoria').setAttribute('required', 'required');
+            document.getElementById('nueva_dedicacion').setAttribute('required', 'required');
+            document.getElementById('nuevo_tipo_cargo').setAttribute('required', 'required');
+            document.getElementById('nueva_fecha_designacion').setAttribute('required', 'required');
+        } else {
+            seccionExistente.style.display = 'block';
+            seccionNuevo.style.display = 'none';
+            cargoExistenteSelect.setAttribute('required', 'required');
+            
+            // Quitar required de campos del nuevo cargo
+            document.getElementById('nueva_categoria').removeAttribute('required');
+            document.getElementById('nueva_dedicacion').removeAttribute('required');
+            document.getElementById('nuevo_tipo_cargo').removeAttribute('required');
+            document.getElementById('nueva_fecha_designacion').removeAttribute('required');
+        }
+    }
+    
+    opcionExistente.addEventListener('change', toggleSecciones);
+    opcionNuevo.addEventListener('change', toggleSecciones);
+    
+    // Validación antes de submit
+    formContinuidad.addEventListener('submit', function(e) {
+        const mensaje = opcionNuevo.checked 
+            ? '¿Confirma crear el nuevo cargo y vincularlo con este cargo?' 
+            : '¿Confirma vincular este cargo con el cargo siguiente seleccionado?';
+        
+        if (!confirm(mensaje)) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
 
 {% endblock %}
