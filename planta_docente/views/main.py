@@ -1304,7 +1304,7 @@ def gestionar_continuidad_cargo(request, pk):
         'tipo_continuidad_choices': Cargo.TIPO_CONTINUIDAD_CHOICES,
         'categoria_choices': Cargo.CATEGORIA_CHOICES,
         'dedicacion_choices': Cargo.DEDICACION_CHOICES,
-        'tipo_cargo_choices': Cargo.TIPO_CARGO_CHOICES,
+        'tipo_cargo_choices': Cargo.CARACTER_CHOICES,
     }
 
     return render(request, 'planta_docente/gestionar_continuidad.html', contexto)
