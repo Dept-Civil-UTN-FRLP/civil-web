@@ -1201,86 +1201,80 @@ def gestionar_continuidad_cargo(request, pk):
                     messages.error(request, mensaje)
 
             elif accion == 'finalizar_con_continuidad':
+                from django.db import transaction  # ✅ Importar
+                
                 opcion_cargo = request.POST.get('opcion_cargo')
-
-                # ✅ OPCIÓN 1: Cargo existente
-                if opcion_cargo == 'existente':
-                    cargo_siguiente_id = request.POST.get('cargo_siguiente_id')
-
-                    if not cargo_siguiente_id:
-                        messages.error(
-                            request, 'Debe seleccionar un cargo siguiente')
-                        return redirect('planta_docente:gestionar_continuidad_cargo', pk=pk)
-
-                    cargo_siguiente = get_object_or_404(
-                        Cargo, pk=cargo_siguiente_id)
-
-                # ✅ OPCIÓN 2: Crear nuevo cargo
-                elif opcion_cargo == 'nuevo':
-                    # Obtener datos del nuevo cargo
-                    categoria = request.POST.get('nueva_categoria')
-                    dedicacion = request.POST.get('nueva_dedicacion')
-                    tipo_cargo = request.POST.get('nuevo_tipo_cargo')
-                    fecha_designacion_str = request.POST.get(
-                        'nueva_fecha_designacion')
-
-                    # Validar campos
-                    if not all([categoria, dedicacion, tipo_cargo, fecha_designacion_str]):
-                        messages.error(
-                            request, 'Todos los campos del nuevo cargo son obligatorios')
-                        return redirect('planta_docente:gestionar_continuidad_cargo', pk=pk)
-
-                    # Parsear fecha
-                    from datetime import datetime
-                    fecha_designacion = datetime.strptime(
-                        fecha_designacion_str, '%Y-%m-%d').date()
-
-                    # Crear el nuevo cargo
-                    try:
-                        cargo_siguiente = Cargo.objects.create(
-                            docente=cargo.docente,
-                            asignatura=cargo.asignatura,
-                            categoria=categoria,
-                            dedicacion=dedicacion,
-                            caracter=tipo_cargo,
-                            fecha_inicio=fecha_designacion,
-                            cantidad_horas=cargo.cantidad_horas,
-                            estado='activo',
-                            estado_continuidad='activo'
+                
+                # ✅ Envolver todo en transacción atómica
+                try:
+                    with transaction.atomic():
+                        # OPCIÓN 1: Cargo existente
+                        if opcion_cargo == 'existente':
+                            cargo_siguiente_id = request.POST.get('cargo_siguiente_id')
+                            
+                            if not cargo_siguiente_id:
+                                messages.error(request, 'Debe seleccionar un cargo siguiente')
+                                return redirect('planta_docente:gestionar_continuidad_cargo', pk=pk)
+                            
+                            cargo_siguiente = get_object_or_404(Cargo, pk=cargo_siguiente_id)
+                        
+                        # OPCIÓN 2: Crear nuevo cargo
+                        elif opcion_cargo == 'nuevo':
+                            categoria = request.POST.get('nueva_categoria')
+                            dedicacion = request.POST.get('nueva_dedicacion')
+                            tipo_cargo = request.POST.get('nuevo_tipo_cargo')
+                            fecha_designacion_str = request.POST.get('nueva_fecha_designacion')
+                            
+                            # Validar campos
+                            if not all([categoria, dedicacion, tipo_cargo, fecha_designacion_str]):
+                                messages.error(request, 'Todos los campos del nuevo cargo son obligatorios')
+                                return redirect('planta_docente:gestionar_continuidad_cargo', pk=pk)
+                            
+                            # Parsear fecha
+                            from datetime import datetime
+                            fecha_designacion = datetime.strptime(fecha_designacion_str, '%Y-%m-%d').date()
+                            
+                            # Crear el nuevo cargo (dentro de transaction.atomic)
+                            cargo_siguiente = Cargo.objects.create(
+                                docente=cargo.docente,
+                                asignatura=cargo.asignatura,
+                                categoria=categoria,
+                                dedicacion=dedicacion,
+                                caracter=tipo_cargo,
+                                fecha_inicio=fecha_designacion,
+                                cantidad_horas=cargo.cantidad_horas,
+                                estado='activo',
+                                estado_continuidad='activo'
+                            )
+                            
+                            messages.info(request, f'Nuevo cargo creado: {cargo_siguiente.get_categoria_display()}')
+                        
+                        else:
+                            messages.error(request, 'Opción de cargo no válida')
+                            return redirect('planta_docente:gestionar_continuidad_cargo', pk=pk)
+                        
+                        # Continuar con la vinculación
+                        tipo_continuidad = request.POST.get('tipo_continuidad')
+                        observaciones = request.POST.get('observaciones')
+            
+                        exito, mensaje = cargo.finalizar_con_continuidad(
+                            cargo_siguiente=cargo_siguiente,
+                            tipo_continuidad=tipo_continuidad,
+                            observaciones=observaciones,
+                            usuario=request.user
                         )
-                        messages.info(request, f'✓ Nuevo cargo creado: {cargo_siguiente.get_categoria_display()}')
-                    except Exception as e:
-                        messages.error(request, f'Error al crear nuevo cargo: {str(e)}')
-                else:
-                    messages.error(request, 'Opción de cargo no válida')
+            
+                        if not exito:
+                            # ✅ Si falla, la transacción hace rollback automático
+                            messages.error(request, mensaje)
+                            return redirect('planta_docente:gestionar_continuidad_cargo', pk=pk)
+            
+                        messages.success(request, mensaje)
+                
+                except Exception as e:
+                    # ✅ Cualquier error hace rollback
+                    messages.error(request, f'Error al procesar continuidad: {str(e)}')
                     return redirect('planta_docente:gestionar_continuidad_cargo', pk=pk)
-
-                # Continuar con la vinculación
-                tipo_continuidad = request.POST.get('tipo_continuidad')
-                observaciones = request.POST.get('observaciones')
-
-                exito, mensaje = cargo.finalizar_con_continuidad(
-                    cargo_siguiente=cargo_siguiente,
-                    tipo_continuidad=tipo_continuidad,
-                    observaciones=observaciones,
-                    usuario=request.user
-                )
-
-                if exito:
-                    messages.success(request, mensaje)
-                else:
-                    messages.error(request, mensaje)
-
-            elif accion == 'desvincular':
-                exito, mensaje = cargo.desvincular_continuidad()
-
-                if exito:
-                    messages.success(request, mensaje)
-                else:
-                    messages.error(request, mensaje)
-
-        except Exception as e:
-            messages.error(request, f'Error al procesar continuidad: {str(e)}')
 
         return redirect('planta_docente:detalle_cargo', pk=pk)
 
