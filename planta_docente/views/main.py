@@ -1202,10 +1202,6 @@ def gestionar_continuidad_cargo(request, pk):
 
             elif accion == 'finalizar_con_continuidad':
                 opcion_cargo = request.POST.get('opcion_cargo')
-                
-                print(f"DEBUG: accion = {accion}")
-                print(f"DEBUG: opcion_cargo = {opcion_cargo}")
-                print(f"DEBUG: POST data = {request.POST}")
 
                 # ✅ OPCIÓN 1: Cargo existente
                 if opcion_cargo == 'existente':
@@ -1227,10 +1223,6 @@ def gestionar_continuidad_cargo(request, pk):
                     tipo_cargo = request.POST.get('nuevo_tipo_cargo')
                     fecha_designacion_str = request.POST.get(
                         'nueva_fecha_designacion')
-                    
-                    print(f"DEBUG: Entrando a crear nuevo cargo")
-                    print(f"DEBUG: categoria={categoria}, dedicacion={dedicacion}, tipo_cargo={tipo_cargo}, fecha={fecha_designacion_str}")
-    
 
                     # Validar campos
                     if not all([categoria, dedicacion, tipo_cargo, fecha_designacion_str]):
@@ -1243,9 +1235,6 @@ def gestionar_continuidad_cargo(request, pk):
                     fecha_designacion = datetime.strptime(
                         fecha_designacion_str, '%Y-%m-%d').date()
 
-                    print(
-                        f"DEBUG: fecha_designacion parseada = {fecha_designacion}")
-
                     # Crear el nuevo cargo
                     try:
                         cargo_siguiente = Cargo.objects.create(
@@ -1255,14 +1244,12 @@ def gestionar_continuidad_cargo(request, pk):
                             dedicacion=dedicacion,
                             caracter=tipo_cargo,
                             fecha_inicio=fecha_designacion,
-                            cantidad_horas=1,
+                            cantidad_horas=cargo.cantidad_horas,
                             estado='activo',
                             estado_continuidad='activo'
                         )
-                        print(f"DEBUG: Cargo creado exitosamente - ID: {cargo_siguiente.pk}")
                         messages.info(request, f'✓ Nuevo cargo creado: {cargo_siguiente.get_categoria_display()}')
                     except Exception as e:
-                        print(f"DEBUG ERROR al crear cargo: {type(e).__name__}: {str(e)}")
                         messages.error(request, f'Error al crear nuevo cargo: {str(e)}')
                 else:
                     messages.error(request, 'Opción de cargo no válida')
