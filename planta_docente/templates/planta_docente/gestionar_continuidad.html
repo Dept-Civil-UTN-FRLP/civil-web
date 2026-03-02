@@ -404,6 +404,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const cargoExistenteSelect = document.getElementById('cargo_siguiente_id');
     const formContinuidad = document.getElementById('formContinuidad');
     
+    // ✅ Guard: Solo ejecutar si los elementos existen
+    if (!opcionExistente || !opcionNuevo || !formContinuidad) {
+        return; // Cargo ya finalizado, elementos no existen
+    }
+    
     // Toggle secciones
     function toggleSecciones() {
         if (opcionNuevo.checked) {
