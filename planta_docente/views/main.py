@@ -1618,3 +1618,91 @@ def asignatura_info_api(request, asignatura_id):
         return JsonResponse({
             'error': 'Asignatura no encontrada'
         }, status=404)
+
+
+@login_required
+@staff_member_required
+def exportar_planta_departamento(request):
+    """Exporta la planta docente de un departamento específico a Excel."""
+
+    departamento = request.GET.get('departamento')
+
+    if not departamento:
+        messages.error(request, 'Debe seleccionar un departamento')
+        return redirect('planta_docente:dashboard_planta')
+
+    # Obtener cargos activos del departamento
+    cargos_qs = Cargo.objects.filter(
+        asignatura__departamento=departamento,
+        estado='activo'
+    ).select_related('docente', 'asignatura').order_by(
+        'docente__apellido', 'docente__nombre'
+    )
+
+    # Crear workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = f"Planta {departamento.upper()}"
+
+    # Headers
+    headers = [
+        'Apellido y Nombre',
+        'Legajo',
+        'Cargo y Categoría',
+        'Dedicación',
+        'Asignatura',
+    ]
+
+    # Escribir headers
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num, value=header)
+        cell.font = openpyxl.styles.Font(bold=True)
+
+    # Datos
+    for row_num, cargo in enumerate(cargos_qs, 2):
+        # Apellido y Nombre
+        ws.cell(
+            row=row_num,
+            column=1,
+            value=f"{cargo.docente.apellido}, {cargo.docente.nombre}"
+        )
+
+        # Legajo
+        ws.cell(row=row_num, column=2, value=cargo.docente.legajo)
+
+        # Cargo y Categoría
+        ws.cell(
+            row=row_num,
+            column=3,
+            value=f"{cargo.get_categoria_display()} {cargo.get_caracter_display()}"
+        )
+
+        # Dedicación
+        ws.cell(row=row_num, column=4, value=cargo.get_dedicacion_display())
+
+        # Asignatura
+        ws.cell(row=row_num, column=5, value=cargo.asignatura.nombre)
+
+    # Ajustar anchos
+    for col in ws.columns:
+        max_length = 0
+        column = col[0].column_letter
+        for cell in col:
+            if cell.value:
+                max_length = max(max_length, len(str(cell.value)))
+        ws.column_dimensions[column].width = max_length + 2
+
+    # Preparar response
+    from django.utils import timezone
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+    # Nombre del departamento para el archivo
+    depto_nombre = dict(Asignatura.DEPTO_CHOICES).get(
+        departamento, departamento)
+    filename = f'planta_{depto_nombre}_{timezone.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    wb.save(response)
+    return response

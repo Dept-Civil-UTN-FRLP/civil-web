@@ -127,4 +127,6 @@ urlpatterns = [
          views.cambiar_responsable_planificacion, name='cambiar_responsable_planificacion'),
     path('planificaciones/<int:pk>/aprobar-observar/',
          views.aprobar_observar_planificacion, name='aprobar_observar_planificacion'),
+    path('exportar-planta-departamento/',
+         views.exportar_planta_departamento, name='exportar_planta_departamento'),
 ]

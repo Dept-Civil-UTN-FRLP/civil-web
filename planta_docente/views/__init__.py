@@ -29,6 +29,7 @@ __all__ = [
     'gestionar_mayor_jerarquia_cargo',
     'editar_licencia_mayor_jerarquia_view',
     'crear_resolucion_csu_ajax',
+    'exportar_planta_departamento'
     # Vistas de estructura de cátedra
     'dashboard_asignaturas',
     'formulario_estructura',
