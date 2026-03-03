@@ -1635,8 +1635,11 @@ def exportar_planta_departamento(request):
     cargos_qs = Cargo.objects.filter(
         asignatura__departamento=departamento,
         estado='activo'
-    ).select_related('docente', 'asignatura').order_by(
-        'docente__apellido', 'docente__nombre'
+    ).select_related('docente', 'asignatura').select_related('docente', 'asignatura').order_by(
+    'asignatura__nivel',
+    'asignatura__nombre',
+    'docente__apellido',
+    'docente__nombre'
     )
 
     # Crear workbook
