@@ -179,6 +179,34 @@
     </div>
 </div>
 
+<!-- Después de los filtros existentes, antes de la tabla -->
+<div class="row mb-3">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <label class="form-label mb-0"><strong>Exportar Planta por Departamento:</strong></label>
+                    </div>
+                    <div class="col-md-6">
+                        <select id="departamentoExportar" class="form-select">
+                            <option value="">Seleccionar departamento...</option>
+                            {% for value, text in departamento_choices %}
+                            <option value="{{ value }}">{{ text }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="button" class="btn btn-success w-100" id="btnExportarDepartamento">
+                            <i class="bi bi-file-earmark-excel"></i> Exportar a Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Tabla de cargos -->
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
@@ -340,6 +368,18 @@ document.addEventListener('DOMContentLoaded', function() {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
 });
+
+document.getElementById('btnExportarDepartamento').addEventListener('click', function() {
+    const depto = document.getElementById('departamentoExportar').value;
+    
+    if (!depto) {
+        alert('Por favor seleccione un departamento');
+        return;
+    }
+    
+    window.location.href = `{% url 'planta_docente:exportar_planta_departamento' %}?departamento=${depto}`;
+});
+
 </script>
 
 {% endblock %}
