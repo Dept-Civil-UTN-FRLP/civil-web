@@ -53,7 +53,11 @@
       {% for ca in carreras %}
       <tr>
         <td>{{ ca.cargo.docente }}</td>
-        <td>{{ ca.cargo.get_categoria_display }} {{ ca.cargo.get_caracter_display }}</td>
+        <td>
+            <a href="{% url 'planta_docente:detalle_cargo' pk=ca.cargo.pk %}" class="text-decoration-none">
+                {{ ca.cargo.get_categoria_display }} {{ ca.cargo.get_caracter_display }}
+            </a>
+        </td>
         <td>{{ ca.cargo.asignatura.nombre.title }}</td>
         <td>{{ ca.fecha_vencimiento_actual|date:"d/m/Y" }}</td>
         <td>
