@@ -47,15 +47,11 @@ Uso:
         </p>
         
         {% if ca.estado == 'ACT' %}
-        <hr>
-        <form action="{% url 'carrera_academica:finalizar_ca' pk=ca.pk %}" method="POST" 
-              onsubmit="return confirm('¿Estás seguro de que querés finalizar este expediente? Esta acción no se puede deshacer fácilmente.');">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-warning w-100">
-                Finalizar Expediente
-            </button>
-        </form>
-        {% endif %}
+<hr>
+<a href="{% url 'carrera_academica:finalizar_ca' pk=ca.pk %}" class="btn btn-warning w-100">
+    Finalizar Expediente
+</a>
+{% endif %}
         
         <hr>
         
