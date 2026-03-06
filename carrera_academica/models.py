@@ -64,6 +64,14 @@ class CarreraAcademica(models.Model):
         ("FIN", "Finalizada"),
         ("VEN", "Vencida"),
     ]
+    
+    RESULTADO_CIERRE_CHOICES = [
+        ('aprobada_redesigna', 'Aprobada - Acepta Redesignación'),
+        ('aprobada_rechaza', 'Aprobada - Rechaza Redesignación'),
+        ('renuncia', 'Renuncia'),
+        ('no_aprobada', 'No Aprobada'),
+        ('jubilacion', 'Jubilación'),
+    ]
 
     cargo = models.OneToOneField(
         Cargo, on_delete=models.CASCADE, related_name="carrera_academica"
@@ -100,6 +108,19 @@ class CarreraAcademica(models.Model):
         verbose_name="Años Pausados",
         help_text="Lista de años que no se evaluarán. Formato: [{'anio': 2022, 'motivo': '...', 'fecha': '2022-03-15', 'usuario': 'admin'}]"
     )
+    resultado_cierre = models.CharField(
+        max_length=30,
+        choices=RESULTADO_CIERRE_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name="Resultado del Cierre",
+        help_text="Resultado al finalizar la Carrera Académica"
+    )
+    observaciones_cierre = models.TextField(
+        blank=True,
+        verbose_name="Observaciones del Cierre"
+    )
+    
     objects = CarreraAcademicaManager()
 
     def clean(self):
