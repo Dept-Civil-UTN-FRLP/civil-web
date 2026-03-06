@@ -576,19 +576,153 @@ def docentes_filtrados_api_view(request):
 
 @login_required
 def finalizar_ca_view(request, pk):
-    # Usamos POST para asegurarnos de que la acción sea intencional
-    if request.method == "POST":
-        ca = get_object_or_404(CarreraAcademica, pk=pk)
-        ca.estado = "FIN"  # 'Finalizada'
-        ca.fecha_finalizacion = timezone.now()
-        ca.save()
-        messages.success(
-            request,
-            f"El expediente de {ca.cargo.docente} ha sido marcado como 'Finalizado'.",
-        )
+    """
+    Finaliza la CA con workflow automático según el resultado.
+    """
+    from django.db import transaction
 
-    # Redirigimos siempre al detalle del expediente
-    return redirect("carrera_academica:detalle_ca", pk=pk)
+    ca = get_object_or_404(CarreraAcademica, pk=pk)
+
+    if request.method == "POST":
+        resultado = request.POST.get('resultado_cierre')
+        observaciones = request.POST.get('observaciones_cierre', '')
+
+        if not resultado:
+            messages.error(request, 'Debe seleccionar un resultado de cierre')
+            return redirect('carrera_academica:detalle_ca', pk=pk)
+
+        # Validaciones específicas por resultado
+        if resultado == 'aprobada_redesigna':
+            nueva_fecha_vencimiento_str = request.POST.get(
+                'nueva_fecha_vencimiento')
+            if not nueva_fecha_vencimiento_str:
+                messages.error(
+                    request, 'Debe especificar la nueva fecha de vencimiento para la redesignación')
+                return redirect('carrera_academica:finalizar_ca', pk=pk)
+
+            from datetime import datetime
+            nueva_fecha_vencimiento = datetime.strptime(
+                nueva_fecha_vencimiento_str, '%Y-%m-%d').date()
+
+        # ✅ Usar transacción atómica para evitar inconsistencias
+        try:
+            with transaction.atomic():
+                # Actualizar CA actual
+                ca.estado = "FIN"
+                ca.fecha_finalizacion = timezone.now()
+                ca.resultado_cierre = resultado
+                ca.observaciones_cierre = observaciones
+                ca.save()
+
+                cargo_actual = ca.cargo
+
+                if resultado == 'aprobada_redesigna':
+                    # Crear nuevo cargo
+                    nuevo_cargo = Cargo.objects.create(
+                        docente=cargo_actual.docente,
+                        asignatura=cargo_actual.asignatura,
+                        categoria=cargo_actual.categoria,
+                        dedicacion=cargo_actual.dedicacion,
+                        caracter=cargo_actual.caracter,  # Mantener ORD o REG
+                        cantidad_horas=cargo_actual.cantidad_horas,
+                        cantidad_comisiones=cargo_actual.cantidad_comisiones,
+                        fecha_inicio=timezone.now().date(),
+                        fecha_vencimiento=nueva_fecha_vencimiento,
+                        estado='activo',
+                        estado_continuidad='activo'
+                    )
+
+                    # Vincular continuidad
+                    exito, mensaje = cargo_actual.finalizar_con_continuidad(
+                        cargo_siguiente=nuevo_cargo,
+                        tipo_continuidad='mismo_cargo',
+                        observaciones=f'Redesignación por aprobación de CA. {observaciones}',
+                        usuario=request.user
+                    )
+
+                    if not exito:
+                        raise Exception(
+                            f"Error al vincular continuidad: {mensaje}")
+
+                    # Crear nueva CA
+                    nueva_ca = CarreraAcademica.objects.create(
+                        cargo=nuevo_cargo,
+                        fecha_inicio=nuevo_cargo.fecha_inicio,
+                        fecha_vencimiento_original=nueva_fecha_vencimiento,
+                        fecha_vencimiento_actual=nueva_fecha_vencimiento,
+                        estado='ACT'
+                    )
+
+                    messages.success(
+                        request,
+                        f"CA Aprobada y redesignada. Nuevo expediente creado con vencimiento {nueva_fecha_vencimiento.strftime('%d/%m/%Y')}."
+                    )
+
+                elif resultado == 'aprobada_rechaza':
+                    # Convertir a interino
+                    cargo_actual.caracter = 'int'
+                    cargo_actual.save()
+                    messages.warning(
+                        request,
+                        f"CA Aprobada pero rechaza redesignación. Cargo convertido a Interino."
+                    )
+
+                elif resultado == 'renuncia':
+                    # Dar de baja el cargo
+                    exito, mensaje = cargo_actual.finalizar_sin_continuidad(
+                        razon='renuncia',
+                        observaciones=observaciones,
+                        usuario=request.user
+                    )
+                    messages.info(
+                        request,
+                        f"Docente {cargo_actual.docente} renunció. Cargo dado de baja."
+                    )
+
+                elif resultado == 'no_aprobada':
+                    # Convertir a interino
+                    cargo_actual.caracter = 'int'
+                    cargo_actual.save()
+                    messages.warning(
+                        request,
+                        f"CA No Aprobada. Cargo convertido a Interino."
+                    )
+
+                elif resultado == 'jubilacion':
+                    # Dar de baja cargo y marcar docente como jubilado
+                    exito, mensaje = cargo_actual.finalizar_sin_continuidad(
+                        razon='jubilacion',
+                        observaciones=observaciones,
+                        usuario=request.user
+                    )
+
+                    docente = cargo_actual.docente
+                    docente.jubilado = True
+                    docente.fecha_jubilacion = timezone.now().date()
+                    docente.save()
+
+                    messages.info(
+                        request,
+                        f"Docente {docente} jubilado. Cargo dado de baja."
+                    )
+
+                messages.success(
+                    request,
+                    f"Expediente de {ca.cargo.docente} finalizado como '{ca.get_resultado_cierre_display()}'."
+                )
+
+        except Exception as e:
+            messages.error(request, f'Error al finalizar CA: {str(e)}')
+            return redirect('carrera_academica:finalizar_ca', pk=pk)
+
+        return redirect('carrera_academica:detalle_ca', pk=pk)
+
+    # GET - Mostrar formulario de cierre
+    context = {
+        'ca': ca,
+        'resultado_choices': CarreraAcademica.RESULTADO_CIERRE_CHOICES,
+    }
+    return render(request, 'carrera_academica/finalizar_ca.html', context)
 
 
 @login_required
