@@ -632,7 +632,7 @@ def finalizar_ca_view(request, pk):
                         estado_continuidad='activo'
                     )
 
-                    # Vincular continuidad
+                    # Vincular continuidad de cargos
                     exito, mensaje = cargo_actual.finalizar_con_continuidad(
                         cargo_siguiente=nuevo_cargo,
                         tipo_continuidad='mismo_cargo',
@@ -642,21 +642,25 @@ def finalizar_ca_view(request, pk):
 
                     if not exito:
                         raise Exception(
-                            f"Error al vincular continuidad: {mensaje}")
+                            f"Error al vincular continuidad de cargos: {mensaje}")
 
-                    # Crear nueva CA
+                    # Crear nueva CA y vincular con la anterior
                     nueva_ca = CarreraAcademica.objects.create(
                         cargo=nuevo_cargo,
                         fecha_inicio=nuevo_cargo.fecha_inicio,
                         fecha_vencimiento_original=nueva_fecha_vencimiento,
                         fecha_vencimiento_actual=nueva_fecha_vencimiento,
-                        estado='ACT'
+                        estado='ACT',
+                        ca_anterior=ca  # ✅ Vincular con CA anterior
                     )
 
                     messages.success(
                         request,
-                        f"CA Aprobada y redesignada. Nuevo expediente creado con vencimiento {nueva_fecha_vencimiento.strftime('%d/%m/%Y')}."
+                        f"CA Aprobada y redesignada. Nuevo expediente #{nueva_ca.pk} creado con vencimiento {nueva_fecha_vencimiento.strftime('%d/%m/%Y')}."
                     )
+
+                    # Redirigir a la nueva CA
+                    return redirect('carrera_academica:detalle_ca', pk=nueva_ca.pk)
 
                 elif resultado == 'aprobada_rechaza':
                     # Convertir a interino
