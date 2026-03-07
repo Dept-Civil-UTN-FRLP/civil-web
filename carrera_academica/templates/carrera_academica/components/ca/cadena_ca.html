@@ -1,0 +1,138 @@
+<!-- carrera_academica/templates/carrera_academica/components/ca/cadena_ca.html -->
+{% comment %}
+Component: Cadena de Carreras Académicas
+Muestra expedientes anteriores y siguientes vinculados
+
+Parámetros requeridos:
+- ca: Objeto CarreraAcademica
+
+Uso:
+{% include 'carrera_academica/components/ca/cadena_ca.html' with ca=carrera %}
+{% endcomment %}
+
+{% load static %}
+
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="bi bi-link-45deg"></i> Expedientes Relacionados
+    </div>
+    <div class="card-body">
+        {% with info=ca.get_info_continuidad_ca cadena=ca.obtener_cadena_ca %}
+        
+        {% if info.tiene_anterior or info.tiene_siguiente %}
+            <div class="timeline">
+                <!-- CA Anteriores -->
+                {% for ca_ant in cadena.anteriores %}
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-secondary"></div>
+                    <div class="timeline-content">
+                        <small class="text-muted">Expediente Anterior</small>
+                        <div>
+                            <a href="{% url 'carrera_academica:detalle_ca' pk=ca_ant.pk %}" class="text-decoration-none">
+                                {% if ca_ant.numero_expediente %}
+                                    Exp. {{ ca_ant.numero_expediente }}
+                                {% else %}
+                                    Exp. #{{ ca_ant.pk }}
+                                {% endif %}
+                            </a>
+                            <span class="badge bg-secondary ms-2">{{ ca_ant.get_estado_display }}</span>
+                        </div>
+                        <small class="text-muted">
+                            {{ ca_ant.fecha_inicio|date:"Y" }} - {{ ca_ant.fecha_vencimiento_original|date:"Y" }}
+                            {% if ca_ant.resultado_cierre %}
+                                | {{ ca_ant.get_resultado_cierre_display }}
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <!-- CA Actual -->
+                <div class="timeline-item">
+                    <div class="timeline-marker {% if ca.estado == 'ACT' %}bg-success{% else %}bg-warning{% endif %}"></div>
+                    <div class="timeline-content">
+                        <small class="text-muted">Expediente Actual ({{ info.numero_en_cadena }}° en la cadena)</small>
+                        <div>
+                            {% if ca.numero_expediente %}
+                                Exp. {{ ca.numero_expediente }}
+                            {% else %}
+                                Exp. #{{ ca.pk }}
+                            {% endif %}
+                            <span class="badge {% if ca.estado == 'ACT' %}bg-success{% else %}bg-warning{% endif %} ms-2">
+                                {{ ca.get_estado_display }}
+                            </span>
+                        </div>
+                        <small class="text-muted">
+                            {{ ca.fecha_inicio|date:"Y" }} - {{ ca.fecha_vencimiento_actual|date:"Y" }}
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- CA Siguiente -->
+                {% if cadena.siguiente %}
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-primary"></div>
+                    <div class="timeline-content">
+                        <small class="text-muted">Expediente Siguiente</small>
+                        <div>
+                            <a href="{% url 'carrera_academica:detalle_ca' pk=cadena.siguiente.pk %}" class="text-decoration-none">
+                                {% if cadena.siguiente.numero_expediente %}
+                                    Exp. {{ cadena.siguiente.numero_expediente }}
+                                {% else %}
+                                    Exp. #{{ cadena.siguiente.pk }}
+                                {% endif %}
+                            </a>
+                            <span class="badge bg-primary ms-2">{{ cadena.siguiente.get_estado_display }}</span>
+                        </div>
+                        <small class="text-muted">
+                            {{ cadena.siguiente.fecha_inicio|date:"Y" }} - {{ cadena.siguiente.fecha_vencimiento_original|date:"Y" }}
+                        </small>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        {% else %}
+            <p class="text-muted mb-0">
+                <i class="bi bi-info-circle"></i> Este expediente no tiene CAs relacionadas
+            </p>
+        {% endif %}
+        
+        {% endwith %}
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -25px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 0 0 2px #dee2e6;
+}
+
+.timeline-content {
+    padding-left: 10px;
+}
+</style>
