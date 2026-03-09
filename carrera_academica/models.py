@@ -61,6 +61,7 @@ class CarreraAcademica(models.Model):
     ESTADO_CHOICES = [
         ("ACT", "Activa"),
         ("STB", "En Standby (Licencia)"),
+        ("ARCH", "Archivada"),
         ("FIN", "Finalizada"),
         ("VEN", "Vencida"),
     ]
@@ -73,6 +74,13 @@ class CarreraAcademica(models.Model):
         ('jubilacion', 'Jubilación'),
     ]
 
+    MOTIVO_ARCHIVO_CHOICES = [
+        ('jubilacion_cercana', 'Jubilación Cercana - Cargo a Interino'),
+        ('renuncia_condicional', 'Renuncia Condicional - Mantiene Cargo'),
+        ('administrativo', 'Motivo Administrativo'),
+        ('otro', 'Otro'),
+    ]
+    
     cargo = models.OneToOneField(
         Cargo, on_delete=models.CASCADE, related_name="carrera_academica"
     )
@@ -84,7 +92,7 @@ class CarreraAcademica(models.Model):
     fecha_vencimiento_actual = models.DateField(
         help_text="Se actualiza con las prórrogas"
     )
-    estado = models.CharField(max_length=3, choices=ESTADO_CHOICES, default="ACT")
+    estado = models.CharField(max_length=4, choices=ESTADO_CHOICES, default="ACT")
     resolucion_designacion = models.ForeignKey(
         Resolucion,
         on_delete=models.SET_NULL,
@@ -102,6 +110,25 @@ class CarreraAcademica(models.Model):
         help_text="Resolución de puesta en función (Decano)",
     )
     fecha_finalizacion = models.DateTimeField(null=True, blank=True)
+    motivo_archivo = models.CharField(
+        max_length=30,
+        choices=MOTIVO_ARCHIVO_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name="Motivo de Archivo",
+        help_text="Motivo por el cual se archivó la CA sin workflow formal de cierre"
+    )
+
+    fecha_archivo = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Archivo"
+    )
+
+    observaciones_archivo = models.TextField(
+        blank=True,
+        verbose_name="Observaciones del Archivo"
+    )
     ca_anterior = models.OneToOneField(
         'self',
         on_delete=models.SET_NULL,
