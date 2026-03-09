@@ -1349,45 +1349,80 @@ class Cargo(models.Model):
         cargo_actual = self
         while cargo_actual.cargo_anterior:
             cargo_actual = cargo_actual.cargo_anterior
-
+        
         return cargo_actual.fecha_inicio
-
+    
     def get_antiguedad_cargo(self):
         """
         Calcula la antigüedad real en el cargo considerando toda la cadena.
         Retorna años, meses, días.
         """
         from django.utils import timezone
-        from dateutil.relativedelta import relativedelta
-
+        
         fecha_inicio_real = self.get_fecha_inicio_real()
         hoy = timezone.now().date()
-
-        delta = relativedelta(hoy, fecha_inicio_real)
-
+        
+        # Calcular diferencia
+        total_dias = (hoy - fecha_inicio_real).days
+        
+        # Calcular años y meses manualmente
+        años = 0
+        meses = 0
+        
+        # Años completos
+        años = (hoy.year - fecha_inicio_real.year)
+        
+        # Ajustar si aún no cumplió años este año
+        if (hoy.month, hoy.day) < (fecha_inicio_real.month, fecha_inicio_real.day):
+            años -= 1
+        
+        # Calcular meses
+        if hoy.month >= fecha_inicio_real.month:
+            meses = hoy.month - fecha_inicio_real.month
+        else:
+            meses = 12 - fecha_inicio_real.month + hoy.month
+        
+        # Ajustar meses si el día no ha llegado
+        if hoy.day < fecha_inicio_real.day:
+            meses -= 1
+            if meses < 0:
+                meses = 11
+                años -= 1
+        
+        # Calcular días del mes actual
+        import calendar
+        if hoy.day >= fecha_inicio_real.day:
+            dias = hoy.day - fecha_inicio_real.day
+        else:
+            # Días del mes anterior
+            mes_anterior = hoy.month - 1 if hoy.month > 1 else 12
+            año_mes_anterior = hoy.year if hoy.month > 1 else hoy.year - 1
+            dias_mes_anterior = calendar.monthrange(año_mes_anterior, mes_anterior)[1]
+            dias = dias_mes_anterior - fecha_inicio_real.day + hoy.day
+        
         return {
-            'años': delta.years,
-            'meses': delta.months,
-            'dias': delta.days,
+            'años': años,
+            'meses': meses,
+            'dias': dias,
             'fecha_inicio': fecha_inicio_real,
-            'total_dias': (hoy - fecha_inicio_real).days
+            'total_dias': total_dias
         }
-
+    
     def get_antiguedad_display(self):
         """
         Retorna la antigüedad formateada para mostrar.
         """
         ant = self.get_antiguedad_cargo()
-
+        
         partes = []
         if ant['años'] > 0:
             partes.append(f"{ant['años']} año{'s' if ant['años'] != 1 else ''}")
         if ant['meses'] > 0:
             partes.append(f"{ant['meses']} mes{'es' if ant['meses'] != 1 else ''}")
-
+        
         if not partes:
             partes.append(f"{ant['dias']} día{'s' if ant['dias'] != 1 else ''}")
-
+        
         return ' y '.join(partes)
     
     def clean(self):
