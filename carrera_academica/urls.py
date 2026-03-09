@@ -76,4 +76,5 @@ urlpatterns = [
         views.gestionar_formularios_anio_view,
         name="gestionar_formularios_anio",
     ),
+    path('ca/<int:pk>/finalizar/', views.finalizar_ca_view, name='finalizar_ca'),
 ]

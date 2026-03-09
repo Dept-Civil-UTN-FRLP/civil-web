@@ -11,6 +11,9 @@
         {# Card de expediente #}
         {% include 'carrera_academica/components/ca/expediente.html' with ca=ca expediente_form=expediente_form %}
         
+        {# Cadena de CAs #}
+        {% include 'carrera_academica/components/ca/cadena_ca.html' with ca=ca %}
+
         {# CV #}
         <div class="card mb-4">
             <div class="card-header">Curriculum Vitae</div>

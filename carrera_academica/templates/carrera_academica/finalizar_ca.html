@@ -1,0 +1,105 @@
+{% extends 'carrera_academica/base_ca.html' %}
+
+{% block ca_content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header bg-warning">
+                <h4 class="mb-0">Finalizar Expediente de Carrera Académica</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Atención:</strong> Esta acción finalizará el expediente y realizará cambios automáticos en el cargo según el resultado seleccionado.
+                </div>
+                
+                <h5>{{ ca.cargo.docente }}</h5>
+                <p class="text-muted">
+                    {{ ca.cargo.get_categoria_display }} {{ ca.cargo.get_caracter_display }} - {{ ca.cargo.asignatura.nombre }}
+                </p>
+                
+                <hr>
+                
+                <form method="POST" id="formFinalizar">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Resultado del Cierre *</strong></label>
+                        {% for value, text in resultado_choices %}
+                        <div class="form-check">
+                            <input class="form-check-input resultado-radio" type="radio" name="resultado_cierre" 
+                                   id="resultado_{{ value }}" value="{{ value }}" required>
+                            <label class="form-check-label" for="resultado_{{ value }}">
+                                {{ text }}
+                            </label>
+                            <small class="d-block text-muted ms-4">
+                                {% if value == 'aprobada_redesigna' %}
+                                    Se creará un <strong>nuevo cargo</strong> vinculado y un <strong>nuevo expediente de CA</strong>
+                                {% elif value == 'aprobada_rechaza' %}
+                                    El cargo pasará a <strong>Interino</strong>
+                                {% elif value == 'renuncia' %}
+                                    El cargo se dará de <strong>baja</strong>
+                                {% elif value == 'no_aprobada' %}
+                                    El cargo pasará a <strong>Interino</strong>
+                                {% elif value == 'jubilacion' %}
+                                    El cargo se dará de <strong>baja</strong> y el docente se marcará como jubilado
+                                {% endif %}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- ✅ Campo condicional para redesignación -->
+                    <div class="mb-3" id="campoRedesignacion" style="display: none;">
+                        <label for="nueva_fecha_vencimiento" class="form-label">
+                            <strong>Nueva Fecha de Vencimiento *</strong>
+                        </label>
+                        <input type="date" class="form-control" id="nueva_fecha_vencimiento" 
+                               name="nueva_fecha_vencimiento">
+                        <small class="text-muted">
+                            Fecha de vencimiento para el nuevo cargo y expediente de CA
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="observaciones_cierre" class="form-label">Observaciones</label>
+                        <textarea class="form-control" id="observaciones_cierre" name="observaciones_cierre" 
+                                  rows="4" placeholder="Información adicional sobre el cierre del expediente..."></textarea>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'carrera_academica:detalle_ca' pk=ca.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-check-circle"></i> Finalizar Expediente
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const radios = document.querySelectorAll('.resultado-radio');
+    const campoRedesignacion = document.getElementById('campoRedesignacion');
+    const inputFecha = document.getElementById('nueva_fecha_vencimiento');
+    
+    radios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'aprobada_redesigna') {
+                campoRedesignacion.style.display = 'block';
+                inputFecha.setAttribute('required', 'required');
+            } else {
+                campoRedesignacion.style.display = 'none';
+                inputFecha.removeAttribute('required');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

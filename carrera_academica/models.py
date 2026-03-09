@@ -64,6 +64,14 @@ class CarreraAcademica(models.Model):
         ("FIN", "Finalizada"),
         ("VEN", "Vencida"),
     ]
+    
+    RESULTADO_CIERRE_CHOICES = [
+        ('aprobada_redesigna', 'Aprobada - Acepta Redesignación'),
+        ('aprobada_rechaza', 'Aprobada - Rechaza Redesignación'),
+        ('renuncia', 'Renuncia'),
+        ('no_aprobada', 'No Aprobada'),
+        ('jubilacion', 'Jubilación'),
+    ]
 
     cargo = models.OneToOneField(
         Cargo, on_delete=models.CASCADE, related_name="carrera_academica"
@@ -94,26 +102,48 @@ class CarreraAcademica(models.Model):
         help_text="Resolución de puesta en función (Decano)",
     )
     fecha_finalizacion = models.DateTimeField(null=True, blank=True)
+    ca_anterior = models.OneToOneField(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='ca_siguiente',
+        verbose_name="CA Anterior",
+        help_text="Expediente de CA del cual este es continuación"
+    )
     anios_pausados = models.JSONField(
         default=list,
         blank=True,
         verbose_name="Años Pausados",
         help_text="Lista de años que no se evaluarán. Formato: [{'anio': 2022, 'motivo': '...', 'fecha': '2022-03-15', 'usuario': 'admin'}]"
     )
+    resultado_cierre = models.CharField(
+        max_length=30,
+        choices=RESULTADO_CIERRE_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name="Resultado del Cierre",
+        help_text="Resultado al finalizar la Carrera Académica"
+    )
+    observaciones_cierre = models.TextField(
+        blank=True,
+        verbose_name="Observaciones del Cierre"
+    )
+    
     objects = CarreraAcademicaManager()
 
     def clean(self):
         """Validaciones a nivel de modelo."""
         super().clean()
         errors = {}
-
+    
         # Validación 1: Solo cargos regulares u ordinarios pueden tener CA
         if self.cargo.caracter not in ["reg", "ord"]:
             errors["cargo"] = ValidationError(
                 "Solo los cargos Regulares u Ordinarios pueden tener Carrera Académica.",
                 code="invalid_caracter",
             )
-
+    
         # Validación 2: Fecha de vencimiento debe ser posterior al inicio
         if self.fecha_vencimiento_original and self.fecha_inicio:
             if self.fecha_vencimiento_original <= self.fecha_inicio:
@@ -121,7 +151,7 @@ class CarreraAcademica(models.Model):
                     "La fecha de vencimiento debe ser posterior a la fecha de inicio.",
                     code="invalid_date_range",
                 )
-
+    
         # Validación 3: Fecha de vencimiento actual no puede ser anterior al inicio
         if self.fecha_vencimiento_actual and self.fecha_inicio:
             if self.fecha_vencimiento_actual < self.fecha_inicio:
@@ -129,8 +159,19 @@ class CarreraAcademica(models.Model):
                     "La fecha de vencimiento actual no puede ser anterior a la fecha de inicio.",
                     code="invalid_current_date",
                 )
-
-        # Validación 4: La duración debe ser al menos de 2 años
+    
+        # ✅ VALIDACIÓN 4: El cargo no puede vencer antes que la CA
+        if self.cargo.fecha_vencimiento and self.fecha_vencimiento_actual:
+            if self.cargo.fecha_vencimiento < self.fecha_vencimiento_actual:
+                errors["fecha_vencimiento_actual"] = ValidationError(
+                    f"La CA no puede vencer después del cargo. "
+                    f"Cargo vence: {self.cargo.fecha_vencimiento.strftime('%d/%m/%Y')}, "
+                    f"CA vence: {self.fecha_vencimiento_actual.strftime('%d/%m/%Y')}. "
+                    f"Debe extender primero el vencimiento del cargo.",
+                    code="ca_vence_despues_cargo",
+                )
+    
+        # Validación 5: La duración debe ser al menos de 2 años
         if self.fecha_inicio and self.fecha_vencimiento_original:
             duracion = self.fecha_vencimiento_original - self.fecha_inicio
             if duracion.days < 730:  # 2 años = ~730 días
@@ -138,26 +179,26 @@ class CarreraAcademica(models.Model):
                     "La Carrera Académica debe tener una duración mínima de 2 años.",
                     code="duration_too_short",
                 )
-
-        # Validación 5: Si está finalizada, debe tener fecha de finalización
+    
+        # Validación 6: Si está finalizada, debe tener fecha de finalización
         if self.estado == "FIN" and not self.fecha_finalizacion:
             errors["fecha_finalizacion"] = ValidationError(
                 "Una Carrera Académica finalizada debe tener fecha de finalización.",
                 code="missing_finalization_date",
             )
-
-        # Validación 6: No puede haber otra CA activa para el mismo cargo
+    
+        # Validación 7: No puede haber otra CA activa para el mismo cargo
         if self.estado == "ACT":
             otras_ca_activas = CarreraAcademica.objects.filter(
                 cargo=self.cargo, estado="ACT"
             ).exclude(pk=self.pk)
-
+    
             if otras_ca_activas.exists():
                 errors["cargo"] = ValidationError(
                     "Ya existe una Carrera Académica activa para este cargo.",
                     code="duplicate_active_ca",
                 )
-
+    
         if errors:
             raise ValidationError(errors)
 
@@ -429,6 +470,81 @@ class CarreraAcademica(models.Model):
             total_formularios,
             f"Se agregaron {len(anios_nuevos)} año(s) con {total_formularios} formularios"
         )
+        
+    def obtener_cadena_ca(self):
+        """
+        Obtiene la cadena completa de CAs (anteriores y siguiente).
+        Retorna: {'anteriores': [cas], 'siguiente': ca}
+        """
+        cadena = {
+            'anteriores': [],
+            'siguiente': None
+        }
+
+        # Buscar todas las CA anteriores
+        ca_actual = self
+        while ca_actual.ca_anterior:
+            cadena['anteriores'].insert(0, ca_actual.ca_anterior)
+            ca_actual = ca_actual.ca_anterior
+
+        # Buscar CA siguiente
+        if hasattr(self, 'ca_siguiente') and self.ca_siguiente:
+            cadena['siguiente'] = self.ca_siguiente
+
+        return cadena
+
+    def get_ca_activa_del_docente(self):
+        """
+        Retorna la CA activa actual del docente (la más reciente en la cadena).
+        """
+        # Si esta CA tiene siguiente, seguir la cadena
+        if hasattr(self, 'ca_siguiente') and self.ca_siguiente:
+            return self.ca_siguiente.get_ca_activa_del_docente()
+
+        # Si no tiene siguiente, esta es la última
+        return self if self.estado == 'ACT' else None
+
+    def get_info_continuidad_ca(self):
+        """
+        Retorna información detallada sobre la continuidad de las CA.
+        """
+        info = {
+            'tiene_anterior': self.ca_anterior is not None,
+            'tiene_siguiente': hasattr(self, 'ca_siguiente') and self.ca_siguiente is not None,
+            'es_activa': self.estado == 'ACT',
+            'numero_en_cadena': 1,
+        }
+
+        # Contar posición en la cadena
+        ca_actual = self
+        while ca_actual.ca_anterior:
+            info['numero_en_cadena'] += 1
+            ca_actual = ca_actual.ca_anterior
+
+        if self.ca_anterior:
+            info['ca_anterior'] = {
+                'id': self.ca_anterior.pk,
+                'numero_expediente': self.ca_anterior.numero_expediente,
+                'periodo': f"{self.ca_anterior.fecha_inicio.strftime('%Y')} - {self.ca_anterior.fecha_vencimiento_original.strftime('%Y')}",
+                'resultado': self.ca_anterior.get_resultado_cierre_display() if self.ca_anterior.resultado_cierre else None,
+            }
+
+        if hasattr(self, 'ca_siguiente') and self.ca_siguiente:
+            info['ca_siguiente'] = {
+                'id': self.ca_siguiente.pk,
+                'numero_expediente': self.ca_siguiente.numero_expediente,
+                'periodo': f"{self.ca_siguiente.fecha_inicio.strftime('%Y')} - {self.ca_siguiente.fecha_vencimiento_original.strftime('%Y')}",
+                'estado': self.ca_siguiente.get_estado_display(),
+            }
+
+        if self.resultado_cierre:
+            info['cierre'] = {
+                'resultado': self.get_resultado_cierre_display(),
+                'observaciones': self.observaciones_cierre,
+                'fecha': self.fecha_finalizacion,
+            }
+
+        return info
 
     class Meta:
         verbose_name = "Carrera Académica"
