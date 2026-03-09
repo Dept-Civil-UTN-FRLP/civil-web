@@ -623,7 +623,7 @@ def finalizar_ca_view(request, pk):
                         asignatura=cargo_actual.asignatura,
                         categoria=cargo_actual.categoria,
                         dedicacion=cargo_actual.dedicacion,
-                        caracter=cargo_actual.caracter,  # Mantener ORD o REG
+                        caracter=cargo_actual.caracter,
                         cantidad_horas=cargo_actual.cantidad_horas,
                         cantidad_comisiones=cargo_actual.cantidad_comisiones,
                         fecha_inicio=timezone.now().date(),
