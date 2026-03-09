@@ -46,11 +46,27 @@ Uso:
             <strong>Estado:</strong> {{ ca.get_estado_display }}
         </p>
         
-        {% if ca.estado == 'ACT' %}
+        {% if ca.estado == 'ACT' or ca.estado == 'VEN' %}
 <hr>
-<a href="{% url 'carrera_academica:finalizar_ca' pk=ca.pk %}" class="btn btn-warning w-100">
-    Finalizar Expediente
-</a>
+<div class="d-grid gap-2">
+    <a href="{% url 'carrera_academica:finalizar_ca' pk=ca.pk %}" class="btn btn-warning">
+        <i class="bi bi-check-circle"></i> Finalizar Expediente
+    </a>
+    <a href="{% url 'carrera_academica:archivar_ca' pk=ca.pk %}" class="btn btn-secondary">
+        <i class="bi bi-archive"></i> Archivar Expediente
+    </a>
+</div>
+{% endif %}
+{% if ca.estado == 'ARCH' %}
+<div class="alert alert-secondary mt-3">
+    <strong><i class="bi bi-archive"></i> Expediente Archivado</strong><br>
+    <small>Motivo: {{ ca.get_motivo_archivo_display }}</small><br>
+    {% if ca.observaciones_archivo %}
+        <small class="text-muted">{{ ca.observaciones_archivo }}</small>
+    {% endif %}
+    <br>
+    <small class="text-muted">Archivado el {{ ca.fecha_archivo|date:"d/m/Y H:i" }}</small>
+</div>
 {% endif %}
         
         <hr>
