@@ -1340,6 +1340,55 @@ class Cargo(models.Model):
                 totales['total'] += funcion.horas_semanales
 
         return totales
+        
+    def get_fecha_inicio_real(self):
+        """
+        Retorna la fecha de inicio original considerando la cadena de continuidad.
+        Para calcular antigüedad real en el cargo.
+        """
+        cargo_actual = self
+        while cargo_actual.cargo_anterior:
+            cargo_actual = cargo_actual.cargo_anterior
+
+        return cargo_actual.fecha_inicio
+
+    def get_antiguedad_cargo(self):
+        """
+        Calcula la antigüedad real en el cargo considerando toda la cadena.
+        Retorna años, meses, días.
+        """
+        from django.utils import timezone
+        from dateutil.relativedelta import relativedelta
+
+        fecha_inicio_real = self.get_fecha_inicio_real()
+        hoy = timezone.now().date()
+
+        delta = relativedelta(hoy, fecha_inicio_real)
+
+        return {
+            'años': delta.years,
+            'meses': delta.months,
+            'dias': delta.days,
+            'fecha_inicio': fecha_inicio_real,
+            'total_dias': (hoy - fecha_inicio_real).days
+        }
+
+    def get_antiguedad_display(self):
+        """
+        Retorna la antigüedad formateada para mostrar.
+        """
+        ant = self.get_antiguedad_cargo()
+
+        partes = []
+        if ant['años'] > 0:
+            partes.append(f"{ant['años']} año{'s' if ant['años'] != 1 else ''}")
+        if ant['meses'] > 0:
+            partes.append(f"{ant['meses']} mes{'es' if ant['meses'] != 1 else ''}")
+
+        if not partes:
+            partes.append(f"{ant['dias']} día{'s' if ant['dias'] != 1 else ''}")
+
+        return ' y '.join(partes)
     
     def clean(self):
         """Validaciones a nivel de modelo."""
