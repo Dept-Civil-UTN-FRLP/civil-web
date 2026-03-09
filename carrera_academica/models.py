@@ -160,17 +160,6 @@ class CarreraAcademica(models.Model):
                     code="invalid_current_date",
                 )
     
-        # ✅ VALIDACIÓN 4: El cargo no puede vencer antes que la CA
-        if self.cargo.fecha_vencimiento and self.fecha_vencimiento_actual:
-            if self.cargo.fecha_vencimiento < self.fecha_vencimiento_actual:
-                errors["fecha_vencimiento_actual"] = ValidationError(
-                    f"La CA no puede vencer después del cargo. "
-                    f"Cargo vence: {self.cargo.fecha_vencimiento.strftime('%d/%m/%Y')}, "
-                    f"CA vence: {self.fecha_vencimiento_actual.strftime('%d/%m/%Y')}. "
-                    f"Debe extender primero el vencimiento del cargo.",
-                    code="ca_vence_despues_cargo",
-                )
-    
         # Validación 5: La duración debe ser al menos de 2 años
         if self.fecha_inicio and self.fecha_vencimiento_original:
             duracion = self.fecha_vencimiento_original - self.fecha_inicio
