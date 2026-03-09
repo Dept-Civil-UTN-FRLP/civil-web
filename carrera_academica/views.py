@@ -591,22 +591,26 @@ def finalizar_ca_view(request, pk):
             messages.error(request, 'Debe seleccionar un resultado de cierre')
             return redirect('carrera_academica:detalle_ca', pk=pk)
 
-        # Validaciones específicas por resultado
-        if resultado == 'aprobada_redesigna':
-            nueva_fecha_vencimiento_str = request.POST.get(
-                'nueva_fecha_vencimiento')
-            if not nueva_fecha_vencimiento_str:
-                messages.error(
-                    request, 'Debe especificar la nueva fecha de vencimiento para la redesignación')
-                return redirect('carrera_academica:finalizar_ca', pk=pk)
-
-            from datetime import datetime
-            nueva_fecha_vencimiento = datetime.strptime(
-                nueva_fecha_vencimiento_str, '%Y-%m-%d').date()
-
-        # ✅ Usar transacción atómica para evitar inconsistencias
+        # ✅ Mover parseo dentro del try-catch
         try:
             with transaction.atomic():
+                # Validaciones específicas por resultado
+                if resultado == 'aprobada_redesigna':
+                    nueva_fecha_vencimiento_str = request.POST.get(
+                        'nueva_fecha_vencimiento')
+                    if not nueva_fecha_vencimiento_str:
+                        raise ValidationError(
+                            'Debe especificar la nueva fecha de vencimiento para la redesignación')
+
+                    # ✅ Parseo dentro del try para capturar ValueError
+                    from datetime import datetime
+                    try:
+                        nueva_fecha_vencimiento = datetime.strptime(
+                            nueva_fecha_vencimiento_str, '%Y-%m-%d').date()
+                    except (ValueError, TypeError):
+                        raise ValidationError(
+                            'Formato de fecha inválido. Use AAAA-MM-DD')
+
                 # Actualizar CA actual
                 ca.estado = "FIN"
                 ca.fecha_finalizacion = timezone.now()
@@ -651,7 +655,7 @@ def finalizar_ca_view(request, pk):
                         fecha_vencimiento_original=nueva_fecha_vencimiento,
                         fecha_vencimiento_actual=nueva_fecha_vencimiento,
                         estado='ACT',
-                        ca_anterior=ca  # ✅ Vincular con CA anterior
+                        ca_anterior=ca
                     )
 
                     messages.success(
@@ -714,6 +718,10 @@ def finalizar_ca_view(request, pk):
                     request,
                     f"Expediente de {ca.cargo.docente} finalizado como '{ca.get_resultado_cierre_display()}'."
                 )
+
+        except ValidationError as e:
+            messages.error(request, str(e))
+            return redirect('carrera_academica:finalizar_ca', pk=pk)
 
         except Exception as e:
             messages.error(request, f'Error al finalizar CA: {str(e)}')
