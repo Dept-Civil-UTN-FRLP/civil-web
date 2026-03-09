@@ -136,14 +136,14 @@ class CarreraAcademica(models.Model):
         """Validaciones a nivel de modelo."""
         super().clean()
         errors = {}
-
+    
         # Validación 1: Solo cargos regulares u ordinarios pueden tener CA
         if self.cargo.caracter not in ["reg", "ord"]:
             errors["cargo"] = ValidationError(
                 "Solo los cargos Regulares u Ordinarios pueden tener Carrera Académica.",
                 code="invalid_caracter",
             )
-
+    
         # Validación 2: Fecha de vencimiento debe ser posterior al inicio
         if self.fecha_vencimiento_original and self.fecha_inicio:
             if self.fecha_vencimiento_original <= self.fecha_inicio:
@@ -151,7 +151,7 @@ class CarreraAcademica(models.Model):
                     "La fecha de vencimiento debe ser posterior a la fecha de inicio.",
                     code="invalid_date_range",
                 )
-
+    
         # Validación 3: Fecha de vencimiento actual no puede ser anterior al inicio
         if self.fecha_vencimiento_actual and self.fecha_inicio:
             if self.fecha_vencimiento_actual < self.fecha_inicio:
@@ -159,8 +159,19 @@ class CarreraAcademica(models.Model):
                     "La fecha de vencimiento actual no puede ser anterior a la fecha de inicio.",
                     code="invalid_current_date",
                 )
-
-        # Validación 4: La duración debe ser al menos de 2 años
+    
+        # ✅ VALIDACIÓN 4: El cargo no puede vencer antes que la CA
+        if self.cargo.fecha_vencimiento and self.fecha_vencimiento_actual:
+            if self.cargo.fecha_vencimiento < self.fecha_vencimiento_actual:
+                errors["fecha_vencimiento_actual"] = ValidationError(
+                    f"La CA no puede vencer después del cargo. "
+                    f"Cargo vence: {self.cargo.fecha_vencimiento.strftime('%d/%m/%Y')}, "
+                    f"CA vence: {self.fecha_vencimiento_actual.strftime('%d/%m/%Y')}. "
+                    f"Debe extender primero el vencimiento del cargo.",
+                    code="ca_vence_despues_cargo",
+                )
+    
+        # Validación 5: La duración debe ser al menos de 2 años
         if self.fecha_inicio and self.fecha_vencimiento_original:
             duracion = self.fecha_vencimiento_original - self.fecha_inicio
             if duracion.days < 730:  # 2 años = ~730 días
@@ -168,26 +179,26 @@ class CarreraAcademica(models.Model):
                     "La Carrera Académica debe tener una duración mínima de 2 años.",
                     code="duration_too_short",
                 )
-
-        # Validación 5: Si está finalizada, debe tener fecha de finalización
+    
+        # Validación 6: Si está finalizada, debe tener fecha de finalización
         if self.estado == "FIN" and not self.fecha_finalizacion:
             errors["fecha_finalizacion"] = ValidationError(
                 "Una Carrera Académica finalizada debe tener fecha de finalización.",
                 code="missing_finalization_date",
             )
-
-        # Validación 6: No puede haber otra CA activa para el mismo cargo
+    
+        # Validación 7: No puede haber otra CA activa para el mismo cargo
         if self.estado == "ACT":
             otras_ca_activas = CarreraAcademica.objects.filter(
                 cargo=self.cargo, estado="ACT"
             ).exclude(pk=self.pk)
-
+    
             if otras_ca_activas.exists():
                 errors["cargo"] = ValidationError(
                     "Ya existe una Carrera Académica activa para este cargo.",
                     code="duplicate_active_ca",
                 )
-
+    
         if errors:
             raise ValidationError(errors)
 
