@@ -1,6 +1,6 @@
 # carrera_academica/signals.py
 
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
 from .models import CarreraAcademica, Formulario
@@ -42,3 +42,19 @@ def crear_formularios_iniciales(sender, instance, created, **kwargs):
                     tipo_formulario=tipo,
                     anio_correspondiente=anio,
                 )
+
+
+@receiver(pre_save, sender=CarreraAcademica)
+def sincronizar_vencimiento_cargo(sender, instance, **kwargs):
+    """
+    Sincroniza el vencimiento del cargo con el de la CA.
+    El cargo siempre debe vencer al mismo tiempo o después que la CA.
+    """
+    if instance.pk and instance.cargo:
+        # Solo si la CA está activa
+        if instance.estado == 'ACT':
+            # Si la CA se prorroga, prorrogar el cargo también
+            if instance.cargo.fecha_vencimiento:
+                if instance.fecha_vencimiento_actual > instance.cargo.fecha_vencimiento:
+                    instance.cargo.fecha_vencimiento = instance.fecha_vencimiento_actual
+                    instance.cargo.save()
