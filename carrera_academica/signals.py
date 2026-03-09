@@ -1,6 +1,6 @@
 # carrera_academica/signals.py
 
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from .models import CarreraAcademica, Formulario
@@ -42,40 +42,3 @@ def crear_formularios_iniciales(sender, instance, created, **kwargs):
                     tipo_formulario=tipo,
                     anio_correspondiente=anio,
                 )
-
-
-@receiver(post_save, sender=CarreraAcademica)
-def sincronizar_vencimiento_cargo_desde_ca(sender, instance, created, **kwargs):
-    """
-    Cuando se modifica el vencimiento de una CA activa,
-    sincroniza el vencimiento del cargo asociado.
-    """
-    # No sincronizar en creación (ya se hace en la vista)
-    if created:
-        return
-
-    # Solo sincronizar si la CA está activa
-    if instance.estado != 'ACT':
-        return
-
-    # Solo si hay cargo asociado
-    if not instance.cargo:
-        return
-
-    # Si la CA se prorrogó, prorrogar el cargo también
-    if instance.cargo.fecha_vencimiento:
-        if instance.fecha_vencimiento_actual > instance.cargo.fecha_vencimiento:
-            # Evitar loop infinito: desconectar el signal del cargo temporalmente
-            from planta_docente.signals import sincronizar_ca_desde_cargo
-            from django.db.models.signals import post_save as cargo_post_save
-            from planta_docente.models import Cargo
-
-            cargo_post_save.disconnect(
-                sincronizar_ca_desde_cargo, sender=Cargo)
-
-            # Actualizar vencimiento del cargo
-            instance.cargo.fecha_vencimiento = instance.fecha_vencimiento_actual
-            instance.cargo.save()
-
-            # Reconectar el signal
-            cargo_post_save.connect(sincronizar_ca_desde_cargo, sender=Cargo)
