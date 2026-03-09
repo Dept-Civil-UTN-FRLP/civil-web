@@ -1,0 +1,85 @@
+{% extends 'carrera_academica/base_ca.html' %}
+
+{% block ca_content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h4 class="mb-0">Archivar Expediente de Carrera Académica</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Archivar CA</strong> se usa cuando el expediente no sigue el workflow normal de cierre (evaluación final).
+                    Casos típicos: jubilación cercana, renuncia condicional, motivos administrativos.
+                </div>
+                
+                <h5>{{ ca.cargo.docente }}</h5>
+                <p class="text-muted">
+                    {{ ca.cargo.get_categoria_display }} {{ ca.cargo.get_caracter_display }} - {{ ca.cargo.asignatura.nombre }}
+                </p>
+                
+                <hr>
+                
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Motivo del Archivo *</strong></label>
+                        {% for value, text in motivo_choices %}
+                        <div class="form-check">
+                            <input class="form-check-input motivo-radio" type="radio" name="motivo_archivo" 
+                                   id="motivo_{{ value }}" value="{{ value }}" required>
+                            <label class="form-check-label" for="motivo_{{ value }}">
+                                {{ text }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Acción sobre el Cargo *</strong></label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="accion_cargo" 
+                                   id="accion_interino" value="interino" required>
+                            <label class="form-check-label" for="accion_interino">
+                                Convertir cargo a <strong>Interino</strong>
+                            </label>
+                            <small class="d-block text-muted ms-4">
+                                Usar cuando el docente está cerca de jubilarse y el cargo pasará a concurso
+                            </small>
+                        </div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="radio" name="accion_cargo" 
+                                   id="accion_mantener" value="mantener" required>
+                            <label class="form-check-label" for="accion_mantener">
+                                <strong>Mantener</strong> cargo como está
+                            </label>
+                            <small class="d-block text-muted ms-4">
+                                Usar cuando hay renuncia condicional y se espera efectivización
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="observaciones_archivo" class="form-label">Observaciones</label>
+                        <textarea class="form-control" id="observaciones_archivo" name="observaciones_archivo" 
+                                  rows="4" placeholder="Detalles adicionales sobre el archivo del expediente..."></textarea>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'carrera_academica:detalle_ca' pk=ca.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-secondary">
+                            <i class="bi bi-archive"></i> Archivar Expediente
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
