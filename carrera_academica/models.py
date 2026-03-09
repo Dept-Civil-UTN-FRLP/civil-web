@@ -75,8 +75,8 @@ class CarreraAcademica(models.Model):
     ]
 
     MOTIVO_ARCHIVO_CHOICES = [
-        ('jubilacion_cercana', 'Jubilación Cercana - Cargo a Interino'),
-        ('renuncia_condicional', 'Renuncia Condicional - Mantiene Cargo'),
+        ('jubilacion_cercana', 'Jubilación Cercana'),
+        ('renuncia_condicional', 'Renuncia Condicional'),
         ('administrativo', 'Motivo Administrativo'),
         ('otro', 'Otro'),
     ]
