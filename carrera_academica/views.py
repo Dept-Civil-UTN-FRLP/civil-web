@@ -1028,39 +1028,30 @@ def gestionar_formularios_anio_view(request, pk, anio):
 
     return render(request, 'carrera_academica/gestionar_formularios_anio.html', context)
 
-
-# carrera_academica/views.py
-
 @login_required
 def archivar_ca_view(request, pk):
     """
     Archiva una CA sin workflow formal de cierre.
     Para casos como jubilación cercana o renuncia condicional.
+    El cargo se gestiona cuando la CA efectivamente venza.
     """
     from django.db import transaction
-
+    
     ca = get_object_or_404(CarreraAcademica, pk=pk)
-
+    
     # Solo se pueden archivar CAs activas o vencidas
     if ca.estado not in ['ACT', 'VEN']:
-        messages.error(
-            request, 'Solo se pueden archivar CAs activas o vencidas')
+        messages.error(request, 'Solo se pueden archivar CAs activas o vencidas')
         return redirect('carrera_academica:detalle_ca', pk=pk)
-
+    
     if request.method == "POST":
         motivo = request.POST.get('motivo_archivo')
         observaciones = request.POST.get('observaciones_archivo', '')
-        accion_cargo = request.POST.get(
-            'accion_cargo')  # 'mantener' o 'interino'
-
+        
         if not motivo:
             messages.error(request, 'Debe seleccionar un motivo de archivo')
             return redirect('carrera_academica:archivar_ca', pk=pk)
-
-        if not accion_cargo:
-            messages.error(request, 'Debe seleccionar qué hacer con el cargo')
-            return redirect('carrera_academica:archivar_ca', pk=pk)
-
+        
         try:
             with transaction.atomic():
                 # Archivar CA
@@ -1069,34 +1060,19 @@ def archivar_ca_view(request, pk):
                 ca.observaciones_archivo = observaciones
                 ca.fecha_archivo = timezone.now()
                 ca.save()
-
-                cargo = ca.cargo
-
-                # Acción sobre el cargo
-                if accion_cargo == 'interino':
-                    cargo.caracter = 'int'
-                    cargo.save()
-                    messages.info(
-                        request,
-                        f"Cargo convertido a Interino. Motivo: {ca.get_motivo_archivo_display()}"
-                    )
-                elif accion_cargo == 'mantener':
-                    messages.info(
-                        request,
-                        f"Cargo se mantiene {cargo.get_caracter_display()} hasta efectivización de la jubilación/renuncia"
-                    )
-
+                
                 messages.success(
                     request,
-                    f"CA archivada: {ca.get_motivo_archivo_display()}"
+                    f"CA archivada: {ca.get_motivo_archivo_display()}. "
+                    f"El cargo se gestionará cuando la CA venza el {ca.fecha_vencimiento_actual.strftime('%d/%m/%Y')}."
                 )
-
+        
         except Exception as e:
             messages.error(request, f'Error al archivar CA: {str(e)}')
             return redirect('carrera_academica:archivar_ca', pk=pk)
-
+        
         return redirect('carrera_academica:detalle_ca', pk=pk)
-
+    
     # GET - Mostrar formulario
     context = {
         'ca': ca,
