@@ -1035,3 +1035,168 @@ def gestionar_formularios_anio_view(request, pk, anio):
     }
 
     return render(request, 'carrera_academica/gestionar_formularios_anio.html', context)
+
+@login_required
+def archivar_ca_view(request, pk):
+    """
+    Archiva una CA sin workflow formal de cierre.
+    Para casos como jubilación cercana o renuncia condicional.
+    El cargo se gestiona cuando la CA efectivamente venza.
+    """
+    from django.db import transaction
+    
+    ca = get_object_or_404(CarreraAcademica, pk=pk)
+    
+    # Solo se pueden archivar CAs activas o vencidas
+    if ca.estado not in ['ACT', 'VEN']:
+        messages.error(request, 'Solo se pueden archivar CAs activas o vencidas')
+        return redirect('carrera_academica:detalle_ca', pk=pk)
+    
+    if request.method == "POST":
+        motivo = request.POST.get('motivo_archivo')
+        observaciones = request.POST.get('observaciones_archivo', '')
+        
+        if not motivo:
+            messages.error(request, 'Debe seleccionar un motivo de archivo')
+            return redirect('carrera_academica:archivar_ca', pk=pk)
+        
+        try:
+            with transaction.atomic():
+                # Archivar CA
+                ca.estado = "ARCH"
+                ca.motivo_archivo = motivo
+                ca.observaciones_archivo = observaciones
+                ca.fecha_archivo = timezone.now()
+                ca.save()
+                
+                messages.success(
+                    request,
+                    f"CA archivada: {ca.get_motivo_archivo_display()}. "
+                    f"El cargo se gestionará cuando la CA venza el {ca.fecha_vencimiento_actual.strftime('%d/%m/%Y')}."
+                )
+        
+        except Exception as e:
+            messages.error(request, f'Error al archivar CA: {str(e)}')
+            return redirect('carrera_academica:archivar_ca', pk=pk)
+        
+        return redirect('carrera_academica:detalle_ca', pk=pk)
+    
+    # GET - Mostrar formulario
+    context = {
+        'ca': ca,
+        'motivo_choices': CarreraAcademica.MOTIVO_ARCHIVO_CHOICES,
+    }
+    return render(request, 'carrera_academica/archivar_ca.html', context)
+
+
+@login_required
+def gestionar_ca_archivada_view(request, pk):
+    """
+    Gestiona una CA archivada: cambiar motivo o cerrarla definitivamente.
+    """
+    from django.db import transaction
+
+    ca = get_object_or_404(CarreraAcademica, pk=pk)
+
+    # Solo CAs archivadas
+    if ca.estado != 'ARCH':
+        messages.error(request, 'Solo se pueden gestionar CAs archivadas')
+        return redirect('carrera_academica:detalle_ca', pk=pk)
+
+    if request.method == "POST":
+        accion = request.POST.get('accion')
+
+        if accion == 'actualizar_motivo':
+            # Cambiar motivo de archivo
+            nuevo_motivo = request.POST.get('motivo_archivo')
+            nuevas_observaciones = request.POST.get(
+                'observaciones_archivo', '')
+
+            if not nuevo_motivo:
+                messages.error(request, 'Debe seleccionar un motivo')
+                return redirect('carrera_academica:gestionar_ca_archivada', pk=pk)
+
+            ca.motivo_archivo = nuevo_motivo
+            ca.observaciones_archivo = nuevas_observaciones
+            ca.save()
+
+            messages.success(
+                request,
+                f"Motivo de archivo actualizado a: {ca.get_motivo_archivo_display()}"
+            )
+
+        elif accion == 'cerrar_definitivamente':
+            # Convertir a finalizada con resultado
+            resultado = request.POST.get('resultado_cierre')
+            observaciones = request.POST.get('observaciones_cierre', '')
+
+            if not resultado:
+                messages.error(
+                    request, 'Debe seleccionar un resultado de cierre')
+                return redirect('carrera_academica:gestionar_ca_archivada', pk=pk)
+
+            try:
+                with transaction.atomic():
+                    # Cambiar de ARCH a FIN
+                    ca.estado = 'FIN'
+                    ca.resultado_cierre = resultado
+                    ca.observaciones_cierre = observaciones
+                    ca.fecha_finalizacion = timezone.now()
+                    ca.save()
+
+                    cargo = ca.cargo
+
+                    # Gestionar cargo según resultado
+                    if resultado == 'renuncia':
+                        exito, mensaje = cargo.finalizar_sin_continuidad(
+                            razon='renuncia',
+                            observaciones=f'Renuncia efectivizada. {observaciones}',
+                            usuario=request.user
+                        )
+                        messages.info(
+                            request, f"Cargo dado de baja por renuncia")
+
+                    elif resultado == 'jubilacion':
+                        exito, mensaje = cargo.finalizar_sin_continuidad(
+                            razon='jubilacion',
+                            observaciones=f'Jubilación efectivizada. {observaciones}',
+                            usuario=request.user
+                        )
+
+                        docente = cargo.docente
+                        docente.jubilado = True
+                        docente.fecha_jubilacion = timezone.now().date()
+                        docente.save()
+
+                        messages.info(
+                            request, f"Docente jubilado y cargo dado de baja")
+
+                    elif resultado == 'no_aprobada':
+                        # Solo convertir a interino
+                        cargo.caracter = 'int'
+                        cargo.save()
+                        messages.warning(
+                            request, "Cargo convertido a Interino")
+
+                    messages.success(
+                        request,
+                        f"CA cerrada definitivamente: {ca.get_resultado_cierre_display()}"
+                    )
+
+            except Exception as e:
+                messages.error(request, f'Error al cerrar CA: {str(e)}')
+                return redirect('carrera_academica:gestionar_ca_archivada', pk=pk)
+
+        return redirect('carrera_academica:detalle_ca', pk=pk)
+
+    # GET - Mostrar formulario
+    context = {
+        'ca': ca,
+        'motivo_choices': CarreraAcademica.MOTIVO_ARCHIVO_CHOICES,
+        'resultado_choices': [
+            ('renuncia', 'Renuncia Efectivizada'),
+            ('jubilacion', 'Jubilación Efectivizada'),
+            ('no_aprobada', 'CA Vencida sin Aprobación'),
+        ],
+    }
+    return render(request, 'carrera_academica/gestionar_ca_archivada.html', context)

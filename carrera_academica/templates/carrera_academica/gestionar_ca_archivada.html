@@ -1,0 +1,125 @@
+{% extends 'carrera_academica/base_ca.html' %}
+
+{% block ca_content %}
+<div class="row">
+    <div class="col-md-10 offset-md-1">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h4 class="mb-0">Gestionar CA Archivada</h4>
+            </div>
+            <div class="card-body">
+                <h5>{{ ca.cargo.docente }}</h5>
+                <p class="text-muted">
+                    {{ ca.cargo.get_categoria_display }} {{ ca.cargo.get_caracter_display }} - {{ ca.cargo.asignatura.nombre }}
+                </p>
+                
+                <div class="alert alert-secondary">
+                    <strong>Estado actual:</strong> Archivada<br>
+                    <strong>Motivo:</strong> {{ ca.get_motivo_archivo_display }}<br>
+                    <strong>Archivada el:</strong> {{ ca.fecha_archivo|date:"d/m/Y H:i" }}<br>
+                    {% if ca.observaciones_archivo %}
+                        <strong>Observaciones:</strong> {{ ca.observaciones_archivo }}
+                    {% endif %}
+                </div>
+                
+                <hr>
+                
+                <!-- Sección 1: Actualizar Motivo -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Actualizar Motivo de Archivo</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="actualizar_motivo">
+                            
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Nuevo Motivo *</strong></label>
+                                {% for value, text in motivo_choices %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="motivo_archivo" 
+                                           id="motivo_{{ value }}" value="{{ value }}" 
+                                           {% if ca.motivo_archivo == value %}checked{% endif %} required>
+                                    <label class="form-check-label" for="motivo_{{ value }}">
+                                        {{ text }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="observaciones_archivo" class="form-label">Observaciones</label>
+                                <textarea class="form-control" id="observaciones_archivo" name="observaciones_archivo" 
+                                          rows="3">{{ ca.observaciones_archivo }}</textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-pencil"></i> Actualizar Motivo
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Sección 2: Cerrar Definitivamente -->
+                <div class="card border-warning">
+                    <div class="card-header bg-warning">
+                        <h5 class="mb-0">Cerrar Definitivamente</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Atención:</strong> Esta acción finalizará definitivamente la CA y gestionará el cargo según el resultado seleccionado.
+                        </div>
+                        
+                        <form method="POST" onsubmit="return confirm('¿Confirma cerrar definitivamente esta CA? Esta acción no se puede deshacer.');">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="cerrar_definitivamente">
+                            
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Resultado del Cierre *</strong></label>
+                                {% for value, text in resultado_choices %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="resultado_cierre" 
+                                           id="resultado_{{ value }}" value="{{ value }}" required>
+                                    <label class="form-check-label" for="resultado_{{ value }}">
+                                        {{ text }}
+                                    </label>
+                                    <small class="d-block text-muted ms-4">
+                                        {% if value == 'renuncia' %}
+                                            El cargo se dará de <strong>baja</strong>
+                                        {% elif value == 'jubilacion' %}
+                                            El cargo se dará de <strong>baja</strong> y el docente se marcará como jubilado
+                                        {% elif value == 'no_aprobada' %}
+                                            El cargo pasará a <strong>Interino</strong>
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="observaciones_cierre" class="form-label">Observaciones del Cierre</label>
+                                <textarea class="form-control" id="observaciones_cierre" name="observaciones_cierre" 
+                                          rows="3" placeholder="Detalles sobre el cierre definitivo..." required></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-x-circle"></i> Cerrar Definitivamente
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <hr class="mt-4">
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'carrera_academica:detalle_ca' pk=ca.pk %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Volver al Expediente
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
