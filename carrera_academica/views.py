@@ -907,6 +907,45 @@ def agendar_evaluacion_view(request, pk):
 
 
 @login_required
+def borrar_archivo_formulario_view(request, pk):
+    """
+    Borra el archivo de un formulario.
+    """
+    formulario = get_object_or_404(Formulario, pk=pk)
+    ca = formulario.carrera_academica
+
+    if request.method == "POST":
+        if formulario.archivo:
+            # Guardar nombre para el mensaje
+            nombre_archivo = formulario.archivo.name
+
+            # Borrar archivo físico
+            formulario.archivo.delete(save=False)
+
+            # Actualizar estado
+            formulario.archivo = None
+            formulario.estado = 'PEN'
+            formulario.fecha_entrega = None
+            formulario.save()
+
+            messages.success(
+                request,
+                f"Archivo eliminado: {formulario.tipo_formulario}"
+            )
+        else:
+            messages.warning(request, "El formulario no tenía archivo adjunto")
+
+        return redirect('carrera_academica:detalle_ca', pk=ca.pk)
+
+    # GET - Confirmación
+    context = {
+        'formulario': formulario,
+        'ca': ca,
+    }
+    return render(request, 'carrera_academica/confirmar_borrar_archivo.html', context)
+
+
+@login_required
 def gestionar_anios_ca_view(request, pk):
     """
     Vista unificada para:
