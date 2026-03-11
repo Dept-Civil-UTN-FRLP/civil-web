@@ -201,12 +201,24 @@
                 
                 <!-- Campo condicional para prórroga -->
                 <div id="campoProrroga" style="display: none;">
-                    <label for="nueva_fecha_vencimiento">Nueva Fecha de Vencimiento *</label>
-                    <input type="date" class="form-control" id="nueva_fecha_vencimiento" name="nueva_fecha_vencimiento">
-                    <small class="text-muted">
-                        Vencimiento actual: {{ ca.fecha_vencimiento_actual|date:"d/m/Y" }}
-                    </small>
-                </div>
+    <div class="row">
+        <div class="col-md-6">
+            <label for="id_prorroga_dias">Días de Prórroga</label>
+            <input type="number" class="form-control" id="id_prorroga_dias" name="prorroga_dias" min="1">
+            <small class="text-muted">Calcular desde días</small>
+        </div>
+        <div class="col-md-6">
+            <label for="nueva_fecha_vencimiento">Nueva Fecha de Vencimiento</label>
+            <input type="date" class="form-control" id="nueva_fecha_vencimiento" name="nueva_fecha_vencimiento">
+            <small class="text-muted">O ingresar fecha directa</small>
+        </div>
+    </div>
+    <div class="alert alert-info mt-2">
+        <small>
+            <strong>Vencimiento actual:</strong> {{ ca.fecha_vencimiento_actual|date:"d/m/Y" }}
+        </small>
+    </div>
+</div>
                 
                 <button type="submit" class="btn btn-success w-100 mt-2">Registrar</button>
             </form>
@@ -218,16 +230,60 @@
 document.addEventListener('DOMContentLoaded', function() {
     const selectObjeto = document.querySelector('select[name="objeto"]');
     const campoProrroga = document.getElementById('campoProrroga');
+    const inputDias = document.getElementById('id_prorroga_dias');
     const inputFecha = document.getElementById('nueva_fecha_vencimiento');
     
+    // Fecha actual de vencimiento desde el servidor
+    const fechaActual = new Date('{{ ca.fecha_vencimiento_actual|date:"Y-m-d" }}');
+    
+    // Mostrar/ocultar según objeto
     if (selectObjeto) {
         selectObjeto.addEventListener('change', function() {
             if (this.value === 'prorroga_ca') {
                 campoProrroga.style.display = 'block';
-                inputFecha.setAttribute('required', 'required');
             } else {
                 campoProrroga.style.display = 'none';
-                inputFecha.removeAttribute('required');
+                inputDias.value = '';
+                inputFecha.value = '';
+            }
+        });
+    }
+    
+    // Sincronización: días → fecha
+    if (inputDias) {
+        inputDias.addEventListener('input', function() {
+            if (this.value && this.value > 0) {
+                const dias = parseInt(this.value);
+                const nuevaFecha = new Date(fechaActual);
+                nuevaFecha.setDate(nuevaFecha.getDate() + dias);
+                
+                // Formatear como YYYY-MM-DD
+                const año = nuevaFecha.getFullYear();
+                const mes = String(nuevaFecha.getMonth() + 1).padStart(2, '0');
+                const dia = String(nuevaFecha.getDate()).padStart(2, '0');
+                
+                inputFecha.value = `${año}-${mes}-${dia}`;
+            } else {
+                inputFecha.value = '';
+            }
+        });
+    }
+    
+    // Sincronización: fecha → días
+    if (inputFecha) {
+        inputFecha.addEventListener('input', function() {
+            if (this.value) {
+                const nuevaFecha = new Date(this.value);
+                const diffTime = nuevaFecha - fechaActual;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                if (diffDays > 0) {
+                    inputDias.value = diffDays;
+                } else {
+                    inputDias.value = '';
+                }
+            } else {
+                inputDias.value = '';
             }
         });
     }
