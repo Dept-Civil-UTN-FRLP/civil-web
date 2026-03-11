@@ -350,46 +350,52 @@ def registrar_resolucion_view(request, pk):
 
             # 2. Actualizamos el estado o las fechas de la CA si corresponde
             if objeto == "prorroga_ca":
+                # Priorizar fecha si está presente, sino usar días
                 nueva_fecha = form.cleaned_data.get("nueva_fecha_vencimiento")
-
+                dias = form.cleaned_data.get("prorroga_dias")
+            
                 if nueva_fecha:
-                    # Validar que sea posterior a la fecha actual
+                    # Usar fecha directa
                     if nueva_fecha <= ca.fecha_vencimiento_actual:
                         messages.error(
                             request,
                             f"La nueva fecha debe ser posterior al vencimiento actual ({ca.fecha_vencimiento_actual.strftime('%d/%m/%Y')})"
                         )
                         return redirect('carrera_academica:detalle_ca', pk=ca.pk)
-
-                    # Calcular días de prórroga
-                    dias_prorroga = (
-                        nueva_fecha - ca.fecha_vencimiento_actual).days
-
-                    # Actualizar CA
-                    fecha_anterior = ca.fecha_vencimiento_actual
-                    ca.fecha_vencimiento_actual = nueva_fecha
-
-                    # Agregar años nuevos si corresponde
-                    anios_nuevos, forms_creados, mensaje = ca.agregar_anios_por_prorroga(
-                        nueva_fecha
-                    )
-
-                    ca.save()
-
-                    if anios_nuevos:
-                        messages.success(
-                            request,
-                            f"Prórroga de {dias_prorroga} días aplicada: {fecha_anterior.strftime('%d/%m/%Y')} → {nueva_fecha.strftime('%d/%m/%Y')}. {mensaje}"
-                        )
-                    else:
-                        messages.success(
-                            request,
-                            f"Prórroga de {dias_prorroga} días aplicada: {fecha_anterior.strftime('%d/%m/%Y')} → {nueva_fecha.strftime('%d/%m/%Y')}"
-                        )
+            
+                    dias_prorroga = (nueva_fecha - ca.fecha_vencimiento_actual).days
+            
+                elif dias and dias > 0:
+                    # Calcular fecha desde días
+                    from datetime import timedelta
+                    nueva_fecha = ca.fecha_vencimiento_actual + timedelta(days=dias)
+                    dias_prorroga = dias
+            
                 else:
                     messages.error(
-                        request, "Debe especificar la nueva fecha de vencimiento para la prórroga")
+                        request, "Debe especificar la nueva fecha de vencimiento O los días de prórroga")
                     return redirect('carrera_academica:detalle_ca', pk=ca.pk)
+            
+                # Actualizar CA
+                fecha_anterior = ca.fecha_vencimiento_actual
+                ca.fecha_vencimiento_actual = nueva_fecha
+            
+                # Agregar años nuevos si corresponde
+                anios_nuevos, forms_creados, mensaje = ca.agregar_anios_por_prorroga(
+                    nueva_fecha)
+            
+                ca.save()
+            
+                if anios_nuevos:
+                    messages.success(
+                        request,
+                        f"Prórroga de {dias_prorroga} días aplicada: {fecha_anterior.strftime('%d/%m/%Y')} → {nueva_fecha.strftime('%d/%m/%Y')}. {mensaje}"
+                    )
+                else:
+                    messages.success(
+                        request,
+                        f"Prórroga de {dias_prorroga} días aplicada: {fecha_anterior.strftime('%d/%m/%Y')} → {nueva_fecha.strftime('%d/%m/%Y')}"
+                    )
 
             elif objeto == "licencia_alta":
                 ca.estado = "STB"  # Standby
