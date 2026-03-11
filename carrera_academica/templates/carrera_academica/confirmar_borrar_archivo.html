@@ -1,0 +1,40 @@
+{% extends 'carrera_academica/base_ca.html' %}
+
+{% block ca_content %}
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">Confirmar Eliminación de Archivo</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Atención:</strong> Esta acción no se puede deshacer.
+                </div>
+                
+                <p><strong>Formulario:</strong> {{ formulario.get_tipo_formulario_display }}</p>
+                {% if formulario.anio_correspondiente %}
+                    <p><strong>Año:</strong> {{ formulario.anio_correspondiente }}</p>
+                {% endif %}
+                <p><strong>Archivo:</strong> {{ formulario.archivo.name }}</p>
+                <p><strong>Fecha de subida:</strong> {{ formulario.fecha_entrega|date:"d/m/Y H:i" }}</p>
+                
+                <hr>
+                
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'carrera_academica:detalle_ca' pk=ca.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Eliminar Archivo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
