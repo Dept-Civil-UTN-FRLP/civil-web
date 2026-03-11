@@ -163,29 +163,7 @@
                 {% endif %}
             </div>
         </div>
-
-        {# Registrar Resolución #}
-        {% if ca.estado != 'FIN' %}
-        <div class="card mt-4">
-            <div class="card-header">
-                <a class="text-decoration-none text-dark d-block" data-bs-toggle="collapse" href="#collapseResolucionForm" role="button">
-                    Registrar Resolución / Evento
-                </a>
-            </div>
-            <div class="collapse" id="collapseResolucionForm">
-                <div class="card-body">
-                    <form action="{% url 'carrera_academica:registrar_resolucion' pk=ca.pk %}" method="POST" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        {{ form_resolucion.as_p }}
-                        <button type="submit" class="btn btn-success w-100 mt-2">Registrar</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-        
-        {# Resoluciones y Eventos #}
-        <!-- En ca_detail.html, dentro del collapse de registrar resolución -->
+{# Registrar Resolución / Evento #}
 {% if ca.estado != 'FIN' %}
 <div class="card mt-4">
     <div class="card-header">
@@ -194,35 +172,78 @@
         </a>
     </div>
     <div class="collapse" id="collapseResolucionForm">
-        <div class="card-body">
-            <form action="{% url 'carrera_academica:registrar_resolucion' pk=ca.pk %}" method="POST" enctype="multipart/form-data" id="formResolucion">
-                {% csrf_token %}
-                {{ form_resolucion.as_p }}
-                
-                <!-- Campo condicional para prórroga -->
-                <div id="campoProrroga" style="display: none;">
-    <div class="row">
-        <div class="col-md-6">
-            <label for="id_prorroga_dias">Días de Prórroga</label>
-            <input type="number" class="form-control" id="id_prorroga_dias" name="prorroga_dias" min="1">
-            <small class="text-muted">Calcular desde días</small>
-        </div>
-        <div class="col-md-6">
-            <label for="nueva_fecha_vencimiento">Nueva Fecha de Vencimiento</label>
-            <input type="date" class="form-control" id="nueva_fecha_vencimiento" name="nueva_fecha_vencimiento">
-            <small class="text-muted">O ingresar fecha directa</small>
-        </div>
-    </div>
-    <div class="alert alert-info mt-2">
-        <small>
-            <strong>Vencimiento actual:</strong> {{ ca.fecha_vencimiento_actual|date:"d/m/Y" }}
-        </small>
-    </div>
-</div>
-                
-                <button type="submit" class="btn btn-success w-100 mt-2">Registrar</button>
-            </form>
-        </div>
+    <div class="card-body">
+        <form action="{% url 'carrera_academica:registrar_resolucion' pk=ca.pk %}" method="POST" enctype="multipart/form-data" id="formResolucion">
+            {% csrf_token %}
+            
+            {# ✅ Renderizar campos uno por uno, SIN prorroga_dias ni nueva_fecha_vencimiento #}
+            <div class="mb-3">
+                {{ form_resolucion.objeto.label_tag }}
+                {{ form_resolucion.objeto }}
+                {% if form_resolucion.objeto.errors %}
+                    <div class="text-danger">{{ form_resolucion.objeto.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                {{ form_resolucion.numero.label_tag }}
+                {{ form_resolucion.numero }}
+                {% if form_resolucion.numero.errors %}
+                    <div class="text-danger">{{ form_resolucion.numero.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                {{ form_resolucion.año.label_tag }}
+                {{ form_resolucion.año }}
+                {% if form_resolucion.año.errors %}
+                    <div class="text-danger">{{ form_resolucion.año.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                {{ form_resolucion.origen.label_tag }}
+                {{ form_resolucion.origen }}
+                {% if form_resolucion.origen.errors %}
+                    <div class="text-danger">{{ form_resolucion.origen.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                {{ form_resolucion.file.label_tag }}
+                {{ form_resolucion.file }}
+                {% if form_resolucion.file.errors %}
+                    <div class="text-danger">{{ form_resolucion.file.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <!-- ✅ Campo condicional para prórroga (ahora sin duplicados) -->
+            <div id="campoProrroga" style="display: none;">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="id_prorroga_dias">Días de Prórroga</label>
+                            <input type="number" class="form-control" id="id_prorroga_dias" name="prorroga_dias" min="1">
+                            <small class="text-muted">Calcular desde días</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="nueva_fecha_vencimiento">Nueva Fecha de Vencimiento</label>
+                            <input type="date" class="form-control" id="nueva_fecha_vencimiento" name="nueva_fecha_vencimiento">
+                            <small class="text-muted">O ingresar fecha directa</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-info">
+                    <small>
+                        <strong>Vencimiento actual:</strong> {{ ca.fecha_vencimiento_actual|date:"d/m/Y" }}
+                    </small>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-success w-100 mt-2">Registrar</button>
+        </form>
     </div>
 </div>
 
