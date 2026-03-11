@@ -333,7 +333,6 @@ def registrar_resolucion_view(request, pk):
             nueva_resolucion.cargo = ca.cargo
             nueva_resolucion.save()
 
-            # --- Lógica de Negocio (CORREGIDA Y AMPLIADA) ---
             objeto = form.cleaned_data["objeto"]
 
             # 1. Vinculamos la resolución al expediente si corresponde
@@ -351,23 +350,46 @@ def registrar_resolucion_view(request, pk):
 
             # 2. Actualizamos el estado o las fechas de la CA si corresponde
             if objeto == "prorroga_ca":
-                dias = form.cleaned_data.get("prorroga_dias", 0)
-                if dias > 0:
-                    ca.fecha_vencimiento_actual += timedelta(days=dias)
+                nueva_fecha = form.cleaned_data.get("nueva_fecha_vencimiento")
+
+                if nueva_fecha:
+                    # Validar que sea posterior a la fecha actual
+                    if nueva_fecha <= ca.fecha_vencimiento_actual:
+                        messages.error(
+                            request,
+                            f"La nueva fecha debe ser posterior al vencimiento actual ({ca.fecha_vencimiento_actual.strftime('%d/%m/%Y')})"
+                        )
+                        return redirect('carrera_academica:detalle_ca', pk=ca.pk)
+
+                    # Calcular días de prórroga
+                    dias_prorroga = (
+                        nueva_fecha - ca.fecha_vencimiento_actual).days
+
+                    # Actualizar CA
+                    fecha_anterior = ca.fecha_vencimiento_actual
+                    ca.fecha_vencimiento_actual = nueva_fecha
+
+                    # Agregar años nuevos si corresponde
                     anios_nuevos, forms_creados, mensaje = ca.agregar_anios_por_prorroga(
-                        ca.fecha_vencimiento_actual
+                        nueva_fecha
                     )
+
+                    ca.save()
+
                     if anios_nuevos:
                         messages.success(
                             request,
-                            f"Prórroga aplicada: {dias} días. {mensaje}"
+                            f"Prórroga de {dias_prorroga} días aplicada: {fecha_anterior.strftime('%d/%m/%Y')} → {nueva_fecha.strftime('%d/%m/%Y')}. {mensaje}"
                         )
                     else:
-                        messages.info(
+                        messages.success(
                             request,
-                            f"Prórroga aplicada: {dias} días (sin años nuevos completos)."
+                            f"Prórroga de {dias_prorroga} días aplicada: {fecha_anterior.strftime('%d/%m/%Y')} → {nueva_fecha.strftime('%d/%m/%Y')}"
                         )
-                
+                else:
+                    messages.error(
+                        request, "Debe especificar la nueva fecha de vencimiento para la prórroga")
+                    return redirect('carrera_academica:detalle_ca', pk=ca.pk)
 
             elif objeto == "licencia_alta":
                 ca.estado = "STB"  # Standby
@@ -385,7 +407,6 @@ def registrar_resolucion_view(request, pk):
             return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
     # Si el formulario no es válido o no es POST, redirigimos
-    # (podríamos pasar el form con errores, pero por ahora es más simple así)
     return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
 
