@@ -185,34 +185,55 @@
         {% endif %}
         
         {# Resoluciones y Eventos #}
-        <div class="card mt-4">
-            <div class="card-header">Resoluciones y Eventos</div>
-            <ul class="list-group list-group-flush">
-                {% for res in ca.cargo.resoluciones.all %}
-                    <li class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <strong>{{ res.get_origen_display|upper }} {{ res.numero }}/{{ res.año }}</strong><br>
-                                <small>{{ res.get_objeto_display }}</small>
-                            </div>
-                            {% if res.objeto == 'prorroga_ca' %}
-                                <span class="badge bg-info text-dark">Prórroga</span>
-                            {% endif %}
-                        </div>
-                        {% if res.descripcion %}
-                            <p class="card-text bg-light border p-2 mt-2 mb-0 rounded" style="font-size: 0.85em;">
-                                {{ res.descripcion }}
-                            </p>
-                        {% endif %}
-                        {% if res.file %}
-                            <a href="{{ res.file.url }}" target="_blank" class="card-link small mt-1 d-block">Ver Archivo</a>
-                        {% endif %}
-                    </li>
-                {% empty %}
-                    <li class="list-group-item text-muted">No hay resoluciones asociadas.</li>
-                {% endfor %}
-            </ul>
+        <!-- En ca_detail.html, dentro del collapse de registrar resolución -->
+{% if ca.estado != 'FIN' %}
+<div class="card mt-4">
+    <div class="card-header">
+        <a class="text-decoration-none text-dark d-block" data-bs-toggle="collapse" href="#collapseResolucionForm" role="button">
+            Registrar Resolución / Evento
+        </a>
+    </div>
+    <div class="collapse" id="collapseResolucionForm">
+        <div class="card-body">
+            <form action="{% url 'carrera_academica:registrar_resolucion' pk=ca.pk %}" method="POST" enctype="multipart/form-data" id="formResolucion">
+                {% csrf_token %}
+                {{ form_resolucion.as_p }}
+                
+                <!-- Campo condicional para prórroga -->
+                <div id="campoProrroga" style="display: none;">
+                    <label for="nueva_fecha_vencimiento">Nueva Fecha de Vencimiento *</label>
+                    <input type="date" class="form-control" id="nueva_fecha_vencimiento" name="nueva_fecha_vencimiento">
+                    <small class="text-muted">
+                        Vencimiento actual: {{ ca.fecha_vencimiento_actual|date:"d/m/Y" }}
+                    </small>
+                </div>
+                
+                <button type="submit" class="btn btn-success w-100 mt-2">Registrar</button>
+            </form>
         </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectObjeto = document.querySelector('select[name="objeto"]');
+    const campoProrroga = document.getElementById('campoProrroga');
+    const inputFecha = document.getElementById('nueva_fecha_vencimiento');
+    
+    if (selectObjeto) {
+        selectObjeto.addEventListener('change', function() {
+            if (this.value === 'prorroga_ca') {
+                campoProrroga.style.display = 'block';
+                inputFecha.setAttribute('required', 'required');
+            } else {
+                campoProrroga.style.display = 'none';
+                inputFecha.removeAttribute('required');
+            }
+        });
+    }
+});
+</script>
+{% endif %}
     </div>
 </div>
 
