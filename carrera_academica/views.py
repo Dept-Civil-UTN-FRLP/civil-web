@@ -336,7 +336,7 @@ def registrar_resolucion_view(request, pk):
             objeto = form.cleaned_data["objeto"]
 
             # 1. Vinculamos la resolución al expediente si corresponde
-            if objeto == "alta" or objeto == "redesignacion":
+            if objeto in ["alta", "redesignacion", "designacion"]:
                 ca.resolucion_designacion = nueva_resolucion
                 messages.info(
                     request, "La resolución se ha vinculado como 'Designación'."
