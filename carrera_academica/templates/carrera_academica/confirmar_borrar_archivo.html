@@ -18,7 +18,9 @@
                     <p><strong>Año:</strong> {{ formulario.anio_correspondiente }}</p>
                 {% endif %}
                 <p><strong>Archivo:</strong> {{ formulario.archivo.name }}</p>
-                <p><strong>Fecha de subida:</strong> {{ formulario.fecha_entrega|date:"d/m/Y H:i" }}</p>
+                {% if formulario.fecha_entrega %}
+                    <p><strong>Fecha de subida:</strong> {{ formulario.fecha_entrega|date:"d/m/Y" }}</p>
+                {% endif %}
                 
                 <hr>
                 
