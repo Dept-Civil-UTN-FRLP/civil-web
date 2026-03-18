@@ -280,13 +280,22 @@ def ver_ficha_asignatura(request, asignatura_id):
     areas = asignatura.area.all()
     bloques = asignatura.bloque.all()
 
-    # ✅ Obtener cargos asociados a través de estructura_catedra
+    # ✅ Filtro de cargos activos/todos
+    mostrar_todos = request.GET.get('mostrar_todos', 'false') == 'true'
+    
     from planta_docente.models import Cargo
 
-    cargos = Cargo.objects.filter(
-        asignatura=asignatura,  # ✅ Relación directa según tu modelo
-        estado='activo'  # ✅ CAMBIO: usar estado en lugar de baja
-    ).select_related('docente').order_by('categoria', 'docente__apellido')
+    if mostrar_todos:
+        # Mostrar todos los cargos
+        cargos = Cargo.objects.filter(
+            asignatura=asignatura
+        ).select_related('docente').order_by('categoria', 'docente__apellido')
+    else:
+        # Por defecto solo activos
+        cargos = Cargo.objects.filter(
+            asignatura=asignatura,
+            estado='activo'
+        ).select_related('docente').order_by('categoria', 'docente__apellido')
 
     # Agrupar cargos por categoría según tipo
     profesores = []  # Titular, Asociado, Adjunto
@@ -330,7 +339,8 @@ def ver_ficha_asignatura(request, asignatura_id):
             for comp in asignatura.competencias.split('-')
             if comp.strip()
         ]
-     # Parsear bibliografía básica (uno por línea)
+    
+    # Parsear bibliografía básica (uno por línea)
     bibliografia_basica_lista = []
     if asignatura.bibliografia_basica:
         bibliografia_basica_lista = [
@@ -359,6 +369,8 @@ def ver_ficha_asignatura(request, asignatura_id):
         'auxiliares': auxiliares,
         'bibliografia_basica_lista': bibliografia_basica_lista,
         'bibliografia_complementaria_lista': bibliografia_complementaria_lista,
+        'mostrar_todos': mostrar_todos,
+        'total_cargos': cargos.count(),
     }
 
     return render(request, 'planta_docente/asignatura/ver_ficha.html', context)
