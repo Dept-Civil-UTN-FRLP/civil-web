@@ -163,56 +163,154 @@
                 {% endif %}
             </div>
         </div>
-
-        {# Registrar Resolución #}
-        {% if ca.estado != 'FIN' %}
-        <div class="card mt-4">
-            <div class="card-header">
-                <a class="text-decoration-none text-dark d-block" data-bs-toggle="collapse" href="#collapseResolucionForm" role="button">
-                    Registrar Resolución / Evento
-                </a>
+{# Registrar Resolución / Evento #}
+{% if ca.estado != 'FIN' %}
+<div class="card mt-4">
+    <div class="card-header">
+        <a class="text-decoration-none text-dark d-block" data-bs-toggle="collapse" href="#collapseResolucionForm" role="button">
+            Registrar Resolución / Evento
+        </a>
+    </div>
+    <div class="collapse" id="collapseResolucionForm">
+    <div class="card-body">
+        <form action="{% url 'carrera_academica:registrar_resolucion' pk=ca.pk %}" method="POST" enctype="multipart/form-data" id="formResolucion">
+            {% csrf_token %}
+            
+            {# ✅ Renderizar campos uno por uno, SIN prorroga_dias ni nueva_fecha_vencimiento #}
+            <div class="mb-3">
+                {{ form_resolucion.objeto.label_tag }}
+                {{ form_resolucion.objeto }}
+                {% if form_resolucion.objeto.errors %}
+                    <div class="text-danger">{{ form_resolucion.objeto.errors }}</div>
+                {% endif %}
             </div>
-            <div class="collapse" id="collapseResolucionForm">
-                <div class="card-body">
-                    <form action="{% url 'carrera_academica:registrar_resolucion' pk=ca.pk %}" method="POST" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        {{ form_resolucion.as_p }}
-                        <button type="submit" class="btn btn-success w-100 mt-2">Registrar</button>
-                    </form>
+            
+            <div class="mb-3">
+                {{ form_resolucion.numero.label_tag }}
+                {{ form_resolucion.numero }}
+                {% if form_resolucion.numero.errors %}
+                    <div class="text-danger">{{ form_resolucion.numero.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                {{ form_resolucion.año.label_tag }}
+                {{ form_resolucion.año }}
+                {% if form_resolucion.año.errors %}
+                    <div class="text-danger">{{ form_resolucion.año.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                {{ form_resolucion.origen.label_tag }}
+                {{ form_resolucion.origen }}
+                {% if form_resolucion.origen.errors %}
+                    <div class="text-danger">{{ form_resolucion.origen.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                {{ form_resolucion.file.label_tag }}
+                {{ form_resolucion.file }}
+                {% if form_resolucion.file.errors %}
+                    <div class="text-danger">{{ form_resolucion.file.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <!-- ✅ Campo condicional para prórroga (ahora sin duplicados) -->
+            <div id="campoProrroga" style="display: none;">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="id_prorroga_dias">Días de Prórroga</label>
+                            <input type="number" class="form-control" id="id_prorroga_dias" name="prorroga_dias" min="1">
+                            <small class="text-muted">Calcular desde días</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="nueva_fecha_vencimiento">Nueva Fecha de Vencimiento</label>
+                            <input type="date" class="form-control" id="nueva_fecha_vencimiento" name="nueva_fecha_vencimiento">
+                            <small class="text-muted">O ingresar fecha directa</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-info">
+                    <small>
+                        <strong>Vencimiento actual:</strong> {{ ca.fecha_vencimiento_actual|date:"d/m/Y" }}
+                    </small>
                 </div>
             </div>
-        </div>
-        {% endif %}
-        
-        {# Resoluciones y Eventos #}
-        <div class="card mt-4">
-            <div class="card-header">Resoluciones y Eventos</div>
-            <ul class="list-group list-group-flush">
-                {% for res in ca.cargo.resoluciones.all %}
-                    <li class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <strong>{{ res.get_origen_display|upper }} {{ res.numero }}/{{ res.año }}</strong><br>
-                                <small>{{ res.get_objeto_display }}</small>
-                            </div>
-                            {% if res.objeto == 'prorroga_ca' %}
-                                <span class="badge bg-info text-dark">Prórroga</span>
-                            {% endif %}
-                        </div>
-                        {% if res.descripcion %}
-                            <p class="card-text bg-light border p-2 mt-2 mb-0 rounded" style="font-size: 0.85em;">
-                                {{ res.descripcion }}
-                            </p>
-                        {% endif %}
-                        {% if res.file %}
-                            <a href="{{ res.file.url }}" target="_blank" class="card-link small mt-1 d-block">Ver Archivo</a>
-                        {% endif %}
-                    </li>
-                {% empty %}
-                    <li class="list-group-item text-muted">No hay resoluciones asociadas.</li>
-                {% endfor %}
-            </ul>
-        </div>
+            
+            <button type="submit" class="btn btn-success w-100 mt-2">Registrar</button>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectObjeto = document.querySelector('select[name="objeto"]');
+    const campoProrroga = document.getElementById('campoProrroga');
+    const inputDias = document.getElementById('id_prorroga_dias');
+    const inputFecha = document.getElementById('nueva_fecha_vencimiento');
+    
+    // Fecha actual de vencimiento desde el servidor
+    const fechaActual = new Date('{{ ca.fecha_vencimiento_actual|date:"Y-m-d" }}');
+    
+    // Mostrar/ocultar según objeto
+    if (selectObjeto) {
+        selectObjeto.addEventListener('change', function() {
+            if (this.value === 'prorroga_ca') {
+                campoProrroga.style.display = 'block';
+            } else {
+                campoProrroga.style.display = 'none';
+                inputDias.value = '';
+                inputFecha.value = '';
+            }
+        });
+    }
+    
+    // Sincronización: días → fecha
+    if (inputDias) {
+        inputDias.addEventListener('input', function() {
+            if (this.value && this.value > 0) {
+                const dias = parseInt(this.value);
+                const nuevaFecha = new Date(fechaActual);
+                nuevaFecha.setDate(nuevaFecha.getDate() + dias);
+                
+                // Formatear como YYYY-MM-DD
+                const año = nuevaFecha.getFullYear();
+                const mes = String(nuevaFecha.getMonth() + 1).padStart(2, '0');
+                const dia = String(nuevaFecha.getDate()).padStart(2, '0');
+                
+                inputFecha.value = `${año}-${mes}-${dia}`;
+            } else {
+                inputFecha.value = '';
+            }
+        });
+    }
+    
+    // Sincronización: fecha → días
+    if (inputFecha) {
+        inputFecha.addEventListener('input', function() {
+            if (this.value) {
+                const nuevaFecha = new Date(this.value);
+                const diffTime = nuevaFecha - fechaActual;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                if (diffDays > 0) {
+                    inputDias.value = diffDays;
+                } else {
+                    inputDias.value = '';
+                }
+            } else {
+                inputDias.value = '';
+            }
+        });
+    }
+});
+</script>
+{% endif %}
     </div>
 </div>
 

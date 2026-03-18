@@ -15,17 +15,25 @@ from .models import (
 
 
 class ResolucionForm(forms.ModelForm):
-    # Añadimos un campo que no está en el modelo para capturar la duración de la prórroga
+    # Campos opcionales para prórroga (uno u otro)
     prorroga_dias = forms.IntegerField(
         label="Días de Prórroga",
         required=False,
-        help_text="Completar solo si el objeto es 'Prorroga de Carrera Academica'.",
+        help_text="Ingrese días O la fecha final (se calcula automáticamente)",
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1'})
+    )
+
+    nueva_fecha_vencimiento = forms.DateField(
+        required=False,
+        widget=forms.DateInput(
+            attrs={'type': 'date', 'class': 'form-control'}),
+        label="Nueva Fecha de Vencimiento",
+        help_text="Ingrese fecha O los días (se calcula automáticamente)"
     )
 
     class Meta:
         model = Resolucion
         fields = ["objeto", "numero", "año", "origen", "file"]
-        # Opcional: Añadir widgets para mejorar la apariencia
         widgets = {
             "objeto": forms.Select(attrs={"class": "form-select"}),
             "numero": forms.NumberInput(attrs={"class": "form-control"}),

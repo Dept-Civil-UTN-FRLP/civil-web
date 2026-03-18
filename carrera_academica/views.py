@@ -333,11 +333,10 @@ def registrar_resolucion_view(request, pk):
             nueva_resolucion.cargo = ca.cargo
             nueva_resolucion.save()
 
-            # --- Lógica de Negocio (CORREGIDA Y AMPLIADA) ---
             objeto = form.cleaned_data["objeto"]
 
             # 1. Vinculamos la resolución al expediente si corresponde
-            if objeto == "alta" or objeto == "redesignacion":
+            if objeto in ["alta", "redesignacion", "designacion"]:
                 ca.resolucion_designacion = nueva_resolucion
                 messages.info(
                     request, "La resolución se ha vinculado como 'Designación'."
@@ -351,23 +350,52 @@ def registrar_resolucion_view(request, pk):
 
             # 2. Actualizamos el estado o las fechas de la CA si corresponde
             if objeto == "prorroga_ca":
-                dias = form.cleaned_data.get("prorroga_dias", 0)
-                if dias > 0:
-                    ca.fecha_vencimiento_actual += timedelta(days=dias)
-                    anios_nuevos, forms_creados, mensaje = ca.agregar_anios_por_prorroga(
-                        ca.fecha_vencimiento_actual
+                # Priorizar fecha si está presente, sino usar días
+                nueva_fecha = form.cleaned_data.get("nueva_fecha_vencimiento")
+                dias = form.cleaned_data.get("prorroga_dias")
+            
+                if nueva_fecha:
+                    # Usar fecha directa
+                    if nueva_fecha <= ca.fecha_vencimiento_actual:
+                        messages.error(
+                            request,
+                            f"La nueva fecha debe ser posterior al vencimiento actual ({ca.fecha_vencimiento_actual.strftime('%d/%m/%Y')})"
+                        )
+                        return redirect('carrera_academica:detalle_ca', pk=ca.pk)
+            
+                    dias_prorroga = (nueva_fecha - ca.fecha_vencimiento_actual).days
+            
+                elif dias and dias > 0:
+                    # Calcular fecha desde días
+                    from datetime import timedelta
+                    nueva_fecha = ca.fecha_vencimiento_actual + timedelta(days=dias)
+                    dias_prorroga = dias
+            
+                else:
+                    messages.error(
+                        request, "Debe especificar la nueva fecha de vencimiento O los días de prórroga")
+                    return redirect('carrera_academica:detalle_ca', pk=ca.pk)
+            
+                # Actualizar CA
+                fecha_anterior = ca.fecha_vencimiento_actual
+                ca.fecha_vencimiento_actual = nueva_fecha
+            
+                # Agregar años nuevos si corresponde
+                anios_nuevos, forms_creados, mensaje = ca.agregar_anios_por_prorroga(
+                    nueva_fecha)
+            
+                ca.save()
+            
+                if anios_nuevos:
+                    messages.success(
+                        request,
+                        f"Prórroga de {dias_prorroga} días aplicada: {fecha_anterior.strftime('%d/%m/%Y')} → {nueva_fecha.strftime('%d/%m/%Y')}. {mensaje}"
                     )
-                    if anios_nuevos:
-                        messages.success(
-                            request,
-                            f"Prórroga aplicada: {dias} días. {mensaje}"
-                        )
-                    else:
-                        messages.info(
-                            request,
-                            f"Prórroga aplicada: {dias} días (sin años nuevos completos)."
-                        )
-                
+                else:
+                    messages.success(
+                        request,
+                        f"Prórroga de {dias_prorroga} días aplicada: {fecha_anterior.strftime('%d/%m/%Y')} → {nueva_fecha.strftime('%d/%m/%Y')}"
+                    )
 
             elif objeto == "licencia_alta":
                 ca.estado = "STB"  # Standby
@@ -385,7 +413,6 @@ def registrar_resolucion_view(request, pk):
             return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
     # Si el formulario no es válido o no es POST, redirigimos
-    # (podríamos pasar el form con errores, pero por ahora es más simple así)
     return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
 
@@ -877,6 +904,45 @@ def agendar_evaluacion_view(request, pk):
 
     # Sin importar qué pase, siempre redirigimos de vuelta a la página del expediente
     return redirect("carrera_academica:detalle_ca", pk=evaluacion.carrera_academica.pk)
+
+
+@login_required
+def borrar_archivo_formulario_view(request, pk):
+    """
+    Borra el archivo de un formulario.
+    """
+    formulario = get_object_or_404(Formulario, pk=pk)
+    ca = formulario.carrera_academica
+
+    if request.method == "POST":
+        if formulario.archivo:
+            # Guardar nombre para el mensaje
+            nombre_archivo = formulario.archivo.name
+
+            # Borrar archivo físico
+            formulario.archivo.delete(save=False)
+
+            # Actualizar estado
+            formulario.archivo = None
+            formulario.estado = 'PEN'
+            formulario.fecha_entrega = None
+            formulario.save()
+
+            messages.success(
+                request,
+                f"Archivo eliminado: {formulario.tipo_formulario}"
+            )
+        else:
+            messages.warning(request, "El formulario no tenía archivo adjunto")
+
+        return redirect('carrera_academica:detalle_ca', pk=ca.pk)
+
+    # GET - Confirmación
+    context = {
+        'formulario': formulario,
+        'ca': ca,
+    }
+    return render(request, 'carrera_academica/confirmar_borrar_archivo.html', context)
 
 
 @login_required

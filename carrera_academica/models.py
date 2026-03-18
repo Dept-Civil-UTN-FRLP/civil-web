@@ -18,9 +18,8 @@ from .managers import CarreraAcademicaManager, EvaluacionManager
 
 def get_ca_upload_path(instance, filename):
     """
-    Genera una ruta de guardado con un nombre de archivo hasheado (UUID).
-    Funciona tanto para Formularios como para Resoluciones.
-    Ej: media/ca/apellido-nombre/uuid4().pdf
+    Genera una ruta única y descriptiva para los archivos de CA.
+    Formato: ca/{apellido-nombre}/{ca_id}-{tipo}-{año}-{apellido}.ext
     """
     try:
         docente = instance.carrera_academica.cargo.docente
@@ -30,12 +29,26 @@ def get_ca_upload_path(instance, filename):
     nombre_completo = f"{docente.apellido} {docente.nombre}"
     docente_slug = slugify(nombre_completo)
 
-    # Obtenemos la extensión del archivo original
+    # Extensión del archivo original
+    import os
     extension = os.path.splitext(filename)[1]
-    # Creamos un nuevo nombre de archivo único
-    new_filename = f"{uuid.uuid4()}{extension}"
 
-    # Devuelve la ruta final
+    # ID de la CA
+    ca_id = instance.carrera_academica.pk
+
+    # Tipo de formulario
+    tipo_form = instance.tipo_formulario
+
+    # Año si aplica
+    año_str = f"-{instance.anio_correspondiente}" if instance.anio_correspondiente else ""
+
+    # Apellido
+    apellido = docente.apellido
+
+    # Construir nombre: {ca_id}-{tipo}-{año}-{apellido}.ext
+    new_filename = f"{ca_id}-{tipo_form}{año_str}-{apellido}{extension}"
+
+    # Devuelve: ca/apellido-nombre/{ca_id}-F04-2025-Ronconi.pdf
     return f"ca/{docente_slug}/{new_filename}"
 
 
