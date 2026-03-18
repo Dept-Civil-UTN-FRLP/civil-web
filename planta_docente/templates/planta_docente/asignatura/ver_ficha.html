@@ -54,14 +54,37 @@
     }
 
     @media print {
-        .btn, .breadcrumb {
+        .btn, .breadcrumb, .no-print {
             display: none !important;
         }
+
+        /* ✅ Ocultar headers de Bootstrap en impresión */
+        .navbar,
+        nav.navbar,
+        header,
+        .sidebar,
+        .container-fluid > .row:first-child {
+            display: none !important;
+        }
+
+        /* ✅ Expandir contenido a full width */
+        .container-fluid {
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
         .ficha-section {
             box-shadow: none;
             page-break-inside: avoid;
         }
+
+        /* ✅ Asegurar que body no tenga margins */
+        body {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
     }
+
     .ficha-section {
         background-color: #f8f9fa;
         border-left: 4px solid #0d6efd;
