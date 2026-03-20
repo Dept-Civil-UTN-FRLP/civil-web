@@ -6,7 +6,7 @@ from contextlib import redirect_stderr
 from datetime import date, timedelta
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import ValidationError
 from django.core.mail import EmailMessage
 from django.db.models import Count, Max, Q
@@ -554,6 +554,8 @@ def asignar_expediente_view(request, pk):
     return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
 
+@login_required
+@permission_required('carrera_academica.view_carreraacademica', raise_exception=True)
 def docentes_filtrados_api_view(request):
     """API optimizada para filtrar docentes."""
     # ✅ OPTIMIZACIÓN: select_related para evitar queries adicionales
