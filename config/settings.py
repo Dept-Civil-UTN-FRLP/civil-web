@@ -45,20 +45,23 @@ INSTALLED_APPS = [
     "planta_docente",
     "equivalencias",
     "carrera_academica",
-    # Debug toolbar (solo en desarrollo)
-    "debug_toolbar",
 ]
+
+# Debug toolbar (solo en desarrollo)
+if DEBUG:
+    INSTALLED_APPS.append("debug_toolbar")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+if DEBUG:
+    MIDDLEWARE.insert(1, "debug_toolbar.middleware.DebugToolbarMiddleware")
 
 ROOT_URLCONF = "config.urls"
 
