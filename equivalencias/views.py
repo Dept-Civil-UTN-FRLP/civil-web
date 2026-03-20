@@ -524,7 +524,6 @@ def generar_acta_pdf_view(request, pk):
         #'signature_image_path': f'file://{image_path}' if image_path and os.path.exists(image_path) else None,
         "signature_image_path": "/static/images/firma_holografica.png",  # Ruta relativa para WeasyPrint
     }
-    print(f"DEBUG: image_path = {context['signature_image_path']}"),
 
     # 3. Renderizar la plantilla HTML a un string con el contexto actualizado
     html_string = render_to_string("equivalencias/acta_template.html", context)
