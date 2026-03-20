@@ -6,12 +6,28 @@ import uuid
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
+from django.core.exceptions import ValidationError
 
 # <-- Apunta a la nueva app
 from planta_docente.models import Asignatura as AsignaturaCA
 from planta_docente.models import Docente as DocenteCA
 
 from .managers import SolicitudEquivalenciaManager
+
+
+def validate_file_extension(value):
+    """Valida que solo se suban archivos PDF"""
+    ext = os.path.splitext(value.name)[1].lower()
+    valid_extensions = ['.pdf']
+    if ext not in valid_extensions:
+        raise ValidationError('Solo se permiten archivos PDF.')
+
+
+def validate_file_size(value):
+    """Valida que el archivo no supere 10MB"""
+    filesize = value.size
+    if filesize > 10 * 1024 * 1024:  # 10MB
+        raise ValidationError('El archivo no debe superar 10MB.')
 
 
 def get_equivalencias_upload_path(instance, filename):
@@ -151,7 +167,11 @@ class SolicitudEquivalencia(models.Model):
 
 class DocumentoAdjunto(models.Model):
     solicitud = models.ForeignKey(SolicitudEquivalencia, on_delete=models.CASCADE)
-    archivo = models.FileField(upload_to=get_equivalencias_upload_path)
+    archivo = models.FileField(
+        upload_to=get_equivalencias_upload_path,
+        validators=[validate_file_extension, validate_file_size]
+        )
+    fecha_subida = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
     class Meta:
         verbose_name = "Documento Adjunto"

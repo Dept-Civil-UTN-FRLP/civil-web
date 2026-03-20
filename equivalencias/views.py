@@ -8,7 +8,7 @@ from datetime import date
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.core.mail import EmailMessage
 from django.db.models import Avg, Case, Count, F, Value, When
 from django.db.models.functions import ExtractMonth, Trim, TruncMonth
@@ -22,6 +22,10 @@ from django.db.models import Q
 from weasyprint import HTML
 from django.core.files.base import ContentFile
 from django.core.mail import EmailMessage
+from django.views.decorators.http import require_POST
+import logging
+
+logger = logging.getLogger(__name__)
 
 from config.pagination import paginate_queryset
 
@@ -405,6 +409,7 @@ def solicitud_detalle_view(request, pk):
 
 
 @login_required
+@permission_required('equivalencias.add_solicitudequivalencia', raise_exception=True)
 def crear_solicitud_view(request):
     if request.method == "POST":
         # --- LÓGICA PARA OBTENER O CREAR EL ESTUDIANTE ---
@@ -519,7 +524,6 @@ def generar_acta_pdf_view(request, pk):
         #'signature_image_path': f'file://{image_path}' if image_path and os.path.exists(image_path) else None,
         "signature_image_path": "/static/images/firma_holografica.png",  # Ruta relativa para WeasyPrint
     }
-    print(f"DEBUG: image_path = {context['signature_image_path']}"),
 
     # 3. Renderizar la plantilla HTML a un string con el contexto actualizado
     html_string = render_to_string("equivalencias/acta_template.html", context)
@@ -579,6 +583,7 @@ def preview_acta_view(request, pk):
 
 
 @login_required
+@permission_required('equivalencias.change_solicitudequivalencia', raise_exception=True)
 def generar_y_enviar_acta_view(request, pk):
     """
     Genera el acta, la guarda en el modelo, y la envía por email
@@ -649,11 +654,17 @@ def generar_y_enviar_acta_view(request, pk):
         return redirect('solicitud_detalle', pk=pk)
 
     except Exception as e:
-        messages.error(request, f"Error al generar/enviar acta: {str(e)}")
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error al generar/enviar acta para solicitud {pk}: {str(e)}")
+        messages.error(
+            request, "Error al generar/enviar acta. Contacte al administrador.")
         return redirect('solicitud_detalle', pk=pk)
 
 
 @login_required
+@permission_required('equivalencias.change_solicitudequivalencia', raise_exception=True)
+@require_POST
 def reenviar_email_asignatura_view(request, pk, detalle_pk):
     detalle = get_object_or_404(DetalleSolicitud, pk=detalle_pk)
 
@@ -664,12 +675,17 @@ def reenviar_email_asignatura_view(request, pk, detalle_pk):
             f"Correo reenviado exitosamente a {detalle.id_asignatura.asignatura}.",
         )
     except Exception as e:
-        messages.error(request, f"Error al reenviar el correo: {e}")
-
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error al reenviar email para detalle {detalle_pk}: {str(e)}")
+        messages.error(request, "Error al reenviar el correo. Contacte al administrador.")
+        
     return redirect("solicitud_detalle", pk=pk)
 
 
 @login_required
+@permission_required('equivalencias.change_solicitudequivalencia', raise_exception=True)
+@require_POST
 def reenviar_pendientes_view(request, pk):
     solicitud = get_object_or_404(SolicitudEquivalencia, pk=pk)
 
@@ -690,11 +706,11 @@ def reenviar_pendientes_view(request, pk):
             _enviar_email_catedra(detalle)
             contador += 1
         except Exception as e:
-            messages.error(
-                request,
-                f"Falló el envío a {detalle.id_asignatura.docente_responsable}: {e}",
-            )
-            continue  # Continúa con el siguiente aunque uno falle
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error al enviar email a cátedra {detalle.id_asignatura.docente_responsable}: {str(e)}")
+            messages.error(request, f"Falló el envío a {detalle.id_asignatura.docente_responsable}.")
+            continue
 
     messages.success(
         request, f"Se reenviaron {contador} correos a las cátedras pendientes."
