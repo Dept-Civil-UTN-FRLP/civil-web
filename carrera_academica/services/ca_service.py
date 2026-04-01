@@ -200,31 +200,31 @@ class CAService:
     def aplicar_prorroga(ca: CarreraAcademica, nueva_fecha=None, dias=None) -> tuple[bool, str]:
         from datetime import timedelta
     
+        fecha_anterior = ca.fecha_vencimiento_actual  # guardar antes de cualquier cambio
+    
         if nueva_fecha:
-            if nueva_fecha <= ca.fecha_vencimiento_actual:
-                return False, f"La nueva fecha debe ser posterior al vencimiento actual ({ca.fecha_vencimiento_actual.strftime('%d/%m/%Y')})"
-            dias_prorroga = (nueva_fecha - ca.fecha_vencimiento_actual).days
+            if nueva_fecha <= fecha_anterior:
+                return False, f"La nueva fecha debe ser posterior al vencimiento actual ({fecha_anterior.strftime('%d/%m/%Y')})"
+            dias_prorroga = (nueva_fecha - fecha_anterior).days
     
         elif dias and dias > 0:
-            nueva_fecha = ca.fecha_vencimiento_actual + timedelta(days=dias)
+            nueva_fecha = fecha_anterior + timedelta(days=dias)
             dias_prorroga = dias
     
         else:
             return False, "Debe especificar la nueva fecha de vencimiento O los días de prórroga"
     
-        fecha_anterior = ca.fecha_vencimiento_actual
-    
-        # Calcular años nuevos ANTES de actualizar la fecha
+        # Calcular años nuevos usando la fecha anterior todavía en el objeto
         anios_nuevos, forms_creados, mensaje_anios = ca.agregar_anios_por_prorroga(
             nueva_fecha)
     
-        # Actualizar y guardar después
-        ca.fecha_vencimiento_actual = nueva_fecha
-        ca.save()
+        # Actualizar y guardar después del cálculo
+        CarreraAcademica.objects.filter(pk=ca.pk).update(
+            fecha_vencimiento_actual=nueva_fecha)
+        ca.fecha_vencimiento_actual = nueva_fecha  # sincronizar el objeto en memoria
     
         mensaje = f"Prórroga de {dias_prorroga} días aplicada: {fecha_anterior.strftime('%d/%m/%Y')} → {nueva_fecha.strftime('%d/%m/%Y')}"
         if anios_nuevos:
             mensaje += f". {mensaje_anios}"
     
         return True, mensaje
-    
