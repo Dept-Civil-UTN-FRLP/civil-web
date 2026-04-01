@@ -3,7 +3,7 @@ import io
 import logging
 import os
 from contextlib import redirect_stderr
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
@@ -304,84 +304,41 @@ def registrar_resolucion_view(request, pk):
 
             objeto = form.cleaned_data["objeto"]
 
-            # 1. Vinculamos la resolución al expediente si corresponde
             if objeto in ["alta", "redesignacion", "designacion"]:
                 ca.resolucion_designacion = nueva_resolucion
                 messages.info(
-                    request, "La resolución se ha vinculado como 'Designación'."
-                )
+                    request, "La resolución se ha vinculado como 'Designación'.")
 
             elif objeto == "puesta_funcion":
                 ca.resolucion_puesta_en_funcion = nueva_resolucion
                 messages.info(
-                    request, "La resolución se ha vinculado como 'Puesta en Función'."
-                )
+                    request, "La resolución se ha vinculado como 'Puesta en Función'.")
 
-            # 2. Actualizamos el estado o las fechas de la CA si corresponde
-            if objeto == "prorroga_ca":
-                # Priorizar fecha si está presente, sino usar días
-                nueva_fecha = form.cleaned_data.get("nueva_fecha_vencimiento")
-                dias = form.cleaned_data.get("prorroga_dias")
-            
-                if nueva_fecha:
-                    # Usar fecha directa
-                    if nueva_fecha <= ca.fecha_vencimiento_actual:
-                        messages.error(
-                            request,
-                            f"La nueva fecha debe ser posterior al vencimiento actual ({ca.fecha_vencimiento_actual.strftime('%d/%m/%Y')})"
-                        )
-                        return redirect('carrera_academica:detalle_ca', pk=ca.pk)
-            
-                    dias_prorroga = (nueva_fecha - ca.fecha_vencimiento_actual).days
-            
-                elif dias and dias > 0:
-                    # Calcular fecha desde días
-                    from datetime import timedelta
-                    nueva_fecha = ca.fecha_vencimiento_actual + timedelta(days=dias)
-                    dias_prorroga = dias
-            
+            elif objeto == "prorroga_ca":
+                exito, mensaje = CAService.aplicar_prorroga(
+                    ca,
+                    nueva_fecha=form.cleaned_data.get(
+                        "nueva_fecha_vencimiento"),
+                    dias=form.cleaned_data.get("prorroga_dias"),
+                )
+                if exito:
+                    messages.success(request, mensaje)
                 else:
-                    messages.error(
-                        request, "Debe especificar la nueva fecha de vencimiento O los días de prórroga")
-                    return redirect('carrera_academica:detalle_ca', pk=ca.pk)
-            
-                # Actualizar CA
-                fecha_anterior = ca.fecha_vencimiento_actual
-                ca.fecha_vencimiento_actual = nueva_fecha
-            
-                # Agregar años nuevos si corresponde
-                anios_nuevos, forms_creados, mensaje = ca.agregar_anios_por_prorroga(
-                    nueva_fecha)
-            
-                ca.save()
-            
-                if anios_nuevos:
-                    messages.success(
-                        request,
-                        f"Prórroga de {dias_prorroga} días aplicada: {fecha_anterior.strftime('%d/%m/%Y')} → {nueva_fecha.strftime('%d/%m/%Y')}. {mensaje}"
-                    )
-                else:
-                    messages.success(
-                        request,
-                        f"Prórroga de {dias_prorroga} días aplicada: {fecha_anterior.strftime('%d/%m/%Y')} → {nueva_fecha.strftime('%d/%m/%Y')}"
-                    )
+                    messages.error(request, mensaje)
+                return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
             elif objeto == "licencia_alta":
-                ca.estado = "STB"  # Standby
+                ca.estado = "STB"
 
             elif objeto == "licencia_baja":
-                ca.estado = "ACT"  # Activa
+                ca.estado = "ACT"
 
-            # Guardamos todos los cambios en la Carrera Académica
             ca.save()
-
             messages.success(
                 request,
                 f"Resolución de '{nueva_resolucion.get_objeto_display()}' registrada exitosamente.",
             )
-            return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
-    # Si el formulario no es válido o no es POST, redirigimos
     return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
 
