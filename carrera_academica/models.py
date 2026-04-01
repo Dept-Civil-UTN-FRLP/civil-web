@@ -415,10 +415,9 @@ class CarreraAcademica(models.Model):
         """
         # Validar que el año esté en el rango de la CA
         start_year = self.fecha_inicio.year
-        end_year = self.fecha_vencimiento_actual.year
 
-        if not (start_year <= anio <= end_year):
-            return 0, f"El año {anio} está fuera del rango de la CA ({start_year}-{end_year})"
+        if anio < start_year:
+            return 0, f"El año {anio} es anterior al inicio de la CA ({start_year})"
 
         # Tipos de formularios anuales base
         tipos_anuales = ['F04', 'F05', 'F06', 'F07', 'ENC']
