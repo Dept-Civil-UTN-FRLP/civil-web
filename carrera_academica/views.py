@@ -72,6 +72,57 @@ def replace_text_in_doc(doc, replacements):
                                 run.text = run.text.replace(old_text, new_text)
 
 
+def _preparar_contexto_detalle(ca):
+    """Prepara la lógica de formularios y años para la vista de detalle."""
+    current_year = timezone.now().year
+
+    # Formularios únicos y CV
+    formularios_sin_anio = ca.formularios.filter(
+        anio_correspondiente__isnull=True
+    ).order_by("tipo_formulario")
+
+    form_cv = formularios_sin_anio.filter(tipo_formulario="CV").first()
+    form_unicos = list(formularios_sin_anio.filter(
+        tipo_formulario__in=["F01", "F02", "F03"]))
+
+    # Años pendientes de evaluación
+    start_year = ca.fecha_inicio.year
+    todos_los_anios = set(range(start_year, current_year + 1))
+    anios_ya_evaluados = {anio for ev in ca.evaluaciones.all()
+                          for anio in ev.anios_evaluados}
+    anios_pausados = {item["anio"] for item in ca.anios_pausados}
+    anios_pendientes = sorted(
+        todos_los_anios - anios_ya_evaluados - anios_pausados)
+
+    # Resumen de años con formularios agrupados
+    resumen_anios = ca.get_resumen_anios()
+    form_anuales = ca.formularios.filter(
+        anio_correspondiente__isnull=False
+    ).order_by("anio_correspondiente", "tipo_formulario")
+
+    formularios_por_anio = {}
+    for form in form_anuales:
+        formularios_por_anio.setdefault(
+            form.anio_correspondiente, []).append(form)
+
+    for item in resumen_anios:
+        item["formularios"] = formularios_por_anio.get(item["anio"], [])
+
+    # Formularios pendientes de notificación
+    tipos_a_notificar = ["F02", "F04", "F05"]
+    hay_formularios_pendientes = ca.formularios.filter(
+        estado="PEN", tipo_formulario__in=tipos_a_notificar
+    ).exists()
+
+    return {
+        "form_cv": form_cv,
+        "form_unicos": form_unicos,
+        "anios_pendientes_evaluacion": anios_pendientes,
+        "hay_formularios_pendientes": hay_formularios_pendientes,
+        "resumen_anios": resumen_anios,
+    }
+
+
 @login_required
 def dashboard_ca_view(request):
     """Dashboard optimizado de Carrera Académica."""
@@ -127,8 +178,6 @@ def dashboard_ca_view(request):
 
 @login_required
 def detalle_ca_view(request, pk):
-    """Vista de detalle optimizada."""
-    # ✅ OPTIMIZACIÓN: Usar with_full_detail()
     ca = get_object_or_404(CarreraAcademica.objects.with_full_detail(), pk=pk)
 
     if request.method == "POST":
@@ -136,7 +185,6 @@ def detalle_ca_view(request, pk):
         archivo = request.FILES.get("archivo")
 
         if formulario_id and archivo:
-            # ✅ OPTIMIZACIÓN: No hacer query adicional, ya lo tenemos
             formulario = ca.formularios.get(pk=formulario_id)
             formulario.archivo = archivo
             formulario.estado = "ENT"
@@ -149,91 +197,11 @@ def detalle_ca_view(request, pk):
 
         return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
-    # Obtener y separar los formularios
-    current_year = timezone.now().year
-    formularios_visibles = []
-
-    todos_los_formularios = ca.formularios.all().order_by(
-        "anio_correspondiente", "evaluacion__numero_evaluacion", "tipo_formulario"
-    )
-
-    for form in todos_los_formularios:
-        if not form.anio_correspondiente:
-            formularios_visibles.append(form)
-            continue
-
-        if form.anio_correspondiente < current_year:
-            formularios_visibles.append(form)
-        elif (
-            form.anio_correspondiente == current_year and form.tipo_formulario == "F04"
-        ):
-            formularios_visibles.append(form)
-
-    # Separar formularios para la plantilla
-    form_cv = next((f for f in formularios_visibles if f.tipo_formulario == "CV"), None)
-    form_unicos = [
-        f for f in formularios_visibles if f.tipo_formulario in ["F01", "F02", "F03"]
-    ]
-    form_anuales = [
-        f
-        for f in formularios_visibles
-        if f.tipo_formulario in ["F04", "F05", "F06", "F07", "ENC", "F13"]
-    ]
-
-    form_resolucion = ResolucionForm()
-    expediente_form = ExpedienteForm(instance=ca)
-
-    # Calcular años pendientes de evaluación
-    start_year = ca.fecha_inicio.year
-    end_year = timezone.now().year
-    todos_los_anios = set(range(start_year, end_year + 1))
-
-    anios_ya_evaluados = set()
-    # OPTIMIZACIÓN: Las evaluaciones ya están precargadas
-    for ev in ca.evaluaciones.all():
-        for anio in ev.anios_evaluados:
-            anios_ya_evaluados.add(anio)
-
-    anios_pausados = {item['anio'] for item in ca.anios_pausados}
-    
-    anios_pendientes = sorted(list(todos_los_anios - anios_ya_evaluados - anios_pausados))
-
-    # Obtener resumen de años con formularios
-    resumen_anios = ca.get_resumen_anios()
-
-    # Asociar formularios a cada año
-    form_anuales = ca.formularios.filter(anio_correspondiente__isnull=False).order_by(
-        'anio_correspondiente', 'tipo_formulario')
-
-    # Agrupar formularios por año
-    formularios_por_anio = {}
-    for form in form_anuales:
-        anio = form.anio_correspondiente
-        if anio not in formularios_por_anio:
-            formularios_por_anio[anio] = []
-        formularios_por_anio[anio].append(form)
-
-    # Agregar formularios al resumen
-    for item in resumen_anios:
-        item['formularios'] = formularios_por_anio.get(item['anio'], [])
-
-    # Lógica para el botón de notificación
-    tipos_a_notificar = ["F02", "F04", "F05"]
-    hay_formularios_pendientes = any(
-        f.estado == "PEN" and f.tipo_formulario in tipos_a_notificar
-        for f in ca.formularios.all()
-    )
-
     contexto = {
         "ca": ca,
-        "form_cv": form_cv,
-        "form_unicos": form_unicos,
-        "form_anuales": form_anuales,
-        "form_resolucion": form_resolucion,
-        "expediente_form": expediente_form,
-        "anios_pendientes_evaluacion": anios_pendientes,
-        "hay_formularios_pendientes": hay_formularios_pendientes,
-        'resumen_anios': resumen_anios,
+        "form_resolucion": ResolucionForm(),
+        "expediente_form": ExpedienteForm(instance=ca),
+        **_preparar_contexto_detalle(ca),
     }
     return render(request, "carrera_academica/ca_detail.html", contexto)
 
