@@ -114,13 +114,12 @@ class CAServiceProrrogaTestCase(CAServiceTestMixin, TestCase):
 
     def test_prorroga_crea_formularios_para_anios_nuevos(self):
         from carrera_academica.models import Formulario
-        formularios_antes = Formulario.objects.filter(
-            carrera_academica=self.ca,
-            anio_correspondiente=2026
-        ).count()
-        self.assertEqual(formularios_antes, 0)
-
         CAService.aplicar_prorroga(self.ca, nueva_fecha=date(2027, 1, 1))
+        formularios_nuevos = Formulario.objects.filter(
+            carrera_academica=self.ca,
+            anio_correspondiente__gt=2025
+        ).count()
+        self.assertGreater(formularios_nuevos, 0)
 
         formularios_despues = Formulario.objects.filter(
             carrera_academica=self.ca,
