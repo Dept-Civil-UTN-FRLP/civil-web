@@ -52,24 +52,6 @@ def get_ca_upload_path(instance, filename):
     return f"ca/{docente_slug}/{new_filename}"
 
 
-# ==============================================================================
-# MODELOS DE CARRERA ACADÉMICA (ADAPTADOS Y REINTEGRADOS)
-# ==============================================================================
-
-
-def get_ca_upload_path(instance, filename):
-    """Genera una ruta única para los archivos de cada CA"""
-    # Obtenemos el objeto docente
-    docente = instance.carrera_academica.cargo.docente
-    # Construimos el nombre completo a partir de los campos correctos
-    nombre_completo = f"{docente.apellido} {docente.nombre}"
-
-    # Creamos el nombre de la carpeta seguro
-    docente_slug = slugify(nombre_completo)
-
-    return f"carrera_academica/{docente_slug}/{filename}"
-
-
 class CarreraAcademica(models.Model):
     ESTADO_CHOICES = [
         ("ACT", "Activa"),
@@ -724,9 +706,6 @@ class Formulario(models.Model):
     )
     fecha_entrega = models.DateField(blank=True, null=True)
     archivo = models.FileField(upload_to=get_ca_upload_path, blank=True, null=True)
-    anio_correspondiente = models.IntegerField(
-        blank=True, null=True, help_text="Ej: 2024 (para F04-F07, F13)"
-    )
     anio_correspondiente = models.IntegerField(
         blank=True, null=True, help_text="Ej: 2024 (para F04-F07, F13)"
     )
