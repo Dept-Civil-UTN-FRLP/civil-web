@@ -1,19 +1,13 @@
 # carrera_academica/models.py
-import os
-import uuid
-
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 
-from planta_docente.models import *
+from planta_docente.models import Cargo, Docente, Resolucion
 
 from .managers import CarreraAcademicaManager, EvaluacionManager
 
-# ==============================================================================
-# TUS MODELOS (CON PEQUEÑAS CORRECCIONES)
-# ==============================================================================
 
 
 def get_ca_upload_path(instance, filename):
