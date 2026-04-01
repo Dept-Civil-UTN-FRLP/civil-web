@@ -216,9 +216,6 @@ class CarreraAcademica(models.Model):
     def save(self, *args, **kwargs):
         """Override save para ejecutar validaciones."""
         # Solo validar si no es una instancia nueva o si se están modificando campos críticos
-        if self.pk or not kwargs.get("skip_validation", False):
-            self.full_clean()
-
         if not self.pk:
             self.fecha_vencimiento_actual = self.fecha_vencimiento_original
 
@@ -658,7 +655,6 @@ class Evaluacion(models.Model):
 
     def save(self, *args, **kwargs):
         """Override save para ejecutar validaciones."""
-        self.full_clean()
         super().save(*args, **kwargs)
 
     class Meta:
@@ -773,7 +769,6 @@ class Formulario(models.Model):
         if self.estado == "ENT" and not self.fecha_entrega:
             self.fecha_entrega = timezone.now()
 
-        self.full_clean()
         super().save(*args, **kwargs)
 
     class Meta:
