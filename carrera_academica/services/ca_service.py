@@ -196,16 +196,8 @@ class CAService:
             logger.error(f"Error al cerrar CA archivada {ca.pk}: {e}")
             return False, str(e)
 
-
     @staticmethod
     def aplicar_prorroga(ca: CarreraAcademica, nueva_fecha=None, dias=None) -> tuple[bool, str]:
-        """
-        Aplica una prórroga a la CA actualizando la fecha de vencimiento.
-        Se debe proveer nueva_fecha O dias, no ambos.
-    
-        Returns:
-            (exito, mensaje)
-        """
         from datetime import timedelta
     
         if nueva_fecha:
@@ -221,10 +213,13 @@ class CAService:
             return False, "Debe especificar la nueva fecha de vencimiento O los días de prórroga"
     
         fecha_anterior = ca.fecha_vencimiento_actual
-        ca.fecha_vencimiento_actual = nueva_fecha
     
+        # Calcular años nuevos ANTES de actualizar la fecha
         anios_nuevos, forms_creados, mensaje_anios = ca.agregar_anios_por_prorroga(
             nueva_fecha)
+    
+        # Actualizar y guardar después
+        ca.fecha_vencimiento_actual = nueva_fecha
         ca.save()
     
         mensaje = f"Prórroga de {dias_prorroga} días aplicada: {fecha_anterior.strftime('%d/%m/%Y')} → {nueva_fecha.strftime('%d/%m/%Y')}"
@@ -232,3 +227,4 @@ class CAService:
             mensaje += f". {mensaje_anios}"
     
         return True, mensaje
+    
