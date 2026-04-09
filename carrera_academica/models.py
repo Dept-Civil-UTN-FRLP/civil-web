@@ -1,19 +1,13 @@
 # carrera_academica/models.py
-import os
-import uuid
-
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 
-from planta_docente.models import *
+from planta_docente.models import Cargo, Docente, Resolucion
 
 from .managers import CarreraAcademicaManager, EvaluacionManager
 
-# ==============================================================================
-# TUS MODELOS (CON PEQUEÑAS CORRECCIONES)
-# ==============================================================================
 
 
 def get_ca_upload_path(instance, filename):
@@ -50,24 +44,6 @@ def get_ca_upload_path(instance, filename):
 
     # Devuelve: ca/apellido-nombre/{ca_id}-F04-2025-Ronconi.pdf
     return f"ca/{docente_slug}/{new_filename}"
-
-
-# ==============================================================================
-# MODELOS DE CARRERA ACADÉMICA (ADAPTADOS Y REINTEGRADOS)
-# ==============================================================================
-
-
-def get_ca_upload_path(instance, filename):
-    """Genera una ruta única para los archivos de cada CA"""
-    # Obtenemos el objeto docente
-    docente = instance.carrera_academica.cargo.docente
-    # Construimos el nombre completo a partir de los campos correctos
-    nombre_completo = f"{docente.apellido} {docente.nombre}"
-
-    # Creamos el nombre de la carpeta seguro
-    docente_slug = slugify(nombre_completo)
-
-    return f"carrera_academica/{docente_slug}/{filename}"
 
 
 class CarreraAcademica(models.Model):
@@ -234,9 +210,6 @@ class CarreraAcademica(models.Model):
     def save(self, *args, **kwargs):
         """Override save para ejecutar validaciones."""
         # Solo validar si no es una instancia nueva o si se están modificando campos críticos
-        if self.pk or not kwargs.get("skip_validation", False):
-            self.full_clean()
-
         if not self.pk:
             self.fecha_vencimiento_actual = self.fecha_vencimiento_original
 
@@ -442,10 +415,9 @@ class CarreraAcademica(models.Model):
         """
         # Validar que el año esté en el rango de la CA
         start_year = self.fecha_inicio.year
-        end_year = self.fecha_vencimiento_actual.year
 
-        if not (start_year <= anio <= end_year):
-            return 0, f"El año {anio} está fuera del rango de la CA ({start_year}-{end_year})"
+        if anio < start_year:
+            return 0, f"El año {anio} es anterior al inicio de la CA ({start_year})"
 
         # Tipos de formularios anuales base
         tipos_anuales = ['F04', 'F05', 'F06', 'F07', 'ENC']
@@ -676,7 +648,6 @@ class Evaluacion(models.Model):
 
     def save(self, *args, **kwargs):
         """Override save para ejecutar validaciones."""
-        self.full_clean()
         super().save(*args, **kwargs)
 
     class Meta:
@@ -724,9 +695,6 @@ class Formulario(models.Model):
     )
     fecha_entrega = models.DateField(blank=True, null=True)
     archivo = models.FileField(upload_to=get_ca_upload_path, blank=True, null=True)
-    anio_correspondiente = models.IntegerField(
-        blank=True, null=True, help_text="Ej: 2024 (para F04-F07, F13)"
-    )
     anio_correspondiente = models.IntegerField(
         blank=True, null=True, help_text="Ej: 2024 (para F04-F07, F13)"
     )
@@ -794,7 +762,6 @@ class Formulario(models.Model):
         if self.estado == "ENT" and not self.fecha_entrega:
             self.fecha_entrega = timezone.now()
 
-        self.full_clean()
         super().save(*args, **kwargs)
 
     class Meta:

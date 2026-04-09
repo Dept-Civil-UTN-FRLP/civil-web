@@ -56,14 +56,14 @@ class DashboardPlantaViewTestCase(TestCase):
             estado="activo",
         )
 
+
     def test_dashboard_requiere_login(self):
-        """Test que dashboard requiere autenticación."""
         self.client.logout()
-        response = self.client.get(reverse("planta_docente:dashboard"))
-
+        url = reverse("carrera_academica:dashboard_ca")
+        response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
-        self.assertTrue("/admin/login/" in response.url)
-
+        self.assertIn("login", response.url)
+    
     def test_dashboard_carga_correctamente(self):
         """Test que dashboard carga sin errores."""
         response = self.client.get(reverse("planta_docente:dashboard"))

@@ -5,14 +5,10 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from .models import (
-    Asignatura,
-    Cargo,
     CarreraAcademica,
-    Docente,
     JuntaEvaluadora,
-    Resolucion,
 )
-
+from planta_docente.models import Asignatura, Cargo, Docente, Resolucion
 
 class ResolucionForm(forms.ModelForm):
     # Campos opcionales para prórroga (uno u otro)

@@ -3,7 +3,7 @@ import io
 import logging
 import os
 from contextlib import redirect_stderr
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
@@ -24,6 +24,7 @@ from weasyprint import HTML
 from carrera_academica.services.document_service import DocumentService
 from carrera_academica.services.email_service import EmailService
 from carrera_academica.services.pdf_service import PDFService
+from carrera_academica.services.ca_service import CAService
 from config.pagination import paginate_queryset
 
 from .forms import (
@@ -69,6 +70,57 @@ def replace_text_in_doc(doc, replacements):
                         for old_text, new_text in replacements.items():
                             if old_text in run.text:
                                 run.text = run.text.replace(old_text, new_text)
+
+
+def _preparar_contexto_detalle(ca):
+    """Prepara la lógica de formularios y años para la vista de detalle."""
+    current_year = timezone.now().year
+
+    # Formularios únicos y CV
+    formularios_sin_anio = ca.formularios.filter(
+        anio_correspondiente__isnull=True
+    ).order_by("tipo_formulario")
+
+    form_cv = formularios_sin_anio.filter(tipo_formulario="CV").first()
+    form_unicos = list(formularios_sin_anio.filter(
+        tipo_formulario__in=["F01", "F02", "F03"]))
+
+    # Años pendientes de evaluación
+    start_year = ca.fecha_inicio.year
+    todos_los_anios = set(range(start_year, current_year + 1))
+    anios_ya_evaluados = {anio for ev in ca.evaluaciones.all()
+                          for anio in ev.anios_evaluados}
+    anios_pausados = {item["anio"] for item in ca.anios_pausados}
+    anios_pendientes = sorted(
+        todos_los_anios - anios_ya_evaluados - anios_pausados)
+
+    # Resumen de años con formularios agrupados
+    resumen_anios = ca.get_resumen_anios()
+    form_anuales = ca.formularios.filter(
+        anio_correspondiente__isnull=False
+    ).order_by("anio_correspondiente", "tipo_formulario")
+
+    formularios_por_anio = {}
+    for form in form_anuales:
+        formularios_por_anio.setdefault(
+            form.anio_correspondiente, []).append(form)
+
+    for item in resumen_anios:
+        item["formularios"] = formularios_por_anio.get(item["anio"], [])
+
+    # Formularios pendientes de notificación
+    tipos_a_notificar = ["F02", "F04", "F05"]
+    hay_formularios_pendientes = ca.formularios.filter(
+        estado="PEN", tipo_formulario__in=tipos_a_notificar
+    ).exists()
+
+    return {
+        "form_cv": form_cv,
+        "form_unicos": form_unicos,
+        "anios_pendientes_evaluacion": anios_pendientes,
+        "hay_formularios_pendientes": hay_formularios_pendientes,
+        "resumen_anios": resumen_anios,
+    }
 
 
 @login_required
@@ -126,8 +178,6 @@ def dashboard_ca_view(request):
 
 @login_required
 def detalle_ca_view(request, pk):
-    """Vista de detalle optimizada."""
-    # ✅ OPTIMIZACIÓN: Usar with_full_detail()
     ca = get_object_or_404(CarreraAcademica.objects.with_full_detail(), pk=pk)
 
     if request.method == "POST":
@@ -135,7 +185,6 @@ def detalle_ca_view(request, pk):
         archivo = request.FILES.get("archivo")
 
         if formulario_id and archivo:
-            # ✅ OPTIMIZACIÓN: No hacer query adicional, ya lo tenemos
             formulario = ca.formularios.get(pk=formulario_id)
             formulario.archivo = archivo
             formulario.estado = "ENT"
@@ -148,91 +197,11 @@ def detalle_ca_view(request, pk):
 
         return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
-    # Obtener y separar los formularios
-    current_year = timezone.now().year
-    formularios_visibles = []
-
-    todos_los_formularios = ca.formularios.all().order_by(
-        "anio_correspondiente", "evaluacion__numero_evaluacion", "tipo_formulario"
-    )
-
-    for form in todos_los_formularios:
-        if not form.anio_correspondiente:
-            formularios_visibles.append(form)
-            continue
-
-        if form.anio_correspondiente < current_year:
-            formularios_visibles.append(form)
-        elif (
-            form.anio_correspondiente == current_year and form.tipo_formulario == "F04"
-        ):
-            formularios_visibles.append(form)
-
-    # Separar formularios para la plantilla
-    form_cv = next((f for f in formularios_visibles if f.tipo_formulario == "CV"), None)
-    form_unicos = [
-        f for f in formularios_visibles if f.tipo_formulario in ["F01", "F02", "F03"]
-    ]
-    form_anuales = [
-        f
-        for f in formularios_visibles
-        if f.tipo_formulario in ["F04", "F05", "F06", "F07", "ENC", "F13"]
-    ]
-
-    form_resolucion = ResolucionForm()
-    expediente_form = ExpedienteForm(instance=ca)
-
-    # Calcular años pendientes de evaluación
-    start_year = ca.fecha_inicio.year
-    end_year = timezone.now().year
-    todos_los_anios = set(range(start_year, end_year + 1))
-
-    anios_ya_evaluados = set()
-    # OPTIMIZACIÓN: Las evaluaciones ya están precargadas
-    for ev in ca.evaluaciones.all():
-        for anio in ev.anios_evaluados:
-            anios_ya_evaluados.add(anio)
-
-    anios_pausados = {item['anio'] for item in ca.anios_pausados}
-    
-    anios_pendientes = sorted(list(todos_los_anios - anios_ya_evaluados - anios_pausados))
-
-    # Obtener resumen de años con formularios
-    resumen_anios = ca.get_resumen_anios()
-
-    # Asociar formularios a cada año
-    form_anuales = ca.formularios.filter(anio_correspondiente__isnull=False).order_by(
-        'anio_correspondiente', 'tipo_formulario')
-
-    # Agrupar formularios por año
-    formularios_por_anio = {}
-    for form in form_anuales:
-        anio = form.anio_correspondiente
-        if anio not in formularios_por_anio:
-            formularios_por_anio[anio] = []
-        formularios_por_anio[anio].append(form)
-
-    # Agregar formularios al resumen
-    for item in resumen_anios:
-        item['formularios'] = formularios_por_anio.get(item['anio'], [])
-
-    # Lógica para el botón de notificación
-    tipos_a_notificar = ["F02", "F04", "F05"]
-    hay_formularios_pendientes = any(
-        f.estado == "PEN" and f.tipo_formulario in tipos_a_notificar
-        for f in ca.formularios.all()
-    )
-
     contexto = {
         "ca": ca,
-        "form_cv": form_cv,
-        "form_unicos": form_unicos,
-        "form_anuales": form_anuales,
-        "form_resolucion": form_resolucion,
-        "expediente_form": expediente_form,
-        "anios_pendientes_evaluacion": anios_pendientes,
-        "hay_formularios_pendientes": hay_formularios_pendientes,
-        'resumen_anios': resumen_anios,
+        "form_resolucion": ResolucionForm(),
+        "expediente_form": ExpedienteForm(instance=ca),
+        **_preparar_contexto_detalle(ca),
     }
     return render(request, "carrera_academica/ca_detail.html", contexto)
 
@@ -335,84 +304,41 @@ def registrar_resolucion_view(request, pk):
 
             objeto = form.cleaned_data["objeto"]
 
-            # 1. Vinculamos la resolución al expediente si corresponde
             if objeto in ["alta", "redesignacion", "designacion"]:
                 ca.resolucion_designacion = nueva_resolucion
                 messages.info(
-                    request, "La resolución se ha vinculado como 'Designación'."
-                )
+                    request, "La resolución se ha vinculado como 'Designación'.")
 
             elif objeto == "puesta_funcion":
                 ca.resolucion_puesta_en_funcion = nueva_resolucion
                 messages.info(
-                    request, "La resolución se ha vinculado como 'Puesta en Función'."
-                )
+                    request, "La resolución se ha vinculado como 'Puesta en Función'.")
 
-            # 2. Actualizamos el estado o las fechas de la CA si corresponde
-            if objeto == "prorroga_ca":
-                # Priorizar fecha si está presente, sino usar días
-                nueva_fecha = form.cleaned_data.get("nueva_fecha_vencimiento")
-                dias = form.cleaned_data.get("prorroga_dias")
-            
-                if nueva_fecha:
-                    # Usar fecha directa
-                    if nueva_fecha <= ca.fecha_vencimiento_actual:
-                        messages.error(
-                            request,
-                            f"La nueva fecha debe ser posterior al vencimiento actual ({ca.fecha_vencimiento_actual.strftime('%d/%m/%Y')})"
-                        )
-                        return redirect('carrera_academica:detalle_ca', pk=ca.pk)
-            
-                    dias_prorroga = (nueva_fecha - ca.fecha_vencimiento_actual).days
-            
-                elif dias and dias > 0:
-                    # Calcular fecha desde días
-                    from datetime import timedelta
-                    nueva_fecha = ca.fecha_vencimiento_actual + timedelta(days=dias)
-                    dias_prorroga = dias
-            
+            elif objeto == "prorroga_ca":
+                exito, mensaje = CAService.aplicar_prorroga(
+                    ca,
+                    nueva_fecha=form.cleaned_data.get(
+                        "nueva_fecha_vencimiento"),
+                    dias=form.cleaned_data.get("prorroga_dias"),
+                )
+                if exito:
+                    messages.success(request, mensaje)
                 else:
-                    messages.error(
-                        request, "Debe especificar la nueva fecha de vencimiento O los días de prórroga")
-                    return redirect('carrera_academica:detalle_ca', pk=ca.pk)
-            
-                # Actualizar CA
-                fecha_anterior = ca.fecha_vencimiento_actual
-                ca.fecha_vencimiento_actual = nueva_fecha
-            
-                # Agregar años nuevos si corresponde
-                anios_nuevos, forms_creados, mensaje = ca.agregar_anios_por_prorroga(
-                    nueva_fecha)
-            
-                ca.save()
-            
-                if anios_nuevos:
-                    messages.success(
-                        request,
-                        f"Prórroga de {dias_prorroga} días aplicada: {fecha_anterior.strftime('%d/%m/%Y')} → {nueva_fecha.strftime('%d/%m/%Y')}. {mensaje}"
-                    )
-                else:
-                    messages.success(
-                        request,
-                        f"Prórroga de {dias_prorroga} días aplicada: {fecha_anterior.strftime('%d/%m/%Y')} → {nueva_fecha.strftime('%d/%m/%Y')}"
-                    )
+                    messages.error(request, mensaje)
+                return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
             elif objeto == "licencia_alta":
-                ca.estado = "STB"  # Standby
+                ca.estado = "STB"
 
             elif objeto == "licencia_baja":
-                ca.estado = "ACT"  # Activa
+                ca.estado = "ACT"
 
-            # Guardamos todos los cambios en la Carrera Académica
             ca.save()
-
             messages.success(
                 request,
                 f"Resolución de '{nueva_resolucion.get_objeto_display()}' registrada exitosamente.",
             )
-            return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
-    # Si el formulario no es válido o no es POST, redirigimos
     return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
 
@@ -605,165 +531,47 @@ def docentes_filtrados_api_view(request):
 
 @login_required
 def finalizar_ca_view(request, pk):
-    """
-    Finaliza la CA con workflow automático según el resultado.
-    """
-    from django.db import transaction
-
     ca = get_object_or_404(CarreraAcademica, pk=pk)
 
     if request.method == "POST":
-        resultado = request.POST.get('resultado_cierre')
-        observaciones = request.POST.get('observaciones_cierre', '')
+        resultado = request.POST.get("resultado_cierre")
+        observaciones = request.POST.get("observaciones_cierre", "")
 
         if not resultado:
-            messages.error(request, 'Debe seleccionar un resultado de cierre')
-            return redirect('carrera_academica:detalle_ca', pk=pk)
+            messages.error(request, "Debe seleccionar un resultado de cierre")
+            return redirect("carrera_academica:finalizar_ca", pk=pk)
 
-        # ✅ Mover parseo dentro del try-catch
-        try:
-            with transaction.atomic():
-                # Validaciones específicas por resultado
-                if resultado == 'aprobada_redesigna':
-                    nueva_fecha_vencimiento_str = request.POST.get(
-                        'nueva_fecha_vencimiento')
-                    if not nueva_fecha_vencimiento_str:
-                        raise ValidationError(
-                            'Debe especificar la nueva fecha de vencimiento para la redesignación')
+        nueva_fecha = None
+        if resultado == "aprobada_redesigna":
+            fecha_str = request.POST.get("nueva_fecha_vencimiento")
+            try:
+                nueva_fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
+            except (ValueError, TypeError):
+                messages.error(request, "Formato de fecha inválido")
+                return redirect("carrera_academica:finalizar_ca", pk=pk)
 
-                    # ✅ Parseo dentro del try para capturar ValueError
-                    from datetime import datetime
-                    try:
-                        nueva_fecha_vencimiento = datetime.strptime(
-                            nueva_fecha_vencimiento_str, '%Y-%m-%d').date()
-                    except (ValueError, TypeError):
-                        raise ValidationError(
-                            'Formato de fecha inválido. Use AAAA-MM-DD')
+        exito, mensaje = CAService.finalizar(
+            ca, resultado, observaciones, nueva_fecha, request.user)
 
-                # Actualizar CA actual
-                ca.estado = "FIN"
-                ca.fecha_finalizacion = timezone.now()
-                ca.resultado_cierre = resultado
-                ca.observaciones_cierre = observaciones
-                ca.save()
+        if not exito:
+            messages.error(request, mensaje)
+            return redirect("carrera_academica:finalizar_ca", pk=pk)
 
-                cargo_actual = ca.cargo
+        # Redesignación: redirigir a la nueva CA
+        if mensaje.startswith("redesignacion:"):
+            nueva_ca_pk = mensaje.split(":")[1]
+            messages.success(
+                request, f"CA finalizada y redesignada. Nuevo expediente #{nueva_ca_pk} creado.")
+            return redirect("carrera_academica:detalle_ca", pk=nueva_ca_pk)
 
-                if resultado == 'aprobada_redesigna':
-                    # Crear nuevo cargo
-                    nuevo_cargo = Cargo.objects.create(
-                        docente=cargo_actual.docente,
-                        asignatura=cargo_actual.asignatura,
-                        categoria=cargo_actual.categoria,
-                        dedicacion=cargo_actual.dedicacion,
-                        caracter=cargo_actual.caracter,
-                        cantidad_horas=cargo_actual.cantidad_horas,
-                        cantidad_comisiones=cargo_actual.cantidad_comisiones,
-                        fecha_inicio=timezone.now().date(),
-                        fecha_vencimiento=nueva_fecha_vencimiento,
-                        estado='activo',
-                        estado_continuidad='activo'
-                    )
+        messages.success(request, f"Expediente finalizado: {mensaje}")
+        return redirect("carrera_academica:detalle_ca", pk=pk)
 
-                    # Vincular continuidad de cargos
-                    exito, mensaje = cargo_actual.finalizar_con_continuidad(
-                        cargo_siguiente=nuevo_cargo,
-                        tipo_continuidad='mismo_cargo',
-                        observaciones=f'Redesignación por aprobación de CA. {observaciones}',
-                        usuario=request.user
-                    )
-
-                    if not exito:
-                        raise Exception(
-                            f"Error al vincular continuidad de cargos: {mensaje}")
-
-                    # Crear nueva CA y vincular con la anterior
-                    nueva_ca = CarreraAcademica.objects.create(
-                        cargo=nuevo_cargo,
-                        fecha_inicio=nuevo_cargo.fecha_inicio,
-                        fecha_vencimiento_original=nueva_fecha_vencimiento,
-                        fecha_vencimiento_actual=nueva_fecha_vencimiento,
-                        estado='ACT',
-                        ca_anterior=ca
-                    )
-
-                    messages.success(
-                        request,
-                        f"CA Aprobada y redesignada. Nuevo expediente #{nueva_ca.pk} creado con vencimiento {nueva_fecha_vencimiento.strftime('%d/%m/%Y')}."
-                    )
-
-                    # Redirigir a la nueva CA
-                    return redirect('carrera_academica:detalle_ca', pk=nueva_ca.pk)
-
-                elif resultado == 'aprobada_rechaza':
-                    # Convertir a interino
-                    cargo_actual.caracter = 'int'
-                    cargo_actual.save()
-                    messages.warning(
-                        request,
-                        f"CA Aprobada pero rechaza redesignación. Cargo convertido a Interino."
-                    )
-
-                elif resultado == 'renuncia':
-                    # Dar de baja el cargo
-                    exito, mensaje = cargo_actual.finalizar_sin_continuidad(
-                        razon='renuncia',
-                        observaciones=observaciones,
-                        usuario=request.user
-                    )
-                    messages.info(
-                        request,
-                        f"Docente {cargo_actual.docente} renunció. Cargo dado de baja."
-                    )
-
-                elif resultado == 'no_aprobada':
-                    # Convertir a interino
-                    cargo_actual.caracter = 'int'
-                    cargo_actual.save()
-                    messages.warning(
-                        request,
-                        f"CA No Aprobada. Cargo convertido a Interino."
-                    )
-
-                elif resultado == 'jubilacion':
-                    # Dar de baja cargo y marcar docente como jubilado
-                    exito, mensaje = cargo_actual.finalizar_sin_continuidad(
-                        razon='jubilacion',
-                        observaciones=observaciones,
-                        usuario=request.user
-                    )
-
-                    docente = cargo_actual.docente
-                    docente.jubilado = True
-                    docente.fecha_jubilacion = timezone.now().date()
-                    docente.save()
-
-                    messages.info(
-                        request,
-                        f"Docente {docente} jubilado. Cargo dado de baja."
-                    )
-
-                messages.success(
-                    request,
-                    f"Expediente de {ca.cargo.docente} finalizado como '{ca.get_resultado_cierre_display()}'."
-                )
-
-        except ValidationError as e:
-            messages.error(request, str(e))
-            return redirect('carrera_academica:finalizar_ca', pk=pk)
-
-        except Exception as e:
-            messages.error(request, f'Error al finalizar CA: {str(e)}')
-            return redirect('carrera_academica:finalizar_ca', pk=pk)
-
-        return redirect('carrera_academica:detalle_ca', pk=pk)
-
-    # GET - Mostrar formulario de cierre
     context = {
-        'ca': ca,
-        'resultado_choices': CarreraAcademica.RESULTADO_CIERRE_CHOICES,
+        "ca": ca,
+        "resultado_choices": CarreraAcademica.RESULTADO_CIERRE_CHOICES,
     }
-    return render(request, 'carrera_academica/finalizar_ca.html', context)
+    return render(request, "carrera_academica/finalizar_ca.html", context)
 
 
 @login_required
@@ -1104,167 +912,85 @@ def gestionar_formularios_anio_view(request, pk, anio):
 
     return render(request, 'carrera_academica/gestionar_formularios_anio.html', context)
 
+
 @login_required
 def archivar_ca_view(request, pk):
-    """
-    Archiva una CA sin workflow formal de cierre.
-    Para casos como jubilación cercana o renuncia condicional.
-    El cargo se gestiona cuando la CA efectivamente venza.
-    """
-    from django.db import transaction
-    
     ca = get_object_or_404(CarreraAcademica, pk=pk)
-    
-    # Solo se pueden archivar CAs activas o vencidas
-    if ca.estado not in ['ACT', 'VEN']:
-        messages.error(request, 'Solo se pueden archivar CAs activas o vencidas')
-        return redirect('carrera_academica:detalle_ca', pk=pk)
-    
+
     if request.method == "POST":
-        motivo = request.POST.get('motivo_archivo')
-        observaciones = request.POST.get('observaciones_archivo', '')
-        
+        motivo = request.POST.get("motivo_archivo")
+        observaciones = request.POST.get("observaciones_archivo", "")
+
         if not motivo:
-            messages.error(request, 'Debe seleccionar un motivo de archivo')
-            return redirect('carrera_academica:archivar_ca', pk=pk)
-        
-        try:
-            with transaction.atomic():
-                # Archivar CA
-                ca.estado = "ARCH"
-                ca.motivo_archivo = motivo
-                ca.observaciones_archivo = observaciones
-                ca.fecha_archivo = timezone.now()
-                ca.save()
-                
-                messages.success(
-                    request,
-                    f"CA archivada: {ca.get_motivo_archivo_display()}. "
-                    f"El cargo se gestionará cuando la CA venza el {ca.fecha_vencimiento_actual.strftime('%d/%m/%Y')}."
-                )
-        
-        except Exception as e:
-            messages.error(request, f'Error al archivar CA: {str(e)}')
-            return redirect('carrera_academica:archivar_ca', pk=pk)
-        
-        return redirect('carrera_academica:detalle_ca', pk=pk)
-    
-    # GET - Mostrar formulario
+            messages.error(request, "Debe seleccionar un motivo de archivo")
+            return redirect("carrera_academica:archivar_ca", pk=pk)
+
+        exito, mensaje = CAService.archivar(ca, motivo, observaciones)
+
+        if exito:
+            messages.success(request, mensaje)
+            return redirect("carrera_academica:detalle_ca", pk=pk)
+        else:
+            messages.error(request, mensaje)
+            return redirect("carrera_academica:archivar_ca", pk=pk)
+
     context = {
-        'ca': ca,
-        'motivo_choices': CarreraAcademica.MOTIVO_ARCHIVO_CHOICES,
+        "ca": ca,
+        "motivo_choices": CarreraAcademica.MOTIVO_ARCHIVO_CHOICES,
     }
-    return render(request, 'carrera_academica/archivar_ca.html', context)
+    return render(request, "carrera_academica/archivar_ca.html", context)
 
 
 @login_required
 def gestionar_ca_archivada_view(request, pk):
-    """
-    Gestiona una CA archivada: cambiar motivo o cerrarla definitivamente.
-    """
-    from django.db import transaction
-
     ca = get_object_or_404(CarreraAcademica, pk=pk)
 
-    # Solo CAs archivadas
-    if ca.estado != 'ARCH':
-        messages.error(request, 'Solo se pueden gestionar CAs archivadas')
-        return redirect('carrera_academica:detalle_ca', pk=pk)
-
     if request.method == "POST":
-        accion = request.POST.get('accion')
+        accion = request.POST.get("accion")
 
-        if accion == 'actualizar_motivo':
-            # Cambiar motivo de archivo
-            nuevo_motivo = request.POST.get('motivo_archivo')
+        if accion == "actualizar_motivo":
+            nuevo_motivo = request.POST.get("motivo_archivo")
             nuevas_observaciones = request.POST.get(
-                'observaciones_archivo', '')
+                "observaciones_archivo", "")
 
             if not nuevo_motivo:
-                messages.error(request, 'Debe seleccionar un motivo')
-                return redirect('carrera_academica:gestionar_ca_archivada', pk=pk)
+                messages.error(request, "Debe seleccionar un motivo")
+                return redirect("carrera_academica:gestionar_ca_archivada", pk=pk)
 
             ca.motivo_archivo = nuevo_motivo
             ca.observaciones_archivo = nuevas_observaciones
             ca.save()
-
             messages.success(
-                request,
-                f"Motivo de archivo actualizado a: {ca.get_motivo_archivo_display()}"
-            )
+                request, f"Motivo actualizado: {ca.get_motivo_archivo_display()}")
 
-        elif accion == 'cerrar_definitivamente':
-            # Convertir a finalizada con resultado
-            resultado = request.POST.get('resultado_cierre')
-            observaciones = request.POST.get('observaciones_cierre', '')
+        elif accion == "cerrar_definitivamente":
+            resultado = request.POST.get("resultado_cierre")
+            observaciones = request.POST.get("observaciones_cierre", "")
 
             if not resultado:
                 messages.error(
-                    request, 'Debe seleccionar un resultado de cierre')
-                return redirect('carrera_academica:gestionar_ca_archivada', pk=pk)
+                    request, "Debe seleccionar un resultado de cierre")
+                return redirect("carrera_academica:gestionar_ca_archivada", pk=pk)
 
-            try:
-                with transaction.atomic():
-                    # Cambiar de ARCH a FIN
-                    ca.estado = 'FIN'
-                    ca.resultado_cierre = resultado
-                    ca.observaciones_cierre = observaciones
-                    ca.fecha_finalizacion = timezone.now()
-                    ca.save()
+            exito, mensaje = CAService.cerrar_archivada(
+                ca, resultado, observaciones, request.user)
 
-                    cargo = ca.cargo
+            if exito:
+                messages.success(
+                    request, f"CA cerrada definitivamente: {mensaje}")
+            else:
+                messages.error(request, mensaje)
+                return redirect("carrera_academica:gestionar_ca_archivada", pk=pk)
 
-                    # Gestionar cargo según resultado
-                    if resultado == 'renuncia':
-                        exito, mensaje = cargo.finalizar_sin_continuidad(
-                            razon='renuncia',
-                            observaciones=f'Renuncia efectivizada. {observaciones}',
-                            usuario=request.user
-                        )
-                        messages.info(
-                            request, f"Cargo dado de baja por renuncia")
+        return redirect("carrera_academica:detalle_ca", pk=pk)
 
-                    elif resultado == 'jubilacion':
-                        exito, mensaje = cargo.finalizar_sin_continuidad(
-                            razon='jubilacion',
-                            observaciones=f'Jubilación efectivizada. {observaciones}',
-                            usuario=request.user
-                        )
-
-                        docente = cargo.docente
-                        docente.jubilado = True
-                        docente.fecha_jubilacion = timezone.now().date()
-                        docente.save()
-
-                        messages.info(
-                            request, f"Docente jubilado y cargo dado de baja")
-
-                    elif resultado == 'no_aprobada':
-                        # Solo convertir a interino
-                        cargo.caracter = 'int'
-                        cargo.save()
-                        messages.warning(
-                            request, "Cargo convertido a Interino")
-
-                    messages.success(
-                        request,
-                        f"CA cerrada definitivamente: {ca.get_resultado_cierre_display()}"
-                    )
-
-            except Exception as e:
-                messages.error(request, f'Error al cerrar CA: {str(e)}')
-                return redirect('carrera_academica:gestionar_ca_archivada', pk=pk)
-
-        return redirect('carrera_academica:detalle_ca', pk=pk)
-
-    # GET - Mostrar formulario
     context = {
-        'ca': ca,
-        'motivo_choices': CarreraAcademica.MOTIVO_ARCHIVO_CHOICES,
-        'resultado_choices': [
-            ('renuncia', 'Renuncia Efectivizada'),
-            ('jubilacion', 'Jubilación Efectivizada'),
-            ('no_aprobada', 'CA Vencida sin Aprobación'),
+        "ca": ca,
+        "motivo_choices": CarreraAcademica.MOTIVO_ARCHIVO_CHOICES,
+        "resultado_choices": [
+            ("renuncia", "Renuncia Efectivizada"),
+            ("jubilacion", "Jubilación Efectivizada"),
+            ("no_aprobada", "CA Vencida sin Aprobación"),
         ],
     }
-    return render(request, 'carrera_academica/gestionar_ca_archivada.html', context)
+    return render(request, "carrera_academica/gestionar_ca_archivada.html", context)
