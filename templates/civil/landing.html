@@ -1,0 +1,271 @@
+{% extends 'equivalencias/base.html' %}
+{% load static %}
+
+{% block title %}Ingeniería Civil — UTN FRLP{% endblock %}
+
+{% block extra_css %}
+<style>
+  .hero-civil {
+    background: linear-gradient(135deg, #0C447C 0%, #185FA5 60%, #378ADD 100%);
+    color: #fff;
+    padding: 5rem 2rem 4rem;
+    text-align: center;
+  }
+  .hero-civil .badge-utn {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 20px;
+    padding: 4px 18px;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 1.2rem;
+  }
+  .hero-civil h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 500;
+  }
+  .hero-civil p.lead {
+    opacity: .85;
+    max-width: 580px;
+    margin: 1rem auto 2rem;
+  }
+  .stats-bar .stat-num {
+    font-size: 1.8rem;
+    font-weight: 500;
+    color: #185FA5;
+  }
+  .stats-bar .stat-lbl {
+    font-size: 12px;
+    color: #6c757d;
+  }
+  .stats-bar .col {
+    border-right: 1px solid #dee2e6;
+  }
+  .stats-bar .col:last-child {
+    border-right: none;
+  }
+  .card-perfil .card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: #E6F1FB;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+  .plan-year h5 {
+    font-size: 13px;
+    font-weight: 500;
+    color: #185FA5;
+  }
+  .plan-year ul li {
+    font-size: 13px;
+    color: #6c757d;
+    padding: 4px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .plan-year ul li:last-child {
+    border-bottom: none;
+  }
+  .contact-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  .contact-item .ci-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    background: #E6F1FB;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .contact-item .ci-label {
+    font-size: 11px;
+    color: #6c757d;
+  }
+  .contact-item .ci-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: #212529;
+  }
+  .link-chip {
+    display: inline-block;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: #185FA5;
+    text-decoration: none;
+    transition: background .2s;
+  }
+  .link-chip:hover {
+    background: #e6f1fb;
+    color: #185FA5;
+  }
+</style>
+{% endblock %}
+
+{% block full_content %}
+
+<!-- Hero -->
+<section class="hero-civil">
+  <span class="badge-utn">UTN · Facultad Regional La Plata</span>
+  <h1>Ingeniería Civil</h1>
+  <p class="lead">Diseñá el futuro. Construí puentes, ciudades e infraestructura que transforma la vida de las personas.</p>
+  <div class="d-flex gap-3 justify-content-center flex-wrap">
+    <a href="https://ingreso.frlp.utn.edu.ar" class="btn btn-light fw-500" target="_blank">Inscribirse</a>
+    <a href="https://www.frlp.utn.edu.ar/carrera-civil" class="btn btn-outline-light" target="_blank">Ver carrera oficial</a>
+  </div>
+</section>
+
+<!-- Stats -->
+<div class="stats-bar border-bottom bg-white py-3">
+  <div class="row text-center g-0">
+    <div class="col py-2">
+      <div class="stat-num">5</div>
+      <div class="stat-lbl">años de duración</div>
+    </div>
+    <div class="col py-2">
+      <div class="stat-num">Grado</div>
+      <div class="stat-lbl">título universitario</div>
+    </div>
+    <div class="col py-2">
+      <div class="stat-num">1853</div>
+      <div class="stat-lbl">plan de estudios</div>
+    </div>
+    <div class="col py-2">
+      <div class="stat-num">UTN</div>
+      <div class="stat-lbl">universidad pública</div>
+    </div>
+  </div>
+</div>
+
+<!-- ¿Qué es? -->
+<section class="py-5 border-bottom">
+  <div class="container">
+    <h2 class="h4 fw-500 mb-1">¿Qué es la Ingeniería Civil?</h2>
+    <p class="text-muted small mb-3">Una carrera con impacto real en la sociedad</p>
+    <p class="text-secondary" style="line-height:1.8">
+      La Ingeniería Civil resuelve problemas básicos de la sociedad relacionados con vivienda, transporte,
+      distribución de agua y calidad del medio ambiente. Se ocupa del diseño de obras que permiten modificar
+      y aprovechar la naturaleza para favorecer el desarrollo social: edificios, puentes, carreteras, puertos,
+      sistemas de riego, desagües y mucho más.
+    </p>
+  </div>
+</section>
+
+<!-- Perfil profesional -->
+<section class="py-5 border-bottom">
+  <div class="container">
+    <h2 class="h4 fw-500 mb-1">Perfil profesional</h2>
+    <p class="text-muted small mb-4">Lo que vas a poder hacer al graduarte</p>
+    <div class="row g-3">
+      {% for item in perfil_items %}
+      <div class="col-sm-6 col-lg-3">
+        <div class="card h-100 border card-perfil p-3">
+          <div class="card-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2">{{ item.icon_path|safe }}</svg>
+          </div>
+          <h5 class="fw-500" style="font-size:14px">{{ item.titulo }}</h5>
+          <p class="text-muted" style="font-size:13px;line-height:1.6">{{ item.descripcion }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Plan de estudios -->
+<section class="py-5 border-bottom">
+  <div class="container">
+    <h2 class="h4 fw-500 mb-1">Plan de estudios — 5 años</h2>
+    <p class="text-muted small mb-4">Ordenanza 1853 · Plan 2023</p>
+    <div class="row g-3">
+      {% for anio in plan_estudios %}
+      <div class="col-sm-6 col-lg-3">
+        <div class="plan-year bg-light border rounded p-3 h-100">
+          <h5>{{ anio.label }}</h5>
+          <ul class="list-unstyled mt-2 mb-0">
+            {% for materia in anio.materias %}
+            <li>{{ materia }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="mt-4 d-flex flex-wrap gap-2">
+      <a href="http://www.frlp.utn.edu.ar/sites/default/files/Civil%20Ord%201853_2025.pdf" class="link-chip" target="_blank">Plan 2023 (PDF)</a>
+      <a href="https://www.frlp.utn.edu.ar/plan-estudios-civil" class="link-chip" target="_blank">Plan 1995</a>
+      <a href="https://www.frlp.utn.edu.ar/autoridades-departamento-civil" class="link-chip" target="_blank">Autoridades</a>
+      <a href="https://www.frlp.utn.edu.ar/investigacion-civil" class="link-chip" target="_blank">Investigación</a>
+    </div>
+  </div>
+</section>
+
+<!-- Contacto -->
+<section class="py-5">
+  <div class="container">
+    <h2 class="h4 fw-500 mb-1">Departamento de Ingeniería Civil</h2>
+    <p class="text-muted small mb-4">El departamento vela por la calidad educativa de la especialidad</p>
+    <div class="row g-3">
+      <div class="col-sm-6 col-lg-3">
+        <div class="contact-item">
+          <div class="ci-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 11.5 19.79 19.79 0 0 1 1.62 2.84 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.56a16 16 0 0 0 6 6l1.06-1.06a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </div>
+          <div>
+            <div class="ci-label">Teléfono</div>
+            <div class="ci-value">412-4331</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="contact-item">
+          <div class="ci-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </div>
+          <div>
+            <div class="ci-label">Email</div>
+            <div class="ci-value">dicivil@frlp.utn.edu.ar</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="contact-item">
+          <div class="ci-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div>
+            <div class="ci-label">Atención</div>
+            <div class="ci-value">9:00 — 20:00</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="contact-item">
+          <div class="ci-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 0 1-2.827 0l-4.244-4.243a8 8 0 1 1 11.314 0z"/><circle cx="12" cy="11" r="3"/></svg>
+          </div>
+          <div>
+            <div class="ci-label">Ubicación</div>
+            <div class="ci-value">UTN FRLP · La Plata</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

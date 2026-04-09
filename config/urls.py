@@ -19,12 +19,14 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
+from config.views import landing_civil
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", include("equivalencias.urls")),
+    path("equivalencia/", include("equivalencias.urls")),
     path("carrera/", include("carrera_academica.urls")),
     path("planta/", include("planta_docente.urls")),
+    path("", landing_civil, name="landing")
 ]
 
 # Debug toolbar (solo en desarrollo)
