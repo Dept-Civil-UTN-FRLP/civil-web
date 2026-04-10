@@ -79,7 +79,6 @@ class Asignatura(models.Model):
         ('area', 'Área'),
     ]
 
-
     nombre = models.CharField(max_length=50)
     tipo = models.CharField(
         choices=TIPO_CHOICES,
