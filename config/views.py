@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from equivalencias.models import AsignaturaParaEquivalencia, SolicitudEquivalencia
 from planta_docente.models import Asignatura
+from itertools import groupby
 
 
 def landing_civil(request):
@@ -60,16 +61,35 @@ def landing_civil(request):
         },
     ]
 
-    plan_estudios = [
-        {"label": "1° año", "materias": ["Análisis Matemático I", "Álgebra y Geometría Analítica",
-                                         "Física I", "Química General", "Sistemas de Representación"]},
-        {"label": "2° año", "materias": [
-            "Análisis Matemático II", "Física II", "Mecánica de los Fluidos", "Estabilidad I", "Topografía"]},
-        {"label": "3° año", "materias": ["Mecánica de Suelos", "Estabilidad II",
-                                         "Hormigón Armado I", "Ingeniería Sanitaria", "Vías de Comunicación"]},
-        {"label": "4° y 5° año", "materias": ["Hormigón Armado II", "Estructuras Metálicas",
-                                              "Hidráulica Aplicada", "Práctica Supervisada", "Proyecto Final Integrador"]},
-    ]
+    asignaturas_plan = Asignatura.objects.filter(
+        especialidad='civil',
+        obligatoria=True,
+    ).order_by('nivel', 'nombre')
+
+    NIVEL_LABELS = {
+        'i': '1° año', 'ii': '2° año', 'iii': '3° año',
+        'iv': '4° año', 'v': '5° año', 'vi': '6° año', '-': 'Electiva',
+    }
+
+    plan_estudios = []
+    for nivel, materias in groupby(asignaturas_plan, key=lambda a: a.nivel):
+        plan_estudios.append({
+            "label": NIVEL_LABELS.get(nivel, f"Nivel {nivel.upper()}"),
+            "materias": [a.nombre.title() for a in materias],
+            "electiva": False,
+        })
+
+    electivas = list(
+        Asignatura.objects.filter(especialidad='civil', obligatoria=False)
+        .order_by('nombre')
+        .values_list('nombre', flat=True)
+    )
+
+    if electivas:
+        plan_estudios.append({
+            "label": "Electivas",
+            "materias": [m.title() for m in electivas],
+        })
 
     return render(request, "civil/landing.html", {
         "asignaturas": asignaturas,

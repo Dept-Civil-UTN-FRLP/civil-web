@@ -262,18 +262,18 @@
     <h2 class="h4 fw-500 mb-1">Plan de estudios — 5 años</h2>
     <p class="text-muted small mb-4">Ordenanza 1853 · Plan 2023</p>
     <div class="row g-3">
-      {% for anio in plan_estudios %}
-      <div class="col-sm-6 col-lg-3">
-        <div class="plan-year bg-light border rounded p-3 h-100">
-          <h5>{{ anio.label }}</h5>
-          <ul class="list-unstyled mt-2 mb-0">
-            {% for materia in anio.materias %}
-            <li>{{ materia }}</li>
-            {% endfor %}
-          </ul>
-        </div>
+    {% for anio in plan_estudios %}
+    <div class="col-sm-6 col-lg-3">
+      <div class="plan-year bg-light border rounded p-3 h-100">
+        <h5>{{ anio.label }}</h5>
+        <ul class="list-unstyled mt-2 mb-0">
+          {% for materia in anio.materias %}
+          <li>{{ materia }}</li>
+          {% endfor %}
+        </ul>
       </div>
-      {% endfor %}
+    </div>
+    {% endfor %}
     </div>
     <div class="mt-4 d-flex flex-wrap gap-2">
       <a href="http://www.frlp.utn.edu.ar/sites/default/files/Civil%20Ord%201853_2025.pdf" class="link-chip" target="_blank">Plan 2023 (PDF)</a>
