@@ -73,8 +73,20 @@ class Asignatura(models.Model):
         ("vi", "VI"),
         ("-", "-"),
     ]
+    TIPO_CHOICES = [
+        ('asignatura', 'Asignatura'),
+        ('laboratorio', 'Laboratorio'),
+        ('area', 'Área'),
+    ]
+
 
     nombre = models.CharField(max_length=50)
+    tipo = models.CharField(
+        choices=TIPO_CHOICES,
+        max_length=11,
+        default='asignatura',
+        verbose_name="Tipo"
+    )
     nivel = models.CharField(choices=NIVEL_CHOICES, max_length=3)
     puntaje = models.IntegerField(default=0)
     departamento = models.CharField(choices=DEPTO_CHOICES, max_length=11)
