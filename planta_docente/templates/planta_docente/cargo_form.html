@@ -74,7 +74,7 @@
                         </div>
                     </div>
 
-                    <!-- Dedicación -->
+                    <!-- Dedicación y Cantidad -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="{{ form.dedicacion.id_for_label }}" class="form-label">
@@ -88,6 +88,22 @@
                             </div>
                             {% endif %}
                         </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.cantidad_dedicaciones.id_for_label }}" class="form-label">
+                                {{ form.cantidad_dedicaciones.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.cantidad_dedicaciones }}
+                            {% if form.cantidad_dedicaciones.errors %}
+                            <div class="text-danger small mt-1">
+                                <i class="bi bi-exclamation-circle"></i> {{ form.cantidad_dedicaciones.errors.0 }}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted" id="help-dedicaciones">
+                                Unidades disponibles: <span id="unidades-disponibles">—</span> / 5
+                            </small>
+                        </div>
+                    </div>
 
                         <!-- Cantidad de Horas -->
                         <div class="col-md-6 mb-3">
@@ -212,6 +228,40 @@ document.addEventListener('DOMContentLoaded', function() {
     const fechaVenc = document.getElementById('{{ form.fecha_vencimiento.id_for_label }}');
     const vencAsterisk = document.getElementById('venc-asterisk');
     const vencHelp = document.getElementById('venc-help');
+    // Unidades de dedicación
+    const dedicacionSelect = document.getElementById('{{ form.dedicacion.id_for_label }}');
+    const cantidadDedicaciones = document.getElementById('{{ form.cantidad_dedicaciones.id_for_label }}');
+    const unidadesSpan = document.getElementById('unidades-disponibles');
+    const docenteSelect = document.getElementById('{{ form.docente.id_for_label }}');
+    
+    const UNIDADES = { 'ms': 0.5, 'ds': 1, 'se': 2, 'de': 4 };
+    const SIN_UNIDADES = ['adh', 'ads'];
+    
+    function actualizarUnidades() {
+        const dedicacion = dedicacionSelect.value;
+        const cantidad = parseFloat(cantidadDedicaciones.value) || 1;
+        const caracter = tipoCargo.value;
+    
+        if (SIN_UNIDADES.includes(caracter) || !dedicacion) {
+            unidadesSpan.textContent = '—';
+            return;
+        }
+    
+        const unidadesCargo = (UNIDADES[dedicacion] || 0) * cantidad;
+        unidadesSpan.textContent = unidadesCargo;
+    
+        if (unidadesCargo > 5) {
+            unidadesSpan.classList.add('text-danger');
+            unidadesSpan.classList.remove('text-success');
+        } else {
+            unidadesSpan.classList.add('text-success');
+            unidadesSpan.classList.remove('text-danger');
+        }
+    }
+    
+    dedicacionSelect.addEventListener('change', actualizarUnidades);
+    cantidadDedicaciones.addEventListener('input', actualizarUnidades);
+    tipoCargo.addEventListener('change', actualizarUnidades);
     
     // Función para auto-calcular fecha de vencimiento
     function calcularVencimiento() {
