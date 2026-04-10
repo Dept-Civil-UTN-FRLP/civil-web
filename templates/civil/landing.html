@@ -6,7 +6,9 @@
 {% block extra_css %}
 <style>
   .hero-civil {
-    background: linear-gradient(135deg, #0C447C 0%, #185FA5 60%, #378ADD 100%);
+    background:
+      linear-gradient(135deg, rgba(27, 94, 32, 0.92) 0%, rgba(46, 125, 50, 0.87) 50%, rgba(56, 142, 60, 0.82) 100%),
+      url('https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1400&q=80') center/cover no-repeat;
     color: #fff;
     padding: 5rem 2rem 4rem;
     text-align: center;
@@ -24,23 +26,24 @@
   }
   .hero-civil h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 500; }
   .hero-civil p.lead { opacity: .85; max-width: 580px; margin: 1rem auto 2rem; }
-  .stats-bar .stat-num { font-size: 1.8rem; font-weight: 500; color: #185FA5; }
+  .stats-bar .stat-num { font-size: 1.8rem; font-weight: 500; color: #2E7D32; }
   .stats-bar .stat-lbl { font-size: 12px; color: #6c757d; }
   .stats-bar .col { border-right: 1px solid #dee2e6; }
   .stats-bar .col:last-child { border-right: none; }
   .step-number {
     width: 36px; height: 36px; border-radius: 50%;
-    background: #185FA5; color: #fff;
+    background: #2E7D32; color: #fff;
     display: flex; align-items: center; justify-content: center;
     font-weight: 500; font-size: 15px; flex-shrink: 0;
   }
   .card-perfil .card-icon {
     width: 40px; height: 40px; border-radius: 8px;
-    background: #E6F1FB;
+    background: #E8F5E9;
     display: flex; align-items: center; justify-content: center;
     margin-bottom: 12px;
   }
-  .plan-year h5 { font-size: 13px; font-weight: 500; color: #185FA5; }
+  .card-perfil .card-icon svg { stroke: #2E7D32; }
+  .plan-year h5 { font-size: 13px; font-weight: 500; color: #2E7D32; }
   .plan-year ul li {
     font-size: 13px; color: #6c757d;
     padding: 4px 0; border-bottom: 1px solid #f0f0f0;
@@ -53,21 +56,26 @@
   }
   .contact-item .ci-icon {
     width: 36px; height: 36px; border-radius: 6px;
-    background: #E6F1FB;
+    background: #E8F5E9;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
+  .contact-item .ci-icon svg { stroke: #2E7D32; }
   .contact-item .ci-label { font-size: 11px; color: #6c757d; }
   .contact-item .ci-value { font-size: 14px; font-weight: 500; color: #212529; }
   .link-chip {
     display: inline-block; background: #f8f9fa;
     border: 1px solid #dee2e6; border-radius: 6px;
-    padding: 8px 14px; font-size: 13px; color: #185FA5;
+    padding: 8px 14px; font-size: 13px; color: #2E7D32;
     text-decoration: none; transition: background .2s;
   }
-  .link-chip:hover { background: #e6f1fb; color: #185FA5; }
+  .link-chip:hover { background: #E8F5E9; color: #1B5E20; }
   .estado-badge-cerrada { background: #d1e7dd; color: #0a3622; }
   .estado-badge-proceso { background: #fff3cd; color: #664d03; }
   .detalle-pc { background: #fff3cd; border-left: 3px solid #ffc107; }
+  .btn-primary { background-color: #2E7D32 !important; border-color: #2E7D32 !important; }
+  .btn-primary:hover { background-color: #1B5E20 !important; border-color: #1B5E20 !important; }
+  .text-primary { color: #2E7D32 !important; }
+  .btn-outline-light:hover { color: #2E7D32 !important; }
 </style>
 {% endblock %}
 
