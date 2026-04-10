@@ -1530,9 +1530,6 @@ class Cargo(models.Model):
                 code="invalid_dedication_for_adhonorem",
             )
 
-        # Validación 5: Validar horas según dedicación
-        horas_esperadas = {"ms": 5, "ds": 10, "se": 20, "de": 40}
-
         # Validación: unidades de dedicación no pueden superar 5
         if self.caracter not in self.CARACTERES_SIN_UNIDADES and self.estado == 'activo':
             unidades_cargo_actual = self.UNIDADES_DEDICACION.get(self.dedicacion, 0)*self.cantidad_dedicaciones
