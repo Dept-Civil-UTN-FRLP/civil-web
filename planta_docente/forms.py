@@ -17,6 +17,7 @@ class CargoForm(forms.ModelForm):
             'caracter',
             'categoria',
             'dedicacion',
+            'cantidad_dedicaciones',
             'cantidad_horas',
             'asignatura',
             'cantidad_comisiones',
@@ -40,6 +41,12 @@ class CargoForm(forms.ModelForm):
             'dedicacion': forms.Select(attrs={
                 'class': 'form-select',
                 'required': True
+            }),
+            'cantidad_dedicaciones': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '1',
+                'max': '5',
+                'value': 1,
             }),
             'cantidad_horas': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -94,8 +101,9 @@ class CargoForm(forms.ModelForm):
         self.fields['caracter'].label = 'Carácter del Cargo'
         self.fields['categoria'].label = 'Categoría'
         self.fields['dedicacion'].label = 'Dedicación'
-        self.fields['cantidad_horas'].label = 'Cantidad de Horas (opcional)'
-        self.fields['asignatura'].label = 'Asignatura (opcional)'
+        self.fields['cantidad_dedicaciones'].label = 'Cantidad'
+        self.fields['cantidad_horas'].label = 'Cantidad de Horas'
+        self.fields['asignatura'].label = 'Asignatura'
         self.fields['fecha_inicio'].label = 'Fecha de Inicio'
         self.fields['fecha_vencimiento'].label = 'Fecha de Vencimiento'
         self.fields['estado'].label = 'Estado'

@@ -303,6 +303,32 @@
   </div>
 </section>
 
+{% if laboratorios %}
+<section class="py-5 border-bottom">
+  <div class="container">
+    <h2 class="h4 fw-500 mb-1">Centros, Laboratorios y Grupos</h2>
+    <p class="text-muted small mb-4">Espacios de investigación y trabajo del departamento</p>
+    <div class="row g-3">
+      {% for lab in laboratorios %}
+      <div class="col-sm-6 col-lg-3">
+        <div class="plan-year bg-light border rounded p-3 h-100">
+          <span class="badge mb-2" style="background:#E8F5E9;color:#2E7D32;font-size:11px">
+            {{ lab.get_tipo_display }}
+          </span>
+          <h5>{{ lab.nombre|title }}</h5>
+          {% if lab.programa %}
+          <a href="{{ lab.programa.url }}" target="_blank" class="link-chip mt-2 d-inline-block" style="font-size:12px">
+            <i class="bi bi-file-earmark-pdf"></i> Programa
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
 <!-- Contacto -->
 <section class="py-5">
   <div class="container">

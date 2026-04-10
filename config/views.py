@@ -64,6 +64,7 @@ def landing_civil(request):
     asignaturas_plan = Asignatura.objects.filter(
         especialidad='civil',
         obligatoria=True,
+        tipo='asignatura',
     ).order_by('nivel', 'nombre')
 
     NIVEL_LABELS = {
@@ -79,7 +80,15 @@ def landing_civil(request):
         })
 
     electivas = Asignatura.objects.filter(
-        especialidad='civil', obligatoria=False
+        especialidad='civil',
+        obligatoria=False,
+        tipo='asignatura',
+    ).order_by('nombre')
+    
+    # Laboratorios/Áreas
+    laboratorios = Asignatura.objects.filter(
+        especialidad='civil',
+        tipo__in=['laboratorio', 'grupo', 'centro'],
     ).order_by('nombre')
 
     if electivas.exists():
@@ -95,4 +104,5 @@ def landing_civil(request):
         "error_dni": error_dni,
         "perfil_items": perfil_items,
         "plan_estudios": plan_estudios,
+        "laboratorios": laboratorios,
     })

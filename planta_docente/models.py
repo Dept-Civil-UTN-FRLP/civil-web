@@ -73,8 +73,21 @@ class Asignatura(models.Model):
         ("vi", "VI"),
         ("-", "-"),
     ]
+    TIPO_CHOICES = [
+        ('asignatura', 'Asignatura'),
+        ('laboratorio', 'Laboratorio'),
+        ('grupo', 'Grupo'),
+        ('centro', 'Centro'),
+        ('area', 'Área'),
+    ]
 
     nombre = models.CharField(max_length=50)
+    tipo = models.CharField(
+        choices=TIPO_CHOICES,
+        max_length=11,
+        default='asignatura',
+        verbose_name="Tipo"
+    )
     nivel = models.CharField(choices=NIVEL_CHOICES, max_length=3)
     puntaje = models.IntegerField(default=0)
     departamento = models.CharField(choices=DEPTO_CHOICES, max_length=11)
@@ -377,6 +390,16 @@ class Cargo(models.Model):
         ("se", "Semi-Exclusiva"),
         ("de", "Exclusiva"),
     ]
+    UNIDADES_DEDICACION = {
+        'ms': 0.5,
+        'ds': 1,
+        'se': 2,
+        'de': 4,
+    }
+    CARACTERES_SIN_UNIDADES = ['adh', 'ads']
+
+    MAX_UNIDADES = 5
+
     ESTADO_CHOICES = [("activo", "Activo"), ("licencia", "Licencia"), ("baja", "Baja")]
     
     CONTINUIDAD_CHOICES = [
@@ -607,6 +630,11 @@ class Cargo(models.Model):
     es_responsable_planificacion = models.BooleanField(
         default=False,
         help_text="Marca este cargo como responsable de recibir notificaciones de planificación"
+    )
+    cantidad_dedicaciones = models.PositiveIntegerField(
+        default=1,
+        verbose_name="Cantidad de Dedicaciones",
+        help_text="Cantidad de dedicaciones de este tipo. Ej: 2 DS = 2 unidades"
     )
     objects = CargoManager()
 
@@ -1421,6 +1449,24 @@ class Cargo(models.Model):
             'fecha_inicio': fecha_inicio_real,
             'total_dias': total_dias
         }
+        
+    def get_unidades_dedicacion(self):
+        """
+        Retorna las unidades de dedicación ocupadas y disponibles del docente.
+        """
+        cargos = Cargo.objects.filter(
+            docente=self.docente,
+            estado='activo',
+        ).exclude(pk=self.pk).exclude(caracter__in=self.CARACTERES_SIN_UNIDADES)
+
+        ocupadas = sum(self.UNIDADES_DEDICACION.get(c.dedicacion, 0) * c.cantidad_cargos for c in cargos)
+        ocupadas += self.UNIDADES_DEDICACION.get(self.dedicacion, 0) * self.cantidad_cargos
+
+        return {
+            'ocupadas': ocupadas,
+            'disponibles': self.MAX_UNIDADES - ocupadas,
+            'maximo': self.MAX_UNIDADES,
+        }
     
     def get_antiguedad_display(self):
         """
@@ -1500,17 +1546,26 @@ class Cargo(models.Model):
                     code="invalid_hours_for_dedication",
                 )
 
-        # Validación 6: No puede haber cargos solapados para el mismo docente en la misma asignatura
-        #if self.estado == "activo":
-        #    cargos_solapados = Cargo.objects.filter(
-        #        docente=self.docente, asignatura=self.asignatura, estado="activo"
-        #    ).exclude(pk=self.pk)
-        #
-        #    if cargos_solapados.exists():
-        #        errors["asignatura"] = ValidationError(
-        #            f"El docente ya tiene un cargo activo en {self.asignatura.nombre}.",
-        #            code="duplicate_active_cargo",
-        #        )
+        # Validación: unidades de dedicación no pueden superar 5
+        if self.caracter not in self.CARACTERES_SIN_UNIDADES and self.estado == 'activo':
+            unidades_cargo_actual = self.UNIDADES_DEDICACION.get(self.dedicacion, 0)*self.cantidad_dedicaciones
+
+            cargos_activos = Cargo.objects.filter(
+                docente=self.docente,
+                estado='activo',
+            ).exclude(pk=self.pk).exclude(caracter__in=self.CARACTERES_SIN_UNIDADES)
+
+            unidades_ocupadas = sum(
+                self.UNIDADES_DEDICACION.get(c.dedicacion, 0)*c.cantidad_dedicaciones  for c in cargos_activos
+            )
+
+            if unidades_ocupadas + unidades_cargo_actual > self.MAX_UNIDADES:
+                errors['dedicacion'] = ValidationError(
+                    f"El docente ya tiene {unidades_ocupadas} unidades de dedicación ocupadas. "
+                    f"Agregar {self.get_dedicacion_display()} ({unidades_cargo_actual} unidades) "
+                    f"superaría el máximo de {self.MAX_UNIDADES}.",
+                    code='max_unidades_dedicacion'
+                )
 
         if errors:
             raise ValidationError(errors)
