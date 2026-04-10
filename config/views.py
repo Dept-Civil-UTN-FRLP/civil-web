@@ -68,27 +68,24 @@ def landing_civil(request):
 
     NIVEL_LABELS = {
         'i': '1° año', 'ii': '2° año', 'iii': '3° año',
-        'iv': '4° año', 'v': '5° año', 'vi': '6° año', '-': 'Electiva',
+        'iv': '4° año', 'v': '5° año', 'vi': '6° año', '-': 'Sin nivel',
     }
-
+    
     plan_estudios = []
-    for nivel, materias in groupby(asignaturas_plan, key=lambda a: a.nivel):
+    for nivel, materias_grupo in groupby(asignaturas_plan, key=lambda a: a.nivel):
         plan_estudios.append({
             "label": NIVEL_LABELS.get(nivel, f"Nivel {nivel.upper()}"),
-            "materias": [a.nombre.title() for a in materias],
-            "electiva": False,
+            "materias": [{"nombre": a.nombre.title(), "programa": a.programa} for a in materias_grupo],
         })
 
-    electivas = list(
-        Asignatura.objects.filter(especialidad='civil', obligatoria=False)
-        .order_by('nombre')
-        .values_list('nombre', flat=True)
-    )
+    electivas = Asignatura.objects.filter(
+        especialidad='civil', obligatoria=False
+    ).order_by('nombre')
 
-    if electivas:
+    if electivas.exists():
         plan_estudios.append({
             "label": "Electivas",
-            "materias": [m.title() for m in electivas],
+            "materias": [{"nombre": a.nombre.title(), "programa": a.programa} for a in electivas],
         })
 
     return render(request, "civil/landing.html", {

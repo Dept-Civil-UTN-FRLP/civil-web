@@ -268,7 +268,15 @@
         <h5>{{ anio.label }}</h5>
         <ul class="list-unstyled mt-2 mb-0">
           {% for materia in anio.materias %}
-          <li>{{ materia }}</li>
+          <li class="d-flex justify-content-between align-items-center">
+            <span>{{ materia.nombre }}</span>
+            {% if materia.programa %}
+              <a href="{{ materia.programa.url }}" target="_blank" title="Descargar programa"
+                 style="font-size:11px; color:#185FA5; text-decoration:none; flex-shrink:0; margin-left:6px">
+                <i class="bi bi-file-earmark-pdf"></i>
+              </a>
+            {% endif %}
+          </li>
           {% endfor %}
         </ul>
       </div>
