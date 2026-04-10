@@ -8,7 +8,7 @@
   .hero-civil {
     background:
       linear-gradient(135deg, rgba(27, 94, 32, 0.92) 0%, rgba(46, 125, 50, 0.87) 50%, rgba(56, 142, 60, 0.82) 100%),
-      url('https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1400&q=80') center/cover no-repeat;
+      url({% static 'images\landing\banner.jpeg' %}) center/cover no-repeat;
     color: #fff;
     padding: 5rem 2rem 4rem;
     text-align: center;
@@ -76,6 +76,9 @@
   .btn-primary:hover { background-color: #1B5E20 !important; border-color: #1B5E20 !important; }
   .text-primary { color: #2E7D32 !important; }
   .btn-outline-light:hover { color: #2E7D32 !important; }
+  .stats-bar { background: rgba(255,255,255,0.95) !important; }
+  section { background: rgba(255,255,255,0.93); }
+  section:last-of-type { background: rgba(255,255,255,0.95); }
 </style>
 {% endblock %}
 
@@ -96,7 +99,7 @@
 <div class="stats-bar border-bottom bg-white py-3">
   <div class="row text-center g-0">
     <div class="col py-2">
-      <div class="stat-num">5</div>
+      <div class="stat-num">6</div>
       <div class="stat-lbl">años de duración</div>
     </div>
     <div class="col py-2">
