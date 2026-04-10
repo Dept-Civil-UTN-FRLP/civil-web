@@ -1,7 +1,42 @@
 from django.shortcuts import render
+from equivalencias.models import AsignaturaParaEquivalencia, SolicitudEquivalencia
+from planta_docente.models import Asignatura
 
 
 def landing_civil(request):
+    # Asignaturas disponibles para equivalencia
+    asignaturas = AsignaturaParaEquivalencia.objects.select_related(
+        'asignatura',
+        'docente_responsable',
+    ).order_by('asignatura__nivel', 'asignatura__nombre')
+
+    # Consulta por DNI
+    solicitudes = None
+    dni_buscado = None
+    error_dni = None
+
+    if request.method == 'POST':
+        dni = request.POST.get('dni', '').strip()
+        if dni:
+            dni_buscado = dni
+            from equivalencias.models import Estudiante
+            try:
+                estudiante = Estudiante.objects.get(dni_pasaporte=dni)
+                solicitudes = SolicitudEquivalencia.objects.filter(
+                    id_estudiante=estudiante
+                ).prefetch_related(
+                    'detallesolicitud_set__id_asignatura__asignatura',
+                    'detallesolicitud_set__id_asignatura__docente_responsable__correos',
+                ).order_by('-fecha_inicio')
+
+                if not solicitudes.exists():
+                    error_dni = "No se encontraron solicitudes para ese DNI."
+
+            except Estudiante.DoesNotExist:
+                error_dni = "No se encontraron solicitudes para ese DNI."
+        else:
+            error_dni = "Ingresá tu DNI para consultar."
+
     perfil_items = [
         {
             "titulo": "Infraestructura urbana",
@@ -37,6 +72,10 @@ def landing_civil(request):
     ]
 
     return render(request, "civil/landing.html", {
+        "asignaturas": asignaturas,
+        "solicitudes": solicitudes,
+        "dni_buscado": dni_buscado,
+        "error_dni": error_dni,
         "perfil_items": perfil_items,
         "plan_estudios": plan_estudios,
     })

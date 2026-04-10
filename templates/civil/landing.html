@@ -22,97 +22,52 @@
     text-transform: uppercase;
     margin-bottom: 1.2rem;
   }
-  .hero-civil h1 {
-    font-size: clamp(2rem, 5vw, 3.2rem);
-    font-weight: 500;
-  }
-  .hero-civil p.lead {
-    opacity: .85;
-    max-width: 580px;
-    margin: 1rem auto 2rem;
-  }
-  .stats-bar .stat-num {
-    font-size: 1.8rem;
-    font-weight: 500;
-    color: #185FA5;
-  }
-  .stats-bar .stat-lbl {
-    font-size: 12px;
-    color: #6c757d;
-  }
-  .stats-bar .col {
-    border-right: 1px solid #dee2e6;
-  }
-  .stats-bar .col:last-child {
-    border-right: none;
+  .hero-civil h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 500; }
+  .hero-civil p.lead { opacity: .85; max-width: 580px; margin: 1rem auto 2rem; }
+  .stats-bar .stat-num { font-size: 1.8rem; font-weight: 500; color: #185FA5; }
+  .stats-bar .stat-lbl { font-size: 12px; color: #6c757d; }
+  .stats-bar .col { border-right: 1px solid #dee2e6; }
+  .stats-bar .col:last-child { border-right: none; }
+  .step-number {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: #185FA5; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 500; font-size: 15px; flex-shrink: 0;
   }
   .card-perfil .card-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
+    width: 40px; height: 40px; border-radius: 8px;
     background: #E6F1FB;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     margin-bottom: 12px;
   }
-  .plan-year h5 {
-    font-size: 13px;
-    font-weight: 500;
-    color: #185FA5;
-  }
+  .plan-year h5 { font-size: 13px; font-weight: 500; color: #185FA5; }
   .plan-year ul li {
-    font-size: 13px;
-    color: #6c757d;
-    padding: 4px 0;
-    border-bottom: 1px solid #f0f0f0;
+    font-size: 13px; color: #6c757d;
+    padding: 4px 0; border-bottom: 1px solid #f0f0f0;
   }
-  .plan-year ul li:last-child {
-    border-bottom: none;
-  }
+  .plan-year ul li:last-child { border-bottom: none; }
   .contact-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 1rem;
+    display: flex; align-items: center; gap: 12px;
+    background: #f8f9fa; border: 1px solid #dee2e6;
+    border-radius: 8px; padding: 1rem;
   }
   .contact-item .ci-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 6px;
+    width: 36px; height: 36px; border-radius: 6px;
     background: #E6F1FB;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
-  .contact-item .ci-label {
-    font-size: 11px;
-    color: #6c757d;
-  }
-  .contact-item .ci-value {
-    font-size: 14px;
-    font-weight: 500;
-    color: #212529;
-  }
+  .contact-item .ci-label { font-size: 11px; color: #6c757d; }
+  .contact-item .ci-value { font-size: 14px; font-weight: 500; color: #212529; }
   .link-chip {
-    display: inline-block;
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    padding: 8px 14px;
-    font-size: 13px;
-    color: #185FA5;
-    text-decoration: none;
-    transition: background .2s;
+    display: inline-block; background: #f8f9fa;
+    border: 1px solid #dee2e6; border-radius: 6px;
+    padding: 8px 14px; font-size: 13px; color: #185FA5;
+    text-decoration: none; transition: background .2s;
   }
-  .link-chip:hover {
-    background: #e6f1fb;
-    color: #185FA5;
-  }
+  .link-chip:hover { background: #e6f1fb; color: #185FA5; }
+  .estado-badge-cerrada { background: #d1e7dd; color: #0a3622; }
+  .estado-badge-proceso { background: #fff3cd; color: #664d03; }
+  .detalle-pc { background: #fff3cd; border-left: 3px solid #ffc107; }
 </style>
 {% endblock %}
 
@@ -151,17 +106,132 @@
   </div>
 </div>
 
-<!-- ¿Qué es? -->
+<!-- Equivalencias -->
 <section class="py-5 border-bottom">
   <div class="container">
-    <h2 class="h4 fw-500 mb-1">¿Qué es la Ingeniería Civil?</h2>
-    <p class="text-muted small mb-3">Una carrera con impacto real en la sociedad</p>
-    <p class="text-secondary" style="line-height:1.8">
-      La Ingeniería Civil resuelve problemas básicos de la sociedad relacionados con vivienda, transporte,
-      distribución de agua y calidad del medio ambiente. Se ocupa del diseño de obras que permiten modificar
-      y aprovechar la naturaleza para favorecer el desarrollo social: edificios, puentes, carreteras, puertos,
-      sistemas de riego, desagües y mucho más.
-    </p>
+    <div class="row g-5 align-items-start">
+
+      <!-- Cómo solicitar -->
+      <div class="col-lg-7">
+        <h2 class="h4 fw-500 mb-1">Solicitud de equivalencias</h2>
+        <p class="text-muted small mb-4">Seguí estos pasos para iniciar tu trámite</p>
+        <div class="d-flex flex-column gap-3">
+          <div class="d-flex gap-3 align-items-start">
+            <div class="step-number">1</div>
+            <div>
+              <div class="fw-500" style="font-size:15px">Preparar la documentación</div>
+              <div class="text-muted" style="font-size:13px;line-height:1.6">Redactá una nota indicando las equivalencias que solicitás: qué asignatura de la UTN querés aprobar y con qué materia aprobada en tu institución de origen la vinculás. Adjuntá el programa y el certificado analítico.</div>
+            </div>
+          </div>
+          <div class="d-flex gap-3 align-items-start">
+            <div class="step-number">2</div>
+            <div>
+              <div class="fw-500" style="font-size:15px">Enviar por correo electrónico</div>
+              <div class="text-muted" style="font-size:13px;line-height:1.6">
+                Enviá toda la documentación a
+                <a href="mailto:alumnos@frlp.utn.edu.ar" class="text-primary fw-500">alumnos@frlp.utn.edu.ar</a>
+                con el asunto <strong>"Solicitud de Equivalencia – [Apellido y Nombre]"</strong>.
+              </div>
+            </div>
+          </div>
+          <div class="d-flex gap-3 align-items-start">
+            <div class="step-number">3</div>
+            <div>
+              <div class="fw-500" style="font-size:15px">Seguimiento</div>
+              <div class="text-muted" style="font-size:13px;line-height:1.6">Una vez ingresada, cada solicitud es evaluada por la cátedra correspondiente. Podés consultar el estado ingresando tu DNI.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Consulta por DNI -->
+      <div class="col-lg-5">
+        <div class="bg-light border rounded p-4">
+          <h3 class="h5 fw-500 mb-1">Consultar estado</h3>
+          <p class="text-muted small mb-3">Ingresá tu DNI para ver el estado de tu trámite</p>
+          <form method="post" action="#consulta" id="consulta">
+            {% csrf_token %}
+            <div class="input-group mb-3">
+              <input type="text" name="dni" class="form-control" placeholder="Ej: 38123456"
+                value="{{ dni_buscado|default:'' }}" maxlength="20" required>
+              <button class="btn btn-primary" type="submit">Consultar</button>
+            </div>
+          </form>
+
+          {% if error_dni %}
+            <div class="alert alert-warning py-2 px-3 mb-0" style="font-size:13px">
+              <i class="bi bi-exclamation-circle me-1"></i>{{ error_dni }}
+            </div>
+          {% endif %}
+
+          {% if solicitudes %}
+            {% for solicitud in solicitudes %}
+            <div class="card border mb-3 mt-2">
+              <div class="card-header d-flex justify-content-between align-items-center py-2">
+                <span class="fw-500" style="font-size:13px">Solicitud #{{ solicitud.id }} · {{ solicitud.fecha_inicio|date:"d/m/Y" }}</span>
+                {% if solicitud.estado_general == "Completada" %}
+                  <span class="badge estado-badge-cerrada">Completada</span>
+                {% elif solicitud.estado_general == "Cancelada" %}
+                  <span class="badge bg-danger">Cancelada</span>
+                {% else %}
+                  <span class="badge estado-badge-proceso">En proceso</span>
+                {% endif %}
+              </div>
+              <div class="card-body p-0">
+                <table class="table table-sm mb-0 align-middle" style="font-size:12px">
+                  <thead class="table-light">
+                    <tr>
+                      <th class="ps-3">Asignatura</th>
+                      <th>Estado</th>
+                      <th>Contacto</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for detalle in solicitud.detallesolicitud_set.all %}
+                    <tr {% if detalle.estado_asignatura == "Requiere PC" %}class="table-warning"{% endif %}>
+                      <td class="ps-3 fw-500">{{ detalle.id_asignatura.asignatura.nombre|title }}</td>
+                      <td>
+                        {% if detalle.estado_asignatura == "Aprobada" %}
+                          <span class="badge bg-success">Aprobada</span>
+                        {% elif detalle.estado_asignatura == "Denegada" %}
+                          <span class="badge bg-danger">Denegada</span>
+                        {% elif detalle.estado_asignatura == "Requiere PC" %}
+                          <span class="badge bg-warning text-dark">P.C.</span>
+                        {% elif detalle.estado_asignatura == "Enviada a Cátedra" %}
+                          <span class="badge bg-info text-dark">En cátedra</span>
+                        {% else %}
+                          <span class="badge bg-secondary">Pendiente</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% with doc=detalle.id_asignatura.docente_responsable %}
+                          {% if doc and doc.email %}
+                            <a href="mailto:{{ doc.email }}" style="font-size:11px">{{ doc.email }}</a>
+                          {% else %}<span class="text-muted">—</span>{% endif %}
+                        {% endwith %}
+                      </td>
+                    </tr>
+                    {% if detalle.estado_asignatura == "Requiere PC" and detalle.detalle_pc %}
+                    <tr class="table-warning">
+                      <td colspan="3" class="ps-3 pb-2">
+                        <div class="detalle-pc rounded p-2 mt-1" style="font-size:11px">
+                          <span class="fw-500">P.C.:</span> {{ detalle.detalle_pc }}
+                        </div>
+                      </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {% endfor %}
+          {% endif %}
+
+        </div>
+      </div>
+
+    </div>
   </div>
 </section>
 
