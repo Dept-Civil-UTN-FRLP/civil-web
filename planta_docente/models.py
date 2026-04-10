@@ -76,6 +76,8 @@ class Asignatura(models.Model):
     TIPO_CHOICES = [
         ('asignatura', 'Asignatura'),
         ('laboratorio', 'Laboratorio'),
+        ('grupo', 'Grupo'),
+        ('centro', 'Centro'),
         ('area', 'Área'),
     ]
 

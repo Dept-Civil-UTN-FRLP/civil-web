@@ -88,7 +88,7 @@ def landing_civil(request):
     # Laboratorios/Áreas
     laboratorios = Asignatura.objects.filter(
         especialidad='civil',
-        tipo__in=['laboratorio'],
+        tipo__in=['laboratorio', 'grupo', 'centro'],
     ).order_by('nombre')
 
     if electivas.exists():
