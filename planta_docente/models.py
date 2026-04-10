@@ -3,12 +3,19 @@ from django.db import models
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.utils import timezone
+from django.utils.text import slugify
 
 from .managers import CargoManager, DocenteManager
 from .validators import validar_extension_planificacion, validar_tamaño_planificacion
 
 
 # Create your models here.
+
+def get_programa_upload_path(instance, filename):
+    import os
+    extension = os.path.splitext(filename)[1]
+    nombre = slugify(instance.nombre)
+    return f"programas/{timezone.now().year}/{nombre}{extension}"
 
 
 class Area(models.Model):
@@ -124,6 +131,13 @@ class Asignatura(models.Model):
         blank=True,
         verbose_name="Bibliografía Complementaria",
         help_text="Formato IEEE. Ejemplo: [1] A. Autor, \"Título del libro\", Editorial, Año. (un ítem por línea)"
+    )
+    programa = models.FileField(
+        upload_to=get_programa_upload_path,
+        blank=True,
+        null=True,
+        verbose_name="Programa",
+        help_text="Archivo PDF del programa de la asignatura"
     )
 
     def __str__(self) -> str:
