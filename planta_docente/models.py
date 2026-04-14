@@ -1543,6 +1543,19 @@ class Cargo(models.Model):
                 self.UNIDADES_DEDICACION.get(c.dedicacion, 0)*c.cantidad_dedicaciones  for c in cargos_activos
             )
 
+        # Validación: unidades de dedicación no pueden superar 5
+        if self.caracter not in self.CARACTERES_SIN_UNIDADES and self.estado == 'activo':
+            unidades_cargo_actual = self.UNIDADES_DEDICACION.get(self.dedicacion, 0)*self.cantidad_dedicaciones
+
+            cargos_activos = Cargo.objects.filter(
+                docente=self.docente,
+                estado='activo',
+            ).exclude(pk=self.pk).exclude(caracter__in=self.CARACTERES_SIN_UNIDADES)
+
+            unidades_ocupadas = sum(
+                self.UNIDADES_DEDICACION.get(c.dedicacion, 0)*c.cantidad_dedicaciones  for c in cargos_activos
+            )
+
             if unidades_ocupadas + unidades_cargo_actual > self.MAX_UNIDADES:
                 errors['dedicacion'] = ValidationError(
                     f"El docente ya tiene {unidades_ocupadas} unidades de dedicación ocupadas. "
