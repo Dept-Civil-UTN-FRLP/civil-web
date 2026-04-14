@@ -1530,21 +1530,18 @@ class Cargo(models.Model):
                 code="invalid_dedication_for_adhonorem",
             )
 
-        # Validación 5: Validar horas según dedicación
-        horas_esperadas = {"ms": 5, "ds": 10, "se": 20, "de": 40}
+        # Validación: unidades de dedicación no pueden superar 5
+        if self.caracter not in self.CARACTERES_SIN_UNIDADES and self.estado == 'activo':
+            unidades_cargo_actual = self.UNIDADES_DEDICACION.get(self.dedicacion, 0)*self.cantidad_dedicaciones
 
-        if self.dedicacion in horas_esperadas:
-            # 80% del esperado
-            horas_min = horas_esperadas[self.dedicacion] * 0.8
-            # 120% del esperado
-            horas_max = horas_esperadas[self.dedicacion] * 1.2
+            cargos_activos = Cargo.objects.filter(
+                docente=self.docente,
+                estado='activo',
+            ).exclude(pk=self.pk).exclude(caracter__in=self.CARACTERES_SIN_UNIDADES)
 
-            if not (horas_min <= self.cantidad_horas <= horas_max):
-                errors["cantidad_horas"] = ValidationError(
-                    f"Para dedicación {self.get_dedicacion_display()}, se esperan aproximadamente "
-                    f"{horas_esperadas[self.dedicacion]} horas (rango: {horas_min}-{horas_max}).",
-                    code="invalid_hours_for_dedication",
-                )
+            unidades_ocupadas = sum(
+                self.UNIDADES_DEDICACION.get(c.dedicacion, 0)*c.cantidad_dedicaciones  for c in cargos_activos
+            )
 
         # Validación: unidades de dedicación no pueden superar 5
         if self.caracter not in self.CARACTERES_SIN_UNIDADES and self.estado == 'activo':
