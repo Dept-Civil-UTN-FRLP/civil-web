@@ -8,6 +8,7 @@ from .models import (
     DocumentoAdjunto,
     Estudiante,
     SolicitudEquivalencia,
+    ConfiguracionDepartamento,
 )
 
 # Definimos una clase para mostrar los documentos "inline"
@@ -60,6 +61,12 @@ class SolicitudEquivalenciaAdmin(admin.ModelAdmin):
             "detallesolicitud_set",
             "documentoadjunto_set",
         )
+
+
+@admin.register(ConfiguracionDepartamento)
+class ConfiguracionDepartamentoAdmin(admin.ModelAdmin):
+    list_display = ['nombre_firmante', 'cargo_firmante', 'activo']
+    list_editable = ['activo']
 
 
 # admin.site.register(AsignaturaParaEquivalencia)
