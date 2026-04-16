@@ -36,7 +36,23 @@ from .models import (
     DocumentoAdjunto,
     Estudiante,
     SolicitudEquivalencia,
+    ConfiguracionDepartamento,
 )
+
+
+def _get_firma_context(request):
+    config = ConfiguracionDepartamento.get_activo()
+    if not config:
+        return {
+            'signature_image_path': None,
+            'nombre_firmante': '',
+            'cargo_firmante': '',
+        }
+    return {
+        'signature_image_path': request.build_absolute_uri(config.firma_imagen.url),
+        'nombre_firmante': config.nombre_firmante,
+        'cargo_firmante': config.cargo_firmante,
+    }
 
 
 def _enviar_email_catedra(detalle_solicitud):
@@ -520,10 +536,8 @@ def generar_acta_pdf_view(request, pk):
     context = {
         "solicitud": solicitud,
         "detalles": detalles,
-        # Añadimos la ruta de la imagen al contexto. El prefijo 'file://' es clave.
-        #'signature_image_path': f'file://{image_path}' if image_path and os.path.exists(image_path) else None,
-        "signature_image_path": "/static/images/firma_holografica.png",  # Ruta relativa para WeasyPrint
-    }
+        **_get_firma_context(request),
+        }
 
     # 3. Renderizar la plantilla HTML a un string con el contexto actualizado
     html_string = render_to_string("equivalencias/acta_template.html", context)
@@ -561,7 +575,7 @@ def preview_acta_view(request, pk):
     context = {
         'solicitud': solicitud,
         'detalles': detalles,
-        'signature_image_path': '/static/images/firma_holografica.png',
+        **_get_firma_context(request),
     }
 
     # Renderizar HTML
@@ -608,7 +622,7 @@ def generar_y_enviar_acta_view(request, pk):
         context = {
             'solicitud': solicitud,
             'detalles': detalles,
-            'signature_image_path': '/static/images/firma_holografica.png',
+            **_get_firma_context(request),
         }
 
         html_string = render_to_string(
