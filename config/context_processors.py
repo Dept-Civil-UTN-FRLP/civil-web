@@ -1,5 +1,14 @@
 from django.conf import settings
 
+DEPARTAMENTO_LABELS = {
+    "civil": "Depto Ing. Civil",
+    "industrial": "Depto Ing. Industrial",
+}
+
 
 def modulos_activos(request):
-    return {"MODULOS_ACTIVOS": settings.MODULOS_ACTIVOS}
+    departamento = settings.DEPARTAMENTO
+    return {
+        "MODULOS_ACTIVOS": settings.MODULOS_ACTIVOS,
+        "DEPARTAMENTO_LABEL": DEPARTAMENTO_LABELS.get(departamento, departamento.title()),
+    }
