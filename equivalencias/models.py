@@ -226,3 +226,24 @@ class DetalleSolicitud(models.Model):
 
     def __str__(self):
         return f"{self.id_asignatura.asignatura.nombre} para {self.id_solicitud.id_estudiante.nombre_completo}"
+
+
+class ConfiguracionDepartamento(models.Model):
+    firma_imagen = models.ImageField(
+        upload_to='firmas/',
+        verbose_name='Imagen de firma',
+    )
+    nombre_firmante = models.CharField(max_length=200)
+    cargo_firmante = models.CharField(max_length=200)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'Configuración del Departamento'
+        verbose_name_plural = 'Configuración del Departamento'
+
+    def __str__(self):
+        return f"{self.nombre_firmante} — {self.cargo_firmante}"
+
+    @classmethod
+    def get_activo(cls):
+        return cls.objects.filter(activo=True).first()
