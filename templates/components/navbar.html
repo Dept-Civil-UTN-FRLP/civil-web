@@ -48,6 +48,7 @@ Variables esperadas en context:
           </ul>
         </li>
 
+        {% if "carrera_academica" in MODULOS_ACTIVOS %}
         <!-- Carrera Académica -->
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle {% if 'carrera_academica' in request.resolver_match.app_name %}active{% endif %}" 
@@ -64,7 +65,9 @@ Variables esperadas en context:
             </a></li>
           </ul>
         </li>
+        {% endif %}
 
+        {% if "planta_docente" in MODULOS_ACTIVOS %}
         <!-- Planta Docente -->
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle {% if 'planta_docente' in request.resolver_match.app_name %}active{% endif %}" 
@@ -97,6 +100,7 @@ Variables esperadas en context:
             </a></li>
           </ul>
         </li>
+        {% endif %}
 
       </ul>
 
