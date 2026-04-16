@@ -226,6 +226,7 @@ MODULOS_ACTIVOS = config(
     cast=Csv(),
 )
 
+DEPARTAMENTO = config("DEPARTAMENTO", default="civil")
 
 # ============================================================================
 # PLANIFICACIONES ANUALES - CONFIGURACIÓN
