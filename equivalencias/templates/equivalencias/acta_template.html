@@ -121,11 +121,16 @@
     </p>
 
     <div class="signature-block" style="text-align: right; margin-top: 40px;">
-    
+
+    {% if signature_image_path %}
     <img src="{{ signature_image_path }}" alt="Firma" class="signature-image">
+    {% endif %}
 
     <p class="signature-line" style="margin-top: 0; margin-bottom: 4px;"></p>
-    <p style="text-align: right; margin-top: 0;">Firma y sello del Departamento</p>
+    <p style="text-align: right; margin-top: 0;">
+        {% if nombre_firmante %}<strong>{{ nombre_firmante }}</strong><br>{% endif %}
+        {% if cargo_firmante %}{{ cargo_firmante }}{% else %}Firma y sello del Departamento{% endif %}
+    </p>
 
     <hr style="page-break-after: always; border: none; margin: 0; padding: 0;">
 
