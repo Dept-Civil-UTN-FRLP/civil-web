@@ -18,25 +18,48 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.core.exceptions import ImproperlyConfigured
 from django.urls import include, path
 from config.views import landing_civil
 
+from django.conf import settings
+from django.conf.urls.static import static
+from django.contrib import admin
+from django.urls import include, path
+from config.views import landing_civil, landing_industrial
+
+LANDING_VIEWS = {
+    "civil": landing_civil,
+    "industrial": landing_industrial,
+}
+
+landing_view = LANDING_VIEWS.get(settings.DEPARTAMENTO)
+
+if landing_view is None:
+    raise ImproperlyConfigured(
+        f"DEPARTAMENTO='{settings.DEPARTAMENTO}' no tiene una landing registrada. "
+        f"Opciones válidas: {list(LANDING_VIEWS.keys())}"
+    )
+
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("equivalencia/", include("equivalencias.urls")),
-    path("carrera/", include("carrera_academica.urls")),
-    path("planta/", include("planta_docente.urls")),
-    path("", landing_civil, name="landing")
+    path("", landing_view, name="landing"),
 ]
 
-# Debug toolbar (solo en desarrollo)
+if "equivalencias" in settings.MODULOS_ACTIVOS:
+    urlpatterns += [path("equivalencia/", include("equivalencias.urls"))]
+
+if "carrera_academica" in settings.MODULOS_ACTIVOS:
+    urlpatterns += [path("carrera/", include("carrera_academica.urls"))]
+
+if "planta_docente" in settings.MODULOS_ACTIVOS:
+    urlpatterns += [path("planta/", include("planta_docente.urls"))]
+
 if settings.DEBUG:
     import debug_toolbar
-
     urlpatterns = [
-        path("__debug__/", include(debug_toolbar.urls)),
-    ] + urlpatterns
+        path("__debug__/", include(debug_toolbar.urls))] + urlpatterns
+    urlpatterns += static(settings.MEDIA_URL,
+                          document_root=settings.MEDIA_ROOT)
 
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

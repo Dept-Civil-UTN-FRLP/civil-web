@@ -11,7 +11,7 @@ Variables esperadas en context:
   <div class="container-fluid">
     <a class="navbar-brand" href="{% url 'landing' %}">
       <i class="bi bi-folder2-open"></i> 
-      <span class="d-none d-md-inline">Depto Ing. Civil</span>
+      <span class="d-none d-md-inline">{{ DEPARTAMENTO_LABEL }}</span>
       <span class="d-md-none">UTN FRLP</span>
     </a>
     
@@ -24,7 +24,7 @@ Variables esperadas en context:
       {% if user.is_authenticated %}
 
       <ul class="navbar-nav me-auto">
-        
+        {% if "equivalencias" in MODULOS_ACTIVOS %}
         <!-- Equivalencias -->
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle {% if 'equivalencias' in request.resolver_match.app_name or request.resolver_match.url_name in 'dashboard,pendientes,estadisticas' %}active{% endif %}" 
@@ -47,7 +47,9 @@ Variables esperadas en context:
             </a></li>
           </ul>
         </li>
+        {% endif %}
 
+        {% if "carrera_academica" in MODULOS_ACTIVOS %}
         <!-- Carrera Académica -->
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle {% if 'carrera_academica' in request.resolver_match.app_name %}active{% endif %}" 
@@ -64,7 +66,9 @@ Variables esperadas en context:
             </a></li>
           </ul>
         </li>
+        {% endif %}
 
+        {% if "planta_docente" in MODULOS_ACTIVOS %}
         <!-- Planta Docente -->
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle {% if 'planta_docente' in request.resolver_match.app_name %}active{% endif %}" 
@@ -97,6 +101,7 @@ Variables esperadas en context:
             </a></li>
           </ul>
         </li>
+        {% endif %}
 
       </ul>
 
@@ -112,9 +117,14 @@ Variables esperadas en context:
               <i class="bi bi-gear"></i> Panel Admin
             </a></li>
             <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="{% url 'admin:logout' %}">
-              <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
-            </a></li>
+            <li>
+              <form method="post" action="{% url 'admin:logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item">
+                  <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                </button>
+              </form>
+            </li>
           </ul>
         </li>
       </ul>
@@ -123,7 +133,7 @@ Variables esperadas en context:
 
       <ul class="navbar-nav ms-auto">
         <li class="nav-item">
-          <a class="btn btn-outline-light btn-sm" href="{% url 'admin:login' %}">
+          <a class="btn btn-outline-light btn-sm" href="{% url 'admin:login' %}?next=/">
             <i class="bi bi-box-arrow-in-right"></i> Iniciar sesión
           </a>
         </li>

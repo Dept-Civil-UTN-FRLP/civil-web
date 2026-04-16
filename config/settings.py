@@ -75,6 +75,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "config.context_processors.modulos_activos",
             ],
         },
     },
@@ -143,6 +144,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_URL = "/admin/login/"
 LOGIN_REDIRECT_URL = "/" 
+LOGOUT_REDIRECT_URL = "/"
 
 # Email Configuration
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -216,6 +218,16 @@ LOGGING = {
     },
 }
 
+# ============================================================================
+# MÓDULOS ACTIVOS
+# ============================================================================
+MODULOS_ACTIVOS = config(
+    "MODULOS_ACTIVOS",
+    default="equivalencias,carrera_academica,planta_docente",
+    cast=Csv(),
+)
+
+DEPARTAMENTO = config("DEPARTAMENTO", default="civil")
 
 # ============================================================================
 # PLANIFICACIONES ANUALES - CONFIGURACIÓN
