@@ -75,6 +75,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "config.context_processors.modulos_activos",
             ],
         },
     },
@@ -215,6 +216,15 @@ LOGGING = {
         },
     },
 }
+
+# ============================================================================
+# MÓDULOS ACTIVOS
+# ============================================================================
+MODULOS_ACTIVOS = config(
+    "MODULOS_ACTIVOS",
+    default="equivalencias,carrera_academica,planta_docente",
+    cast=Csv(),
+)
 
 
 # ============================================================================
