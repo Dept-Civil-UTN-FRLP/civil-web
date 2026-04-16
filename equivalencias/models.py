@@ -247,3 +247,8 @@ class ConfiguracionDepartamento(models.Model):
     @classmethod
     def get_activo(cls):
         return cls.objects.filter(activo=True).first()
+    
+    def save(self, *args, **kwargs):
+        if self.activo:
+            ConfiguracionDepartamento.objects.exclude(pk=self.pk).update(activo=False)
+        super().save(*args, **kwargs)
