@@ -16,9 +16,12 @@
 
 {# Botón reenviar a todos los pendientes #}
 <div class="d-flex justify-content-end mb-3">
-    <a href="{% url 'reenviar_pendientes' pk=solicitud.pk %}" class="btn btn-warning">
+  <form method="post" action="{% url 'reenviar_pendientes' pk=solicitud.pk %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-warning">
         <i class="bi bi-send"></i> Reenviar a todos los Pendientes
-    </a>
+    </button>
+  </form>
 </div>
 
 {# Asignaturas solicitadas #}
