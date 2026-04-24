@@ -149,10 +149,24 @@ def generar_pdf_estructura(request, asignatura_id):
         # Última designación: resolución más reciente de alta o designación
         resoluciones = cargo.resoluciones.filter(
             objeto__in=['alta', 'designacion']
-        ).order_by('-año', '-numero')
+        ).order_by('año', 'numero')
 
-        fecha_ultima = resoluciones.first(
-        ).año if resoluciones.exists() else cargo.fecha_inicio.year
+        if cargo.caracter == 'int':
+            # Interino: la más cercana entre fecha_inicio y 1/4 del año actual
+            from datetime import date
+            primer_abril = date(timezone.now().year, 4, 1)
+            fecha_ultima = min(
+                fecha_primera, primer_abril).strftime('%d/%m/%Y')
+        else:
+            # Ordinario / Regular: primera resolución de ese tipo y última redesignación
+            primera_res = resoluciones.first()
+            ultima_res = resoluciones.last()
+            if primera_res and ultima_res and primera_res.pk != ultima_res.pk:
+                fecha_ultima = f"{primera_res.año} / {ultima_res.año}"
+            elif primera_res:
+                fecha_ultima = str(primera_res.año)
+            else:
+                fecha_ultima = str(cargo.fecha_inicio.year)
 
         # Antigüedad
         antiguedad = calcular_antiguedad(fecha_primera)
@@ -174,6 +188,7 @@ def generar_pdf_estructura(request, asignatura_id):
 
         cargo_data = {
             'docente': cargo.docente,
+            'legajo': cargo.docente.legajo,
             'categoria': cargo.get_categoria_display(),
             'caracter': cargo.get_caracter_display(),
             'dedicacion': cargo.get_dedicacion_display(),
@@ -203,6 +218,20 @@ def generar_pdf_estructura(request, asignatura_id):
     # Áreas y bloques
     areas = list(asignatura.area.all()) if incluir_areas else []
     bloques = list(asignatura.bloque.all()) if incluir_bloques else []
+    
+    import string
+    asignaturas_del_area = []
+    if areas:
+        qs = list(
+            Asignatura.objects.filter(area__in=areas)
+            .exclude(pk=asignatura.pk)
+            .distinct()
+            .order_by('nombre')
+        )
+        asignaturas_del_area = [
+            {'letra': string.ascii_lowercase[i], 'nombre': a.nombre}
+            for i, a in enumerate(qs)
+        ]
 
     context = {
         "asignatura": asignatura,
@@ -216,6 +245,7 @@ def generar_pdf_estructura(request, asignatura_id):
         "fecha_generacion": timezone.now(),
         "areas": areas,
         "bloques": bloques,
+        "asignaturas_del_area": asignaturas_del_area,
     }
 
     # Renderizar HTML
