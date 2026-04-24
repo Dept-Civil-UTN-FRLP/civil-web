@@ -84,10 +84,12 @@ Uso:
     <!-- Botón reenviar si está pendiente -->
     {% if detalle.estado_asignatura == 'Enviada a Cátedra' %}
     <div class="text-end mt-2">
-        <a href="{% url 'reenviar_email_asignatura' pk=solicitud.pk detalle_pk=detalle.pk %}" 
-           class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-arrow-repeat"></i> Reenviar Correo a esta Cátedra
-        </a>
+        <form method="post" action="{% url 'reenviar_email_asignatura' pk=solicitud.pk detalle_pk=detalle.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-repeat"></i> Reenviar Correo a esta Cátedra
+            </button>
+        </form>
     </div>
     {% endif %}
 </div>
