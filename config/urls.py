@@ -45,7 +45,7 @@ if landing_view is None:
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", landing_view, name="landing"),
-    path('media/private/<path:path>',
+    path('file/<path:path>',
          serve_private_media, name='serve_private_media'),
 ]
 
