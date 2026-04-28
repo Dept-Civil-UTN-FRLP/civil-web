@@ -8,7 +8,7 @@
   .hero-civil {
     background:
       linear-gradient(135deg, rgba(27, 94, 32, 0.92) 0%, rgba(46, 125, 50, 0.87) 50%, rgba(56, 142, 60, 0.82) 100%),
-      url({% static 'images\landing\civil.jpeg' %}) center/cover no-repeat;
+      url({% static 'images/landing/civil.jpeg' %}) center/cover no-repeat;
     color: #fff;
     padding: 5rem 2rem 4rem;
     text-align: center;
@@ -89,10 +89,12 @@
   <span class="badge-utn">UTN · Facultad Regional La Plata</span>
   <h1>Ingeniería Civil</h1>
   <p class="lead">Diseñá el futuro. Construí puentes, ciudades e infraestructura que transforma la vida de las personas.</p>
-  <div class="d-flex gap-3 justify-content-center flex-wrap">
+{% comment %}
+<div class="d-flex gap-3 justify-content-center flex-wrap">
     <a href="https://ingreso.frlp.utn.edu.ar" class="btn btn-light fw-500" target="_blank">Inscribirse</a>
     <a href="https://www.frlp.utn.edu.ar/carrera-civil" class="btn btn-outline-light" target="_blank">Ver carrera oficial</a>
   </div>
+{% endcomment %}
 </section>
 
 <!-- Stats -->
@@ -107,8 +109,8 @@
       <div class="stat-lbl">título universitario</div>
     </div>
     <div class="col py-2">
-      <div class="stat-num">1853</div>
-      <div class="stat-lbl">plan de estudios</div>
+      <div class="stat-num">Ord.</div>
+      <div class="stat-lbl">1853 · Plan 2023</div>
     </div>
     <div class="col py-2">
       <div class="stat-num">UTN</div>
@@ -256,7 +258,7 @@
       <div class="col-sm-6 col-lg-3">
         <div class="card h-100 border card-perfil p-3">
           <div class="card-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2">{{ item.icon_path|safe }}</svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="2">{{ item.icon_path|safe }}</svg>
           </div>
           <h5 class="fw-500" style="font-size:14px">{{ item.titulo }}</h5>
           <p class="text-muted" style="font-size:13px;line-height:1.6">{{ item.descripcion }}</p>
@@ -270,7 +272,7 @@
 <!-- Plan de estudios -->
 <section class="py-5 border-bottom">
   <div class="container">
-    <h2 class="h4 fw-500 mb-1">Plan de estudios — 5 años</h2>
+    <h2 class="h4 fw-500 mb-1">Plan de estudios — 6 años</h2>
     <p class="text-muted small mb-4">Ordenanza 1853 · Plan 2023</p>
     <div class="row g-3">
     {% for anio in plan_estudios %}
@@ -338,7 +340,7 @@
       <div class="col-sm-6 col-lg-3">
         <div class="contact-item">
           <div class="ci-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 11.5 19.79 19.79 0 0 1 1.62 2.84 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.56a16 16 0 0 0 6 6l1.06-1.06a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 11.5 19.79 19.79 0 0 1 1.62 2.84 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.56a16 16 0 0 0 6 6l1.06-1.06a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
           <div>
             <div class="ci-label">Teléfono</div>
@@ -349,7 +351,7 @@
       <div class="col-sm-6 col-lg-3">
         <div class="contact-item">
           <div class="ci-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
           </div>
           <div>
             <div class="ci-label">Email</div>
@@ -360,7 +362,7 @@
       <div class="col-sm-6 col-lg-3">
         <div class="contact-item">
           <div class="ci-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           </div>
           <div>
             <div class="ci-label">Atención</div>
@@ -371,7 +373,7 @@
       <div class="col-sm-6 col-lg-3">
         <div class="contact-item">
           <div class="ci-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 0 1-2.827 0l-4.244-4.243a8 8 0 1 1 11.314 0z"/><circle cx="12" cy="11" r="3"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="2"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 0 1-2.827 0l-4.244-4.243a8 8 0 1 1 11.314 0z"/><circle cx="12" cy="11" r="3"/></svg>
           </div>
           <div>
             <div class="ci-label">Ubicación</div>
@@ -382,5 +384,11 @@
     </div>
   </div>
 </section>
+
+<footer class="py-4 border-top bg-white">
+  <div class="container text-center text-muted" style="font-size:13px">
+    Departamento de Ingeniería Civil · UTN FRLP · <a href="mailto:dicivil@frlp.utn.edu.ar" class="text-muted">dicivil@frlp.utn.edu.ar</a>
+  </div>
+</footer>
 
 {% endblock %}
