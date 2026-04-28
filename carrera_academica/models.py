@@ -694,7 +694,7 @@ class Formulario(models.Model):
         max_length=3, choices=ESTADO_FORMULARIO_CHOICES, default="PEN"
     )
     fecha_entrega = models.DateField(blank=True, null=True)
-    archivo = models.FileField(upload_to=get_ca_upload_path, blank=True, null=True)
+    archivo = models.FileField(upload_to=get_ca_upload_path, blank=True, null=True, max_length=500)
     anio_correspondiente = models.IntegerField(
         blank=True, null=True, help_text="Ej: 2024 (para F04-F07, F13)"
     )
