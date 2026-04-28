@@ -25,7 +25,7 @@ Uso:
                     <span class="badge bg-success">Entregado</span> 
                     <small class="text-muted">el {{ form.fecha_entrega|date:"d/m/Y" }}</small>
                     {% if form.archivo %}
-                        <a href="{{ form.archivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary me-1">
+                        <a href="{% url 'serve_private_media' path=form.archivo.name|slice:'8:' %}" target="_blank" class="btn btn-sm btn-outline-primary me-1">
                             <i class="bi bi-file-pdf"></i> Ver
                         </a>
                         <a href="{% url 'carrera_academica:borrar_archivo_formulario' pk=form.pk %}" 
