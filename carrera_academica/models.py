@@ -43,7 +43,7 @@ def get_ca_upload_path(instance, filename):
     new_filename = f"{ca_id}-{tipo_form}{año_str}-{apellido}{extension}"
 
     # Devuelve: ca/apellido-nombre/{ca_id}-F04-2025-Ronconi.pdf
-    return f"ca/{docente_slug}/{new_filename}"
+    return f"private/ca/{docente_slug}/{new_filename}"
 
 
 class CarreraAcademica(models.Model):
@@ -950,7 +950,7 @@ class MembreteAnual(models.Model):
     anio = models.IntegerField(
         unique=True, help_text="Año al que corresponde este membrete"
     )
-    logo = models.ImageField(upload_to="membretes/logos/")
+    logo = models.ImageField(upload_to="private/membretes/logos/")
     frase = models.CharField(
         max_length=255, help_text="Frase del encabezado para este año"
     )
@@ -974,7 +974,7 @@ class PlantillaDocumento(models.Model):
     ]
 
     tipo_formulario = models.CharField(max_length=4, choices=TIPO_FORMULARIO_CHOICES)
-    archivo = models.FileField(upload_to="plantillas_documentos/")
+    archivo = models.FileField(upload_to="private/plantillas_documentos/")
     descripcion = models.CharField(max_length=255, blank=True)
 
     class Meta:

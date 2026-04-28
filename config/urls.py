@@ -27,6 +27,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from config.views import landing_civil, landing_industrial
+from config.views_media import serve_private_media
 
 LANDING_VIEWS = {
     "civil": landing_civil,
@@ -44,6 +45,8 @@ if landing_view is None:
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", landing_view, name="landing"),
+    path('media/private/<path:path>',
+         serve_private_media, name='serve_private_media'),
 ]
 
 if "equivalencias" in settings.MODULOS_ACTIVOS:
