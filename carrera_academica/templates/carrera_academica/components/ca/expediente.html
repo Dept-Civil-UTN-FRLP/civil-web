@@ -80,7 +80,7 @@ Uso:
             {% if ca.resolucion_designacion %}
                 {{ ca.resolucion_designacion }}
                 {% if ca.resolucion_designacion.file %}
-                    <a href="/media/private/{{ ca.resolucion_designacion.file.name|slice:'8:' }}" target="_blank" class="ms-2 fw-bold">(Ver Archivo)</a>
+                    <a href="/file/{{ ca.resolucion_designacion.file.name|slice:'8:' }}" target="_blank" class="ms-2 fw-bold">(Ver Archivo)</a>
                 {% endif %}
             {% else %}
                 No asignada.
@@ -92,7 +92,7 @@ Uso:
             {% if ca.resolucion_puesta_en_funcion %}
                 {{ ca.resolucion_puesta_en_funcion }}
                 {% if ca.resolucion_puesta_en_funcion.file %}
-                    <a href="/media/private/{{ ca.resolucion_puesta_en_funcion.file.name|slice:'8:' }}" target="_blank" class="ms-2 fw-bold">(Ver Archivo)</a>
+                    <a href="/file/{{ ca.resolucion_puesta_en_funcion.file.name|slice:'8:' }}" target="_blank" class="ms-2 fw-bold">(Ver Archivo)</a>
                 {% endif %}
             {% else %}
                 No asignada.
