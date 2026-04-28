@@ -62,7 +62,7 @@
                         </td>
                         <td>
                             {% if res.file %}
-                            <a href="{{ res.file.url }}" 
+                            <a href="/media/private/{{ res.file.name|slice:'8:' }}" 
                                target="_blank" 
                                class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-file-pdf"></i> Ver PDF

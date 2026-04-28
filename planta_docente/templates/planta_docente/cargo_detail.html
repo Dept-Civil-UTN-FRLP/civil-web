@@ -434,7 +434,7 @@
                         <td>{{ res.get_objeto_display }}</td>
                         <td>
                             {% if res.file %}
-                            <a href="{{ res.file.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <a href="/media/private/{{ res.file.name|slice:'8:' }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-file-pdf"></i> Ver
                             </a>
                             {% else %}

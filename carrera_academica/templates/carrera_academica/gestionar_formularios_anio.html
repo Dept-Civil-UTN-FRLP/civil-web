@@ -73,7 +73,7 @@
                                 </td>
                                 <td>
                                     {% if form.archivo %}
-                                        <a href="{{ form.archivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <a href="/media/private/{{ form.archivo.name|slice:'8:' }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                             <i class="bi bi-file-pdf"></i> Ver
                                         </a>
                                     {% else %}
