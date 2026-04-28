@@ -49,7 +49,7 @@ def _get_firma_context(request):
             'cargo_firmante': '',
         }
     return {
-        'signature_image_path': request.build_absolute_uri(config.firma_imagen.url),
+        'signature_image_path': config.firma_imagen.path,
         'nombre_firmante': config.nombre_firmante,
         'cargo_firmante': config.cargo_firmante,
     }
