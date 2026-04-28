@@ -15,7 +15,7 @@ def get_programa_upload_path(instance, filename):
     import os
     extension = os.path.splitext(filename)[1]
     nombre = slugify(instance.nombre)
-    return f"programas/{timezone.now().year}/{nombre}{extension}"
+    return f"private/programas/{timezone.now().year}/{nombre}{extension}"
 
 
 class Area(models.Model):
@@ -1850,7 +1850,7 @@ class Resolucion(models.Model):
     año = models.IntegerField()
     objeto = models.CharField(choices=OBJETO_CHOICES, max_length=15)
     origen = models.CharField(choices=ORIGEN_CHOICES, max_length=4)
-    file = models.FileField(upload_to="resoluciones/", blank=True, null=True)
+    file = models.FileField(upload_to="private/resoluciones/", blank=True, null=True)
     # === NUEVOS CAMPOS PARA LICENCIAS ===
     fecha_inicio_licencia = models.DateField(
         "Fecha de Inicio de Licencia",
@@ -1981,7 +1981,7 @@ class PlanificacionAnual(models.Model):
 
     # Archivo
     archivo = models.FileField(
-        upload_to='planificaciones/%Y/',
+        upload_to='private/planificaciones/%Y/',
         verbose_name="Archivo de planificación",
         help_text="Formatos permitidos: PDF, DOCX (máx. 20MB)"
     )
@@ -2067,7 +2067,7 @@ class PlanificacionAnual(models.Model):
     )
     
     archivo = models.FileField(
-        upload_to='planificaciones/%Y/',
+        upload_to='private/planificaciones/%Y/',
         verbose_name="Archivo de planificación",
         help_text="Formatos permitidos: PDF, DOCX (máx. 20MB)",
         validators=[validar_extension_planificacion,

@@ -48,7 +48,7 @@ def get_equivalencias_upload_path(instance, filename):
     new_filename = f"{uuid.uuid4()}{extension}"
 
     # Devolvemos la ruta final
-    return f"equivalencias/{student_folder}/{new_filename}"
+    return f"private/equivalencias/{student_folder}/{new_filename}"
 
 
 class AsignaturaParaEquivalencia(models.Model):
@@ -230,7 +230,7 @@ class DetalleSolicitud(models.Model):
 
 class ConfiguracionDepartamento(models.Model):
     firma_imagen = models.ImageField(
-        upload_to='firmas/',
+        upload_to='private/firmas/',
         verbose_name='Imagen de firma',
     )
     nombre_firmante = models.CharField(max_length=200)
