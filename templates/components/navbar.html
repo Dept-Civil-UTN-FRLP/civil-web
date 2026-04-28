@@ -7,7 +7,8 @@ Variables esperadas en context:
 - request: Request object para detección de ruta activa
 {% endcomment %}
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar navbar-expand-lg navbar-dark" 
+     style="background-color: {% if DEPARTAMENTO == 'civil' %}#1B5E20{% elif DEPARTAMENTO == 'industrial' %}#E65100{% else %}#212529{% endif %};">
   <div class="container-fluid">
     <a class="navbar-brand" href="{% url 'landing' %}">
       <i class="bi bi-folder2-open"></i> 
