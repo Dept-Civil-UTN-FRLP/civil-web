@@ -217,31 +217,73 @@ Departamento de Ingeniería Civil""",
         ca: CarreraAcademica, destinatario: str, formularios_pendientes
     ) -> EmailMessage:
         """Prepara el email de recordatorio de formularios pendientes."""
+        from carrera_academica.services.document_service import DocumentService
+    
         info_cargo = (
             f"{ca.cargo.get_categoria_display()} {ca.cargo.get_caracter_display()} "
             f"en la asignatura {ca.cargo.asignatura.nombre.title()}"
         )
-
+    
         email_body_lines = [
             "Estimado/a Docente,",
             f"\nLe recordamos que tiene documentación pendiente para su expediente de Carrera Académica "
             f"correspondiente a su cargo de {info_cargo}.",
-            "A continuación, se adjuntan las plantillas para los siguientes formularios:",
+            "\nA continuación, se adjuntan las plantillas de los siguientes formularios pendientes:",
             "",
-            "- Curriculum Vitae (formato CONEAU).",
         ]
-
+    
         email = EmailMessage(
             subject="Recordatorio de Documentación Pendiente - Carrera Académica",
             from_email=None,
             to=[destinatario],
         )
-
-        # Aquí iría la lógica de adjuntar plantillas
-        # (la movemos en el siguiente paso)
-
-        email.body = "\n".join(
-            email_body_lines + ["\nSaludos cordiales,", "Departamento de Ing. Civil"]
-        )
-
+    
+        # ✅ ADJUNTAR PLANTILLAS DE FORMULARIOS PENDIENTES
+        tipos_dinamicos = ["F06", "F07", "F13", "ENC", "F04", "F05"]
+    
+        for formulario in formularios_pendientes:
+            tipo = formulario.tipo_formulario
+    
+            # Si es dinámico, generar el documento personalizado
+            if tipo in tipos_dinamicos:
+                buffer, filename = DocumentService.generar_documento_dinamico(
+                    formulario)
+    
+                if buffer:
+                    email.attach(
+                        filename,
+                        buffer.read(),
+                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                    )
+                    email_body_lines.append(
+                        f"- {formulario.get_tipo_formulario_display()} (personalizado)")
+                else:
+                    logger.warning(f"No se pudo generar documento para {tipo}")
+                    email_body_lines.append(
+                        f"- {formulario.get_tipo_formulario_display()} (sin plantilla disponible)")
+    
+            else:
+                # Para formularios estáticos, adjuntar la plantilla genérica
+                from carrera_academica.models import PlantillaDocumento
+    
+                plantilla = PlantillaDocumento.objects.filter(
+                    tipo_formulario=tipo).first()
+    
+                if plantilla and plantilla.archivo:
+                    email.attach_file(plantilla.archivo.path)
+                    email_body_lines.append(
+                        f"- {formulario.get_tipo_formulario_display()}")
+                else:
+                    logger.warning(f"No se encontró plantilla para {tipo}")
+                    email_body_lines.append(
+                        f"- {formulario.get_tipo_formulario_display()} (sin plantilla disponible)")
+    
+        email_body_lines.extend([
+            "\nPor favor, complete la documentación y súbala al sistema a la brevedad.",
+            "\nSaludos cordiales,",
+            "Departamento de Ingeniería Civil"
+        ])
+    
+        email.body = "\n".join(email_body_lines)
+    
         return email
