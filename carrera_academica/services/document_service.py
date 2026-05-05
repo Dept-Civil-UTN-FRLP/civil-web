@@ -10,7 +10,7 @@ from typing import Optional, Tuple
 from django.utils.text import slugify
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.shared import Inches
+from docx.shared import Inches, Cm
 
 from carrera_academica.models import Formulario, MembreteAnual, PlantillaDocumento
 
@@ -130,7 +130,7 @@ class DocumentService:
         for p in cell_logo.paragraphs:
             if "[LOGO_ANUAL]" in p.text:
                 p.text = ""
-                p.add_run().add_picture(membrete.logo.path, height=Inches(1.5))
+                p.add_run().add_picture(membrete.logo.path, height=Inches(0.8))
 
         # Celda de la frase (columna 1)
         cell_frase = table.cell(0, 1)
