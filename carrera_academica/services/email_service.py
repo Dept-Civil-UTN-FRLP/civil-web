@@ -284,8 +284,12 @@ Departamento de Ingeniería Civil""",
 
                 if plantilla and plantilla.archivo:
                     email.attach_file(plantilla.archivo.path)
-                    email_body_lines.append(
-                        f"- {formulario.get_tipo_formulario_display()}")
+                    if tipo == 'F02':
+                        email_body_lines.append(
+                            f"  • Planificación de Cátedra (adjunto)")
+                    else:
+                        email_body_lines.append(
+                            f"  • {formulario.get_tipo_formulario_display()} (adjunto)")
                 else:
                     logger.warning(f"No se encontró plantilla para {tipo}")
                     email_body_lines.append(
