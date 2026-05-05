@@ -4,6 +4,7 @@ Servicio para manejo de envío de emails relacionados con Carrera Académica.
 """
 import logging
 from typing import List, Optional
+from django.db.models import Q
 
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
@@ -87,6 +88,7 @@ class EmailService:
     ) -> tuple[bool, str]:
         """
         Envía recordatorio de formularios pendientes al docente.
+        Solo incluye formularios de años anteriores o del año actual.
 
         Args:
             ca: Instancia de CarreraAcademica
@@ -94,15 +96,26 @@ class EmailService:
         Returns:
             tuple: (exito, mensaje)
         """
+        from django.utils import timezone
+
         docente = ca.cargo.docente
         correo_principal = docente.correos.filter(principal=True).first()
 
         if not correo_principal:
             return False, f"El docente {docente} no tiene correo principal"
 
+        # ✅ FILTRO: Solo formularios hasta el año actual
+        anio_actual = timezone.now().year
         tipos_a_notificar = ["F02", "F04", "F05"]
+
         formularios_pendientes = Formulario.objects.filter(
-            carrera_academica=ca, estado="PEN", tipo_formulario__in=tipos_a_notificar
+            carrera_academica=ca,
+            estado="PEN",
+            tipo_formulario__in=tipos_a_notificar
+        ).filter(
+            # Sin año (formularios únicos como F02) O año <= actual
+            Q(anio_correspondiente__isnull=True) | Q(
+                anio_correspondiente__lte=anio_actual)
         )
 
         if not formularios_pendientes.exists():
@@ -218,12 +231,12 @@ Departamento de Ingeniería Civil""",
     ) -> EmailMessage:
         """Prepara el email de recordatorio de formularios pendientes."""
         from carrera_academica.services.document_service import DocumentService
-    
+
         info_cargo = (
             f"{ca.cargo.get_categoria_display()} {ca.cargo.get_caracter_display()} "
             f"en la asignatura {ca.cargo.asignatura.nombre.title()}"
         )
-    
+
         email_body_lines = [
             "Estimado/a Docente,",
             f"\nLe recordamos que tiene documentación pendiente para su expediente de Carrera Académica "
@@ -231,24 +244,24 @@ Departamento de Ingeniería Civil""",
             "\nA continuación, se adjuntan las plantillas de los siguientes formularios pendientes:",
             "",
         ]
-    
+
         email = EmailMessage(
             subject="Recordatorio de Documentación Pendiente - Carrera Académica",
             from_email=None,
             to=[destinatario],
         )
-    
+
         # ✅ ADJUNTAR PLANTILLAS DE FORMULARIOS PENDIENTES
         tipos_dinamicos = ["F06", "F07", "F13", "ENC", "F04", "F05"]
-    
+
         for formulario in formularios_pendientes:
             tipo = formulario.tipo_formulario
-    
+
             # Si es dinámico, generar el documento personalizado
             if tipo in tipos_dinamicos:
                 buffer, filename = DocumentService.generar_documento_dinamico(
                     formulario)
-    
+
                 if buffer:
                     email.attach(
                         filename,
@@ -261,14 +274,14 @@ Departamento de Ingeniería Civil""",
                     logger.warning(f"No se pudo generar documento para {tipo}")
                     email_body_lines.append(
                         f"- {formulario.get_tipo_formulario_display()} (sin plantilla disponible)")
-    
+
             else:
                 # Para formularios estáticos, adjuntar la plantilla genérica
                 from carrera_academica.models import PlantillaDocumento
-    
+
                 plantilla = PlantillaDocumento.objects.filter(
                     tipo_formulario=tipo).first()
-    
+
                 if plantilla and plantilla.archivo:
                     email.attach_file(plantilla.archivo.path)
                     email_body_lines.append(
@@ -277,13 +290,13 @@ Departamento de Ingeniería Civil""",
                     logger.warning(f"No se encontró plantilla para {tipo}")
                     email_body_lines.append(
                         f"- {formulario.get_tipo_formulario_display()} (sin plantilla disponible)")
-    
+
         email_body_lines.extend([
             "\nPor favor, complete la documentación y súbala al sistema a la brevedad.",
             "\nSaludos cordiales,",
             "Departamento de Ingeniería Civil"
         ])
-    
+
         email.body = "\n".join(email_body_lines)
-    
+
         return email
