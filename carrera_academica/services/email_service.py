@@ -231,6 +231,7 @@ Departamento de Ingeniería Civil""",
     ) -> EmailMessage:
         """Prepara el email de recordatorio de formularios pendientes."""
         from carrera_academica.services.document_service import DocumentService
+        from collections import defaultdict
 
         info_cargo = (
             f"{ca.cargo.get_categoria_display()} {ca.cargo.get_caracter_display()} "
@@ -241,7 +242,7 @@ Departamento de Ingeniería Civil""",
             "Estimado/a Docente,",
             f"\nLe recordamos que tiene documentación pendiente para su expediente de Carrera Académica "
             f"correspondiente a su cargo de {info_cargo}.",
-            "\nA continuación, se adjuntan las plantillas de los siguientes formularios pendientes:",
+            "\nA continuación, se detallan los formularios pendientes de entrega:",
             "",
         ]
 
@@ -251,54 +252,71 @@ Departamento de Ingeniería Civil""",
             to=[destinatario],
         )
 
-        # ✅ ADJUNTAR PLANTILLAS DE FORMULARIOS PENDIENTES
+        # ✅ AGRUPAR FORMULARIOS POR TIPO
+        formularios_por_tipo = defaultdict(list)
+        for f in formularios_pendientes:
+            formularios_por_tipo[f.tipo_formulario].append(f)
+
+        # ✅ PROCESAR POR TIPO
         tipos_dinamicos = ["F06", "F07", "F13", "ENC", "F04", "F05"]
 
-        for formulario in formularios_pendientes:
-            tipo = formulario.tipo_formulario
+        for tipo, formularios_grupo in sorted(formularios_por_tipo.items()):
+            # Obtener años si aplica
+            anios = [
+                f.anio_correspondiente for f in formularios_grupo if f.anio_correspondiente]
+            anios_texto = "-".join(str(a) for a in sorted(anios)) if anios else ""
 
-            # Si es dinámico, generar el documento personalizado
-            if tipo in tipos_dinamicos:
-                buffer, filename = DocumentService.generar_documento_dinamico(
-                    formulario)
-
-                if buffer:
-                    email.attach(
-                        filename,
-                        buffer.read(),
-                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                    )
-                    email_body_lines.append(
-                        f"- {formulario.get_tipo_formulario_display()} (personalizado)")
-                else:
-                    logger.warning(f"No se pudo generar documento para {tipo}")
-                    email_body_lines.append(
-                        f"- {formulario.get_tipo_formulario_display()} (sin plantilla disponible)")
-
+            # Nombre descriptivo
+            if tipo == 'F02':
+                nombre_display = "Planificación de Cátedra"
+            elif tipo == 'F04':
+                nombre_display = f"Plan Anual de Actividades años {anios_texto}" if anios_texto else "Plan Anual de Actividades"
+            elif tipo == 'F05':
+                nombre_display = f"Informe Anual de Actividades años {anios_texto}" if anios_texto else "Informe Anual de Actividades"
             else:
-                # Para formularios estáticos, adjuntar la plantilla genérica
-                from carrera_academica.models import PlantillaDocumento
+                nombre_display = formularios_grupo[0].get_tipo_formulario_display()
 
-                plantilla = PlantillaDocumento.objects.filter(
-                    tipo_formulario=tipo).first()
+            # Adjuntar documentos
+            adjuntos_ok = 0
+            for formulario in formularios_grupo:
+                if tipo in tipos_dinamicos:
+                    buffer, filename = DocumentService.generar_documento_dinamico(
+                        formulario)
 
-                if plantilla and plantilla.archivo:
-                    email.attach_file(plantilla.archivo.path)
-                    if tipo == 'F02':
-                        email_body_lines.append(
-                            f"  • Planificación de Cátedra (adjunto)")
+                    if buffer:
+                        email.attach(
+                            filename,
+                            buffer.read(),
+                            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                        )
+                        adjuntos_ok += 1
                     else:
-                        email_body_lines.append(
-                            f"  • {formulario.get_tipo_formulario_display()} (adjunto)")
+                        logger.warning(f"No se pudo generar documento para {tipo}")
                 else:
-                    logger.warning(f"No se encontró plantilla para {tipo}")
-                    email_body_lines.append(
-                        f"- {formulario.get_tipo_formulario_display()} (sin plantilla disponible)")
+                    # Para formularios estáticos
+                    from carrera_academica.models import PlantillaDocumento
+
+                    plantilla = PlantillaDocumento.objects.filter(
+                        tipo_formulario=tipo).first()
+
+                    if plantilla and plantilla.archivo:
+                        email.attach_file(plantilla.archivo.path)
+                        adjuntos_ok += 1
+                    else:
+                        logger.warning(f"No se encontró plantilla para {tipo}")
+
+            # Agregar línea al cuerpo
+            if adjuntos_ok > 0:
+                email_body_lines.append(f"  • {tipo} - {nombre_display} (adjunto)")
+            else:
+                email_body_lines.append(
+                    f"  • {tipo} - {nombre_display} (sin plantilla disponible)")
 
         email_body_lines.extend([
-            "\nPor favor, complete la documentación y súbala al sistema a la brevedad.",
+            "\nPor favor, complete los formularios y envíelos por correo adjuntando los archivos.",
             "\nSaludos cordiales,",
-            "Departamento de Ingeniería Civil"
+            "Departamento de Ingeniería Civil",
+            "UTN - Facultad Regional La Plata"
         ])
 
         email.body = "\n".join(email_body_lines)
