@@ -1,4 +1,5 @@
 from datetime import datetime
+from django.conf import settings
 
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -246,6 +247,7 @@ def generar_pdf_estructura(request, asignatura_id):
         "areas": areas,
         "bloques": bloques,
         "asignaturas_del_area": asignaturas_del_area,
+        "MEDIA_ROOT": settings.MEDIA_ROOT,
     }
 
     # Renderizar HTML
@@ -254,7 +256,7 @@ def generar_pdf_estructura(request, asignatura_id):
     )
 
     # Generar PDF
-    html = HTML(string=html_string)
+    html = HTML(string=html_string, base_url=request.build_absolute_uri('/'))
     pdf = html.write_pdf()
 
     # Respuesta HTTP
