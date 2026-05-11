@@ -98,11 +98,11 @@ def calcular_antiguedad(fecha_inicio):
         months += 12
 
     if years > 0 and months > 0:
-        return f"{years} años {months} meses"
+        return f"{years} A {months} M"
     elif years > 0:
-        return f"{years} años"
+        return f"{years} A"
     elif months > 0:
-        return f"{months} meses"
+        return f"{months} M"
     else:
         return "Menos de 1 mes"
 
@@ -212,14 +212,20 @@ def generar_pdf_estructura(request, asignatura_id):
 
     # Obtener membrete del año actual
     from carrera_academica.models import MembreteAnual
+    import pathlib
 
     ano_actual = timezone.now().year
     membrete = MembreteAnual.objects.filter(anio=ano_actual).first()
 
+    # ✅ Convertir ruta del logo a URI para WeasyPrint
+    logo_uri = None
+    if membrete and membrete.logo:
+        logo_uri = pathlib.Path(membrete.logo.path).as_uri()
+
     # Áreas y bloques
     areas = list(asignatura.area.all()) if incluir_areas else []
     bloques = list(asignatura.bloque.all()) if incluir_bloques else []
-    
+
     import string
     asignaturas_del_area = []
     if areas:
@@ -243,6 +249,7 @@ def generar_pdf_estructura(request, asignatura_id):
         "total_comisiones_auxiliares": total_comisiones_auxiliares,
         "otros_aportes": otros_aportes if incluir_otros_aportes else None,
         "membrete": membrete,
+        "logo_uri": logo_uri,  # ✅ Pasar URI del logo
         "fecha_generacion": timezone.now(),
         "areas": areas,
         "bloques": bloques,

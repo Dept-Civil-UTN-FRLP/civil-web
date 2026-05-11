@@ -6,7 +6,7 @@
     <style>
         @page {
             size: A4;
-            margin-top: 2cm;
+            margin-top: 1cm;
             margin-bottom: 2cm;
             margin-left: 2.5cm;
             margin-right: 1cm;
@@ -28,7 +28,7 @@
             padding-bottom: 15px;
         }
 
-        .header img { max-height: 80px; margin-bottom: 10px; }
+        .header img { max-height: 120px; margin-bottom: 10px; }
         .header h1 { font-size: 14pt; font-weight: bold; margin-bottom: 5px; }
         .header .frase { font-size: 9pt; font-style: italic; color: #555; }
 
@@ -202,13 +202,13 @@
 <body>
 
 <div class="header">
-    {% if membrete %}
+    {% if logo_uri %}
     <table style="width: 100%; border: none; margin-bottom: 10px;">
         <tr>
             <td style="width: 35%; text-align: left; border: none; padding: 0;">
-                <img src="file://{{ MEDIA_ROOT }}/{{ membrete.logo }}" 
+                <img src="{{ logo_uri }}" 
                      alt="Logo UTN" 
-                     style="max-height: 70px; width: auto;">
+                     style="max-height: 3cm; width: auto;">  <!-- ✅ Cambiar a 3cm -->
             </td>
             <td style="width: 65%; text-align: right; vertical-align: middle; border: none; padding: 0;">
                 <div style="font-size: 10pt; font-weight: 500; color: #333; line-height: 1.3;">
