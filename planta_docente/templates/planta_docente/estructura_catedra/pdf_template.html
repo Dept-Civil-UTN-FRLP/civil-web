@@ -8,7 +8,7 @@
             size: A4;
             margin-top: 2cm;
             margin-bottom: 2cm;
-            margin-left: 3cm;
+            margin-left: 2.5cm;
             margin-right: 1cm;
         }
 
@@ -76,6 +76,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
+            table-layout: fixed;
         }
 
         table.cargos th {
@@ -85,12 +86,66 @@
             font-size: 9pt;
             font-weight: bold;
             text-align: left;
+            white-space: normal !important;
         }
 
         table.cargos td {
             border: 1px solid #000;
             padding: 6px 8px;
             font-size: 9pt;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            word-wrap: break-word;
+        }
+
+        /* ✅ Anchos específicos por columna */
+        table.cargos th:nth-child(1), /* Apellido y Nombre */
+        table.cargos td:nth-child(1) {
+            width: 20%;
+            white-space: normal; /* Permitir wrap en nombres */
+        }
+
+        table.cargos th:nth-child(2), /* Legajo */
+        table.cargos td:nth-child(2) {
+            width: 8%;
+        }
+
+        table.cargos th:nth-child(3), /* Cargo */
+        table.cargos td:nth-child(3) {
+            width: 12%;
+        }
+
+        table.cargos th:nth-child(4), /* Dedicación */
+        table.cargos td:nth-child(4) {
+            width: 10%;
+        }
+
+        table.cargos th:nth-child(5), /* Carácter */
+        table.cargos td:nth-child(5) {
+            width: 10%;
+        }
+
+        table.cargos th:nth-child(6), /* Comisiones */
+        table.cargos td:nth-child(6) {
+            width: 8%;
+            text-align: center;
+        }
+
+        table.cargos th:nth-child(7), /* 1ª Desig */
+        table.cargos td:nth-child(7) {
+            width: 10%;
+            text-align: center;
+        }
+
+        table.cargos th:nth-child(8), /* Última Desig */
+        table.cargos td:nth-child(8) {
+            width: 10%;
+            text-align: center;
+        }
+
+        table.cargos th:nth-child(9), /* Antigüedad */
+        table.cargos td:nth-child(9) {
+            width: 12%;
         }
 
         table.cargos td.text-center { text-align: center; }
@@ -240,7 +295,7 @@
                 <th>Cargo y Jerarquía</th>
                 <th>Dedicación</th>
                 <th>Carácter</th>
-                <th class="text-center">Comisiones</th>
+                <th class="text-center">Com</th>
                 <th class="text-center">1ª Desig.</th>
                 <th class="text-center">Última Desig.</th>
                 <th>Antigüedad</th>
@@ -279,7 +334,7 @@
                 <th>Cargo y Jerarquía</th>
                 <th>Dedicación</th>
                 <th>Carácter</th>
-                <th class="text-center">Comisiones</th>
+                <th class="text-center">Com</th>
                 <th class="text-center">1ª Desig.</th>
                 <th class="text-center">Última Desig.</th>
                 <th>Antigüedad</th>
