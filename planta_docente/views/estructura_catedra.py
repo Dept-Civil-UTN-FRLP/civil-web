@@ -190,7 +190,7 @@ def generar_pdf_estructura(request, asignatura_id):
         cargo_data = {
             'docente': cargo.docente,
             'legajo': cargo.docente.legajo,
-            'categoria': cargo.get_categoria_display(),
+            'categoria': cargo.get_categoria_display_abreviada(),
             'caracter': cargo.get_caracter_display(),
             'dedicacion': cargo.get_dedicacion_display(),
             'comisiones': cargo.cantidad_comisiones,

@@ -687,6 +687,19 @@ class Cargo(models.Model):
         self.save()
 
         return True, "Renovación cancelada exitosamente"
+    
+    def get_categoria_display_abreviada(self):
+        """Retorna nombre abreviado de categoría para PDFs."""
+        abreviaturas = {
+            'tit': 'Titular',
+            'aso': 'Asociado',
+            'adj': 'Adjunto',
+            'jtp': 'JTP',
+            'atp1': 'ATP1',
+            'atp2': 'ATP2',
+            'ads': 'Adscripto',
+        }
+        return abreviaturas.get(self.categoria, self.get_categoria_display())
 
     def get_jerarquia_display(self):
         """Retorna jerarquía formateada."""
