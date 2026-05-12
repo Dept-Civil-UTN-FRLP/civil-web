@@ -4,7 +4,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 
-from planta_docente.models import Cargo, Docente, Resolucion
+from planta_docente.models import Cargo, Docente, Resolucion, Asignatura
 
 from .managers import CarreraAcademicaManager, EvaluacionManager
 
@@ -144,6 +144,16 @@ class CarreraAcademica(models.Model):
     observaciones_cierre = models.TextField(
         blank=True,
         verbose_name="Observaciones del Cierre"
+    )
+    
+    jurado = models.ForeignKey(
+        'Jurado',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='carreras_academicas',
+        verbose_name="Jurado Evaluador",
+        help_text="Jurado asignado para la evaluación de esta CA"
     )
     
     objects = CarreraAcademicaManager()
@@ -984,3 +994,174 @@ class PlantillaDocumento(models.Model):
 
     def __str__(self):
         return f"Plantilla para {self.tipo_formulario}"
+
+
+class VeedorGraduado(models.Model):
+    """Graduado que actúa como veedor en evaluaciones de CA."""
+    apellido = models.CharField(max_length=100)
+    nombre = models.CharField(max_length=100)
+    email = models.EmailField()
+    telefono = models.CharField(max_length=20, blank=True)
+    titulo = models.CharField(max_length=200, help_text="Ej: Ingeniero Civil")
+    año_egreso = models.IntegerField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.apellido}, {self.nombre}"
+
+    class Meta:
+        verbose_name = "Veedor Graduado"
+        verbose_name_plural = "Veedores Graduados"
+        ordering = ['apellido', 'nombre']
+
+
+class VeedorEstudiante(models.Model):
+    """Estudiante que actúa como veedor en evaluaciones de CA."""
+    apellido = models.CharField(max_length=100)
+    nombre = models.CharField(max_length=100)
+    email = models.EmailField()
+    legajo = models.CharField(max_length=20)
+
+    def __str__(self):
+        return f"{self.apellido}, {self.nombre} (Leg. {self.legajo})"
+
+    class Meta:
+        verbose_name = "Veedor Estudiante"
+        verbose_name_plural = "Veedores Estudiantes"
+        ordering = ['apellido', 'nombre']
+
+
+class Jurado(models.Model):
+    """
+    Jurado reutilizable para evaluación de múltiples Carreras Académicas.
+    Compuesto por 3 profesores titulares (con suplentes) + veedores.
+    """
+    nombre = models.CharField(
+        max_length=300,
+        unique=True,
+        editable=False,
+        help_text="Generado automáticamente: Apellido1 - Apellido2 - Apellido3"
+    )
+
+    # Departamento al que pertenece
+    departamento = models.CharField(
+        max_length=15,
+        choices=Asignatura.DEPTO_CHOICES,
+        default='civil',
+        help_text="Departamento al que pertenece este jurado"
+    )
+
+    # ===== PROFESORES TITULARES =====
+    profesor_titular_1 = models.ForeignKey(
+        'planta_docente.Docente',
+        on_delete=models.PROTECT,
+        related_name='jurado_titular_1',
+        verbose_name="Profesor Titular 1"
+    )
+    profesor_suplente_1 = models.ForeignKey(
+        'planta_docente.Docente',
+        on_delete=models.PROTECT,
+        related_name='jurado_suplente_1',
+        null=True,
+        blank=True,
+        verbose_name="Profesor Suplente 1"
+    )
+
+    profesor_titular_2 = models.ForeignKey(
+        'planta_docente.Docente',
+        on_delete=models.PROTECT,
+        related_name='jurado_titular_2',
+        verbose_name="Profesor Titular 2"
+    )
+    profesor_suplente_2 = models.ForeignKey(
+        'planta_docente.Docente',
+        on_delete=models.PROTECT,
+        related_name='jurado_suplente_2',
+        null=True,
+        blank=True,
+        verbose_name="Profesor Suplente 2"
+    )
+
+    profesor_titular_3 = models.ForeignKey(
+        'planta_docente.Docente',
+        on_delete=models.PROTECT,
+        related_name='jurado_titular_3',
+        verbose_name="Profesor Titular 3"
+    )
+    profesor_suplente_3 = models.ForeignKey(
+        'planta_docente.Docente',
+        on_delete=models.PROTECT,
+        related_name='jurado_suplente_3',
+        null=True,
+        blank=True,
+        verbose_name="Profesor Suplente 3"
+    )
+
+    # ===== VEEDORES =====
+    veedor_graduado_titular = models.ForeignKey(
+        'VeedorGraduado',
+        on_delete=models.PROTECT,
+        related_name='jurado_graduado_titular',
+        null=True,
+        blank=True,
+        verbose_name="Veedor Graduado Titular"
+    )
+    veedor_graduado_suplente = models.ForeignKey(
+        'VeedorGraduado',
+        on_delete=models.PROTECT,
+        related_name='jurado_graduado_suplente',
+        null=True,
+        blank=True,
+        verbose_name="Veedor Graduado Suplente"
+    )
+
+    veedor_estudiante_titular = models.ForeignKey(
+        'VeedorEstudiante',
+        on_delete=models.PROTECT,
+        related_name='jurado_estudiante_titular',
+        null=True,
+        blank=True,
+        verbose_name="Veedor Estudiante Titular"
+    )
+    veedor_estudiante_suplente = models.ForeignKey(
+        'VeedorEstudiante',
+        on_delete=models.PROTECT,
+        related_name='jurado_estudiante_suplente',
+        null=True,
+        blank=True,
+        verbose_name="Veedor Estudiante Suplente"
+    )
+
+    # ===== METADATA =====
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    activo = models.BooleanField(default=True)
+    notas = models.TextField(
+        blank=True,
+        help_text="Observaciones o notas internas sobre este jurado"
+    )
+
+    def save(self, *args, **kwargs):
+        """Generar nombre automáticamente con apellidos de los 3 titulares."""
+        if not self.nombre or not self.pk:  # Solo al crear o si está vacío
+            apellidos = [
+                self.profesor_titular_1.apellido,
+                self.profesor_titular_2.apellido,
+                self.profesor_titular_3.apellido,
+            ]
+            self.nombre = " - ".join(apellidos)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.nombre} ({self.get_departamento_display()})"
+
+    def get_cas_asignadas(self):
+        """Retorna las CAs que usan este jurado."""
+        return self.carreras_academicas.all()
+
+    def get_cantidad_cas(self):
+        """Cantidad de CAs asignadas a este jurado."""
+        return self.carreras_academicas.count()
+
+    class Meta:
+        verbose_name = "Jurado"
+        verbose_name_plural = "Jurados"
+        ordering = ['-fecha_creacion']
