@@ -7,6 +7,9 @@ from django.utils import timezone
 from .models import (
     CarreraAcademica,
     JuntaEvaluadora,
+    VeedorGraduado,
+    VeedorEstudiante,
+    Jurado,
 )
 from planta_docente.models import Asignatura, Cargo, Docente, Resolucion
 
@@ -281,3 +284,71 @@ class NotificacionJuntaForm(forms.Form):
 
         for key, miembro in miembros:
             self.fields[key] = forms.BooleanField(label=str(miembro), required=False)
+
+
+class VeedorGraduadoForm(forms.ModelForm):
+    class Meta:
+        model = VeedorGraduado
+        fields = ['apellido', 'nombre', 'email',
+                  'telefono', 'titulo', 'año_egreso']
+        widgets = {
+            'apellido': forms.TextInput(attrs={'class': 'form-control'}),
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'telefono': forms.TextInput(attrs={'class': 'form-control'}),
+            'titulo': forms.TextInput(attrs={'class': 'form-control'}),
+            'año_egreso': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
+
+
+class VeedorEstudianteForm(forms.ModelForm):
+    class Meta:
+        model = VeedorEstudiante
+        fields = ['apellido', 'nombre', 'email', 'legajo']
+        widgets = {
+            'apellido': forms.TextInput(attrs={'class': 'form-control'}),
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'legajo': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+
+class JuradoForm(forms.ModelForm):
+    class Meta:
+        model = Jurado
+        fields = [
+            'departamento',
+            'profesor_titular_1', 'profesor_suplente_1',
+            'profesor_titular_2', 'profesor_suplente_2',
+            'profesor_titular_3', 'profesor_suplente_3',
+            'veedor_graduado_titular', 'veedor_graduado_suplente',
+            'veedor_estudiante_titular', 'veedor_estudiante_suplente',
+            'notas',
+        ]
+        widgets = {
+            'departamento': forms.Select(attrs={'class': 'form-select'}),
+            'profesor_titular_1': forms.Select(attrs={'class': 'form-select'}),
+            'profesor_suplente_1': forms.Select(attrs={'class': 'form-select'}),
+            'profesor_titular_2': forms.Select(attrs={'class': 'form-select'}),
+            'profesor_suplente_2': forms.Select(attrs={'class': 'form-select'}),
+            'profesor_titular_3': forms.Select(attrs={'class': 'form-select'}),
+            'profesor_suplente_3': forms.Select(attrs={'class': 'form-select'}),
+            'veedor_graduado_titular': forms.Select(attrs={'class': 'form-select'}),
+            'veedor_graduado_suplente': forms.Select(attrs={'class': 'form-select'}),
+            'veedor_estudiante_titular': forms.Select(attrs={'class': 'form-select'}),
+            'veedor_estudiante_suplente': forms.Select(attrs={'class': 'form-select'}),
+            'notas': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Filtrar solo docentes con categoría de profesor
+        from planta_docente.models import Docente
+        profesores = Docente.objects.filter(
+            cargo_docente__categoria__in=['tit', 'aso', 'adj']
+        ).distinct().order_by('apellido', 'nombre')
+
+        for field_name in ['profesor_titular_1', 'profesor_suplente_1',
+                           'profesor_titular_2', 'profesor_suplente_2',
+                           'profesor_titular_3', 'profesor_suplente_3']:
+            self.fields[field_name].queryset = profesores
