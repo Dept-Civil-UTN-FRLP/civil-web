@@ -50,6 +50,7 @@ from .models import (
     Jurado,
     VeedorEstudiante,
     VeedorGraduado,
+    Asignatura
 )
 
 logger = logging.getLogger(__name__)
