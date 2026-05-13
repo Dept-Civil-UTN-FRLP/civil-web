@@ -267,3 +267,48 @@ admin.site.register(Resolucion, ResolucionAdmin)
 admin.site.register(CarreraAcademica, CarreraAcademicaAdmin)
 admin.site.register(PlantillaDocumento, PlantillaDocumentoAdmin)
 admin.site.register(Evaluacion, EvaluacionAdmin)
+
+
+@admin.register(VeedorGraduado)
+class VeedorGraduadoAdmin(admin.ModelAdmin):
+    list_display = ['apellido', 'nombre', 'email', 'titulo', 'año_egreso']
+    search_fields = ['apellido', 'nombre', 'email']
+    list_filter = ['año_egreso']
+
+
+@admin.register(VeedorEstudiante)
+class VeedorEstudianteAdmin(admin.ModelAdmin):
+    list_display = ['apellido', 'nombre', 'legajo', 'email']
+    search_fields = ['apellido', 'nombre', 'legajo', 'email']
+
+
+@admin.register(Jurado)
+class JuradoAdmin(admin.ModelAdmin):
+    list_display = ['nombre', 'departamento',
+                    'activo', 'fecha_creacion', 'cantidad_cas']
+    list_filter = ['departamento', 'activo', 'fecha_creacion']
+    search_fields = ['nombre', 'notas']
+    readonly_fields = ['nombre', 'fecha_creacion']
+
+    fieldsets = (
+        ('Información General', {
+            'fields': ('nombre', 'departamento', 'activo', 'fecha_creacion', 'notas')
+        }),
+        ('Profesores Titulares', {
+            'fields': (
+                ('profesor_titular_1', 'profesor_suplente_1'),
+                ('profesor_titular_2', 'profesor_suplente_2'),
+                ('profesor_titular_3', 'profesor_suplente_3'),
+            )
+        }),
+        ('Veedores', {
+            'fields': (
+                ('veedor_graduado_titular', 'veedor_graduado_suplente'),
+                ('veedor_estudiante_titular', 'veedor_estudiante_suplente'),
+            )
+        }),
+    )
+
+    def cantidad_cas(self, obj):
+        return obj.get_cantidad_cas()
+    cantidad_cas.short_description = 'CAs Asignadas'
