@@ -1,0 +1,116 @@
+{% extends 'carrera_academica/base_ca.html' %}
+
+{% block title %}Jurados{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-people-fill"></i> Jurados Evaluadores</h2>
+        <a href="{% url 'carrera_academica:crear_jurado' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Crear Jurado
+        </a>
+    </div>
+
+    <!-- Filtro por departamento -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="departamento" class="form-label">Filtrar por Departamento:</label>
+                    <select name="departamento" id="departamento" class="form-select" onchange="this.form.submit()">
+                        <option value="">Todos los departamentos</option>
+                        {% for code, name in departamentos %}
+                        <option value="{{ code }}" {% if departamento_filter == code %}selected{% endif %}>
+                            {{ name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de jurados -->
+    <div class="row">
+        {% for jurado in jurados %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ jurado.nombre }}</h5>
+                    <span class="badge bg-light text-dark">{{ jurado.get_departamento_display }}</span>
+                </div>
+                <div class="card-body">
+                    <h6 class="text-muted mb-3">
+                        <i class="bi bi-mortarboard-fill"></i> Profesores Titulares:
+                    </h6>
+                    <ol class="mb-3">
+                        <li>
+                            <strong>{{ jurado.profesor_titular_1 }}</strong>
+                            {% if jurado.profesor_suplente_1 %}
+                            <br><small class="text-muted">Suplente: {{ jurado.profesor_suplente_1 }}</small>
+                            {% endif %}
+                        </li>
+                        <li>
+                            <strong>{{ jurado.profesor_titular_2 }}</strong>
+                            {% if jurado.profesor_suplente_2 %}
+                            <br><small class="text-muted">Suplente: {{ jurado.profesor_suplente_2 }}</small>
+                            {% endif %}
+                        </li>
+                        <li>
+                            <strong>{{ jurado.profesor_titular_3 }}</strong>
+                            {% if jurado.profesor_suplente_3 %}
+                            <br><small class="text-muted">Suplente: {{ jurado.profesor_suplente_3 }}</small>
+                            {% endif %}
+                        </li>
+                    </ol>
+
+                    <h6 class="text-muted mb-2">
+                        <i class="bi bi-eye-fill"></i> Veedores:
+                    </h6>
+                    <ul class="list-unstyled mb-3">
+                        <li>
+                            🎓 <strong>Graduado:</strong> 
+                            {{ jurado.veedor_graduado_titular|default:"<span class='text-muted'>Sin asignar</span>" }}
+                        </li>
+                        <li>
+                            📚 <strong>Estudiante:</strong> 
+                            {{ jurado.veedor_estudiante_titular|default:"<span class='text-muted'>Sin asignar</span>" }}
+                        </li>
+                    </ul>
+
+                    {% if jurado.notas %}
+                    <div class="alert alert-info py-2 mb-3">
+                        <small><strong>Notas:</strong> {{ jurado.notas }}</small>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-light d-flex justify-content-between align-items-center">
+                    <span>
+                        <strong>CAs asignadas:</strong> 
+                        <span class="badge bg-info">{{ jurado.get_cantidad_cas }}</span>
+                    </span>
+                    <div>
+                        <a href="{% url 'carrera_academica:detalle_jurado' jurado.pk %}" 
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> Ver
+                        </a>
+                        <a href="{% url 'carrera_academica:editar_jurado' jurado.pk %}" 
+                           class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil"></i> Editar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i> 
+                No hay jurados creados. 
+                <a href="{% url 'carrera_academica:crear_jurado' %}">Crear el primero</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
