@@ -80,4 +80,17 @@ urlpatterns = [
     path('ca/<int:pk>/gestionar-archivada/', views.gestionar_ca_archivada_view, name='gestionar_ca_archivada'),
     path('formulario/<int:pk>/borrar-archivo/',
          views.borrar_archivo_formulario_view, name='borrar_archivo_formulario'),
+    # ===== JURADOS =====
+    path('jurados/', views.lista_jurados_view, name='lista_jurados'),
+    path('jurados/crear/', views.crear_jurado_view, name='crear_jurado'),
+    path('jurados/<int:pk>/', views.detalle_jurado_view, name='detalle_jurado'),
+    path('jurados/<int:pk>/editar/', views.editar_jurado_view, name='editar_jurado'),
+    path('ca/<int:ca_pk>/asignar-jurado/', views.asignar_jurado_ca_view, name='asignar_jurado_ca'),
+
+    # ===== VEEDORES =====
+    path('veedores/graduados/', views.lista_veedores_graduados_view, name='lista_veedores_graduados'),
+    path('veedores/graduados/crear/', views.crear_veedor_graduado_view, name='crear_veedor_graduado'),
+    path('veedores/estudiantes/', views.lista_veedores_estudiantes_view, name='lista_veedores_estudiantes'),
+    path('veedores/estudiantes/crear/',
+         views.crear_veedor_estudiante_view, name='crear_veedor_estudiante'),
 ]
