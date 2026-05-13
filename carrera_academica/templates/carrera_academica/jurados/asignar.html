@@ -1,0 +1,99 @@
+{% extends 'carrera_academica/base_ca.html' %}
+
+{% block title %}Asignar Jurado{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-people-fill"></i> Asignar Jurado Evaluador
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Info de la CA -->
+                    <div class="alert alert-info">
+                        <h6 class="mb-2">Carrera Académica:</h6>
+                        <p class="mb-1"><strong>Docente:</strong> {{ ca.cargo.docente }}</p>
+                        <p class="mb-1"><strong>Asignatura:</strong> {{ ca.cargo.asignatura.nombre|title }}</p>
+                        <p class="mb-1"><strong>Cargo:</strong> {{ ca.cargo.get_categoria_display }}</p>
+                        <p class="mb-0"><strong>Departamento:</strong> {{ ca.cargo.asignatura.get_departamento_display }}</p>
+                    </div>
+
+                    {% if ca.jurado %}
+                    <div class="alert alert-warning">
+                        <strong>Jurado actual:</strong> {{ ca.jurado.nombre }}
+                    </div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="jurado_id" class="form-label fw-bold">
+                                Seleccionar Jurado:
+                            </label>
+                            <select name="jurado_id" id="jurado_id" class="form-select" required>
+                                <option value="">-- Seleccione un jurado --</option>
+                                {% for jurado in jurados %}
+                                <option value="{{ jurado.pk }}" {% if ca.jurado.pk == jurado.pk %}selected{% endif %}>
+                                    {{ jurado.nombre }} ({{ jurado.get_cantidad_cas }} CAs asignadas)
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">
+                                Solo se muestran jurados del departamento {{ ca.cargo.asignatura.get_departamento_display }}.
+                            </small>
+                        </div>
+
+                        <!-- Vista previa del jurado seleccionado -->
+                        <div id="jurado-preview" class="card mb-4" style="display: none;">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">Vista previa del jurado:</h6>
+                            </div>
+                            <div class="card-body" id="jurado-info">
+                                <!-- Se llena con JavaScript -->
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'carrera_academica:detalle_ca' ca.pk %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Asignar Jurado
+                            </button>
+                        </div>
+                    </form>
+
+                    {% if not jurados %}
+                    <div class="alert alert-warning mt-3">
+                        <i class="bi bi-exclamation-triangle"></i> 
+                        No hay jurados disponibles para el departamento {{ ca.cargo.asignatura.get_departamento_display }}.
+                        <a href="{% url 'carrera_academica:crear_jurado' %}">Crear un jurado</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Vista previa del jurado (opcional, mejora UX)
+document.getElementById('jurado_id').addEventListener('change', function() {
+    const juradoId = this.value;
+    const preview = document.getElementById('jurado-preview');
+    
+    if (juradoId) {
+        // Aquí podrías hacer un fetch para obtener detalles del jurado
+        preview.style.display = 'block';
+        document.getElementById('jurado-info').innerHTML = '<p class="mb-0">Jurado seleccionado: ' + this.options[this.selectedIndex].text + '</p>';
+    } else {
+        preview.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}
