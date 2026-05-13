@@ -1,4 +1,5 @@
 # carrera_academica/views.py
+from django.http import JsonResponse
 import io
 import logging
 import os
@@ -1173,3 +1174,47 @@ def crear_veedor_estudiante_view(request):
         form = VeedorEstudianteForm()
 
     return render(request, 'carrera_academica/veedores/form_estudiante.html', {'form': form})
+
+
+@login_required
+def crear_veedor_graduado_ajax(request):
+    """Crear veedor graduado vía AJAX."""
+    if request.method == 'POST':
+        form = VeedorGraduadoForm(request.POST)
+        if form.is_valid():
+            veedor = form.save()
+            return JsonResponse({
+                'success': True,
+                'veedor': {
+                    'id': veedor.pk,
+                    'texto': str(veedor)
+                }
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': str(form.errors)
+            })
+    return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+
+@login_required
+def crear_veedor_estudiante_ajax(request):
+    """Crear veedor estudiante vía AJAX."""
+    if request.method == 'POST':
+        form = VeedorEstudianteForm(request.POST)
+        if form.is_valid():
+            veedor = form.save()
+            return JsonResponse({
+                'success': True,
+                'veedor': {
+                    'id': veedor.pk,
+                    'texto': str(veedor)
+                }
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': str(form.errors)
+            })
+    return JsonResponse({'success': False, 'error': 'Método no permitido'})

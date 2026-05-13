@@ -83,11 +83,10 @@
                             <div class="col-md-6">
                                 <label class="form-label">Veedor Graduado Titular</label>
                                 {{ form.veedor_graduado_titular }}
-                                <small class="form-text text-muted">
-                                    <a href="{% url 'carrera_academica:crear_veedor_graduado' %}" target="_blank">
-                                        + Crear nuevo graduado
-                                    </a>
-                                </small>
+                                <button type="button" class="btn btn-sm btn-outline-primary mt-1" 
+                                        data-bs-toggle="modal" data-bs-target="#modalGraduado">
+                                    <i class="bi bi-plus-circle"></i> Crear nuevo graduado
+                                </button>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Suplente</label>
@@ -99,11 +98,10 @@
                             <div class="col-md-6">
                                 <label class="form-label">Veedor Estudiante Titular</label>
                                 {{ form.veedor_estudiante_titular }}
-                                <small class="form-text text-muted">
-                                    <a href="{% url 'carrera_academica:crear_veedor_estudiante' %}" target="_blank">
-                                        + Crear nuevo estudiante
-                                    </a>
-                                </small>
+                                <button type="button" class="btn btn-sm btn-outline-primary mt-1" 
+                                        data-bs-toggle="modal" data-bs-target="#modalEstudiante">
+                                    <i class="bi bi-plus-circle"></i> Crear nuevo estudiante
+                                </button>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Suplente</label>
@@ -134,4 +132,176 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Graduado -->
+<div class="modal fade" id="modalGraduado" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Crear Veedor Graduado</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formGraduado">
+                    {% csrf_token %}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Apellido *</label>
+                            <input type="text" name="apellido" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nombre *</label>
+                            <input type="text" name="nombre" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email *</label>
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Teléfono</label>
+                        <input type="text" name="telefono" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Título *</label>
+                        <input type="text" name="titulo" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Año de Egreso</label>
+                        <input type="number" name="año_egreso" class="form-control">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarGraduado()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Estudiante -->
+<div class="modal fade" id="modalEstudiante" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Crear Veedor Estudiante</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEstudiante">
+                    {% csrf_token %}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Apellido *</label>
+                            <input type="text" name="apellido" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nombre *</label>
+                            <input type="text" name="nombre" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Legajo *</label>
+                        <input type="text" name="legajo" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email *</label>
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarEstudiante()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function guardarGraduado() {
+    const form = document.getElementById('formGraduado');
+    const formData = new FormData(form);
+    
+    fetch('{% url "carrera_academica:crear_veedor_graduado_ajax" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Agregar al select
+            const select = document.querySelector('select[name="veedor_graduado_titular"]');
+            const option = new Option(data.veedor.texto, data.veedor.id, true, true);
+            select.add(option);
+            
+            // Cerrar modal y resetear form
+            bootstrap.Modal.getInstance(document.getElementById('modalGraduado')).hide();
+            form.reset();
+            
+            alert('Veedor graduado creado exitosamente');
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al guardar');
+    });
+}
+
+function guardarEstudiante() {
+    const form = document.getElementById('formEstudiante');
+    const formData = new FormData(form);
+    
+    fetch('{% url "carrera_academica:crear_veedor_estudiante_ajax" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Agregar al select
+            const select = document.querySelector('select[name="veedor_estudiante_titular"]');
+            const option = new Option(data.veedor.texto, data.veedor.id, true, true);
+            select.add(option);
+            
+            // Cerrar modal y resetear form
+            bootstrap.Modal.getInstance(document.getElementById('modalEstudiante')).hide();
+            form.reset();
+            
+            alert('Veedor estudiante creado exitosamente');
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al guardar');
+    });
+}
+</script>
+
 {% endblock %}

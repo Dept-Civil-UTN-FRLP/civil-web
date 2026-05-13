@@ -93,4 +93,8 @@ urlpatterns = [
     path('veedores/estudiantes/', views.lista_veedores_estudiantes_view, name='lista_veedores_estudiantes'),
     path('veedores/estudiantes/crear/',
          views.crear_veedor_estudiante_view, name='crear_veedor_estudiante'),
+    path('veedores/graduados/ajax/', views.crear_veedor_graduado_ajax,
+         name='crear_veedor_graduado_ajax'),
+    path('veedores/estudiantes/ajax/', views.crear_veedor_estudiante_ajax,
+         name='crear_veedor_estudiante_ajax'),
 ]
