@@ -237,6 +237,13 @@ function getCookie(name) {
 
 function guardarGraduado() {
     const form = document.getElementById('formGraduado');
+    
+    // ✅ Validar formulario antes de enviar
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
     const formData = new FormData(form);
     
     fetch('{% url "carrera_academica:crear_veedor_graduado_ajax" %}', {
@@ -249,28 +256,58 @@ function guardarGraduado() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Agregar al select
-            const select = document.querySelector('select[name="veedor_graduado_titular"]');
-            const option = new Option(data.veedor.texto, data.veedor.id, true, true);
-            select.add(option);
+            // Agregar al select titular
+            const selectTitular = document.querySelector('select[name="veedor_graduado_titular"]');
+            const option1 = new Option(data.veedor.texto, data.veedor.id, true, true);
+            selectTitular.add(option1);
+            
+            // También agregarlo al select suplente
+            const selectSuplente = document.querySelector('select[name="veedor_graduado_suplente"]');
+            const option2 = new Option(data.veedor.texto, data.veedor.id);
+            selectSuplente.add(option2);
             
             // Cerrar modal y resetear form
             bootstrap.Modal.getInstance(document.getElementById('modalGraduado')).hide();
             form.reset();
             
-            alert('Veedor graduado creado exitosamente');
+            // ✅ Mensaje de éxito más sutil
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+            alertDiv.style.zIndex = '9999';
+            alertDiv.innerHTML = `
+                <i class="bi bi-check-circle"></i> Veedor graduado creado exitosamente
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            setTimeout(() => alertDiv.remove(), 3000);
         } else {
-            alert('Error: ' + data.error);
+            // ✅ Mostrar errores específicos
+            let errorMsg = 'Errores:\n';
+            if (typeof data.error === 'object') {
+                for (const [field, errors] of Object.entries(data.error)) {
+                    errorMsg += `${field}: ${errors.join(', ')}\n`;
+                }
+            } else {
+                errorMsg = data.error;
+            }
+            alert(errorMsg);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error al guardar');
+        alert('Error al guardar. Revisa la consola.');
     });
 }
 
 function guardarEstudiante() {
     const form = document.getElementById('formEstudiante');
+    
+    // ✅ Validar formulario antes de enviar
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
     const formData = new FormData(form);
     
     fetch('{% url "carrera_academica:crear_veedor_estudiante_ajax" %}', {
@@ -283,23 +320,46 @@ function guardarEstudiante() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Agregar al select
-            const select = document.querySelector('select[name="veedor_estudiante_titular"]');
-            const option = new Option(data.veedor.texto, data.veedor.id, true, true);
-            select.add(option);
+            // Agregar al select titular
+            const selectTitular = document.querySelector('select[name="veedor_estudiante_titular"]');
+            const option1 = new Option(data.veedor.texto, data.veedor.id, true, true);
+            selectTitular.add(option1);
+            
+            // También agregarlo al select suplente
+            const selectSuplente = document.querySelector('select[name="veedor_estudiante_suplente"]');
+            const option2 = new Option(data.veedor.texto, data.veedor.id);
+            selectSuplente.add(option2);
             
             // Cerrar modal y resetear form
             bootstrap.Modal.getInstance(document.getElementById('modalEstudiante')).hide();
             form.reset();
             
-            alert('Veedor estudiante creado exitosamente');
+            // ✅ Mensaje de éxito
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+            alertDiv.style.zIndex = '9999';
+            alertDiv.innerHTML = `
+                <i class="bi bi-check-circle"></i> Veedor estudiante creado exitosamente
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            setTimeout(() => alertDiv.remove(), 3000);
         } else {
-            alert('Error: ' + data.error);
+            // ✅ Mostrar errores específicos
+            let errorMsg = 'Errores:\n';
+            if (typeof data.error === 'object') {
+                for (const [field, errors] of Object.entries(data.error)) {
+                    errorMsg += `${field}: ${errors.join(', ')}\n`;
+                }
+            } else {
+                errorMsg = data.error;
+            }
+            alert(errorMsg);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error al guardar');
+        alert('Error al guardar. Revisa la consola.');
     });
 }
 </script>

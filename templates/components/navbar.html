@@ -65,6 +65,20 @@ Variables esperadas en context:
             <li><a class="dropdown-item" href="{% url 'carrera_academica:crear_ca' %}">
               <i class="bi bi-plus-circle"></i> Nuevo Expediente
             </a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{% url 'carrera_academica:lista_jurados' %}">
+              <i class="bi bi-people-fill"></i> Jurados
+            </a></li>
+            <li><a class="dropdown-item" href="{% url 'carrera_academica:crear_jurado' %}">
+              <i class="bi bi-plus-circle"></i> Crear Jurado
+            </a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{% url 'carrera_academica:lista_veedores_graduados' %}">
+              <i class="bi bi-mortarboard-fill"></i> Veedores Graduados
+            </a></li>
+            <li><a class="dropdown-item" href="{% url 'carrera_academica:lista_veedores_estudiantes' %}">
+              <i class="bi bi-book-fill"></i> Veedores Estudiantes
+            </a></li>
           </ul>
         </li>
         {% endif %}
