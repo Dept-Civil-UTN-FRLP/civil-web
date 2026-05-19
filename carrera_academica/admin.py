@@ -312,3 +312,40 @@ class JuradoAdmin(admin.ModelAdmin):
     def cantidad_cas(self, obj):
         return obj.get_cantidad_cas()
     cantidad_cas.short_description = 'CAs Asignadas'
+
+
+@admin.register(Universidad)
+class UniversidadAdmin(admin.ModelAdmin):
+    list_display = ['sigla', 'nombre_completo',
+                    'es_utn', 'regional', 'cantidad_jurados']
+    list_filter = ['es_utn']
+    search_fields = ['sigla', 'nombre_completo']
+
+    def cantidad_jurados(self, obj):
+        return obj.jurados_externos.count()
+    cantidad_jurados.short_description = 'Jurados Externos'
+
+
+@admin.register(JuradoExterno)
+class JuradoExternoAdmin(admin.ModelAdmin):
+    list_display = ['apellido', 'nombre', 'universidad',
+                    'categoria', 'es_investigador', 'es_jubilado', 'activo']
+    list_filter = ['categoria', 'es_investigador',
+                   'es_jubilado', 'activo', 'universidad']
+    search_fields = ['apellido', 'nombre', 'email']
+    readonly_fields = ['fecha_alta']
+
+    fieldsets = (
+        ('Información Personal', {
+            'fields': ('apellido', 'nombre', 'email', 'telefono')
+        }),
+        ('Datos Institucionales', {
+            'fields': ('universidad', 'categoria', 'es_investigador', 'es_jubilado')
+        }),
+        ('Documentación', {
+            'fields': ('archivo_resolucion', 'notas')
+        }),
+        ('Estado', {
+            'fields': ('activo', 'fecha_alta')
+        }),
+    )

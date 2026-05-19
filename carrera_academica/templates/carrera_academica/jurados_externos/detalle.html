@@ -1,0 +1,144 @@
+{% extends 'carrera_academica/base_ca.html' %}
+
+{% block title %}{{ jurado }}{% endblock %}
+
+{% block ca_content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-person-badge"></i> {{ jurado }}</h2>
+        <div>
+            <a href="{% url 'carrera_academica:editar_jurado_externo' jurado.pk %}" class="btn btn-primary">
+                <i class="bi bi-pencil"></i> Editar
+            </a>
+            <a href="{% url 'carrera_academica:lista_jurados_externos' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Información del Jurado -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Información General</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Apellido y Nombre:</strong> {{ jurado.apellido }}, {{ jurado.nombre }}</p>
+                    <p><strong>Email:</strong> {{ jurado.email }}</p>
+                    <p><strong>Teléfono:</strong> {{ jurado.telefono|default:"-" }}</p>
+                    <hr>
+                    <p><strong>Universidad:</strong> {{ jurado.universidad }}</p>
+                    <p><strong>Categoría:</strong> {{ jurado.get_categoria_display }}</p>
+                    <p><strong>Docente Investigador:</strong> 
+                        {% if jurado.es_investigador %}
+                        <span class="badge bg-info">Sí</span>
+                        {% else %}
+                        No
+                        {% endif %}
+                    </p>
+                    <p><strong>Jubilado:</strong> 
+                        {% if jurado.es_jubilado %}
+                        <span class="badge bg-secondary">Sí</span>
+                        {% else %}
+                        No
+                        {% endif %}
+                    </p>
+                    <p><strong>Estado:</strong> 
+                        {% if jurado.activo %}
+                        <span class="badge bg-success">Activo</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Inactivo</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>Fecha de Alta:</strong> {{ jurado.fecha_alta|date:"d/m/Y H:i" }}</p>
+                    
+                    {% if jurado.archivo_resolucion %}
+                    <hr>
+                    <p><strong>Resolución:</strong></p>
+                    <a href="{{ jurado.archivo_resolucion.url }}" target="_blank" class="btn btn-outline-primary">
+                        <i class="bi bi-file-pdf"></i> Ver Resolución
+                    </a>
+                    {% endif %}
+                    
+                    {% if jurado.notas %}
+                    <hr>
+                    <p><strong>Notas:</strong></p>
+                    <div class="alert alert-info">{{ jurado.notas }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Participación en Jurados -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-people-fill"></i> Participación en Jurados</h5>
+                </div>
+                <div class="card-body">
+                    {% if jurados_titular_2 or jurados_titular_3 %}
+                    
+                    {% if jurados_titular_2 %}
+                    <h6 class="text-muted">Como Profesor Titular 2:</h6>
+                    <ul class="list-unstyled mb-3">
+                        {% for j in jurados_titular_2 %}
+                        <li>
+                            <a href="{% url 'carrera_academica:detalle_jurado' j.pk %}">
+                                {{ j.nombre }}
+                            </a>
+                            <small class="text-muted">({{ j.get_departamento_display }})</small>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    
+                    {% if jurados_titular_3 %}
+                    <h6 class="text-muted">Como Profesor Titular 3:</h6>
+                    <ul class="list-unstyled mb-3">
+                        {% for j in jurados_titular_3 %}
+                        <li>
+                            <a href="{% url 'carrera_academica:detalle_jurado' j.pk %}">
+                                {{ j.nombre }}
+                            </a>
+                            <small class="text-muted">({{ j.get_departamento_display }})</small>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    
+                    {% if jurados_suplente_2 or jurados_suplente_3 %}
+                    <hr>
+                    <h6 class="text-muted">Como Suplente:</h6>
+                    <ul class="list-unstyled">
+                        {% for j in jurados_suplente_2 %}
+                        <li>
+                            <a href="{% url 'carrera_academica:detalle_jurado' j.pk %}">
+                                {{ j.nombre }}
+                            </a>
+                            <small class="text-muted">(Suplente 2)</small>
+                        </li>
+                        {% endfor %}
+                        {% for j in jurados_suplente_3 %}
+                        <li>
+                            <a href="{% url 'carrera_academica:detalle_jurado' j.pk %}">
+                                {{ j.nombre }}
+                            </a>
+                            <small class="text-muted">(Suplente 3)</small>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="alert alert-warning mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> 
+                        Este jurado externo aún no ha sido asignado a ningún jurado evaluador.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

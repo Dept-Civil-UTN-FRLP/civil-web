@@ -73,6 +73,13 @@ Variables esperadas en context:
               <i class="bi bi-plus-circle"></i> Crear Jurado
             </a></li>
             <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{% url 'carrera_academica:lista_jurados_externos' %}">
+              <i class="bi bi-person-badge"></i> Jurados Externos
+            </a></li>
+            <li><a class="dropdown-item" href="{% url 'carrera_academica:lista_universidades' %}">
+              <i class="bi bi-bank"></i> Universidades
+            </a></li>
+            <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="{% url 'carrera_academica:lista_veedores_graduados' %}">
               <i class="bi bi-mortarboard-fill"></i> Veedores Graduados
             </a></li>
