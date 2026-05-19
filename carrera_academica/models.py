@@ -1031,137 +1031,224 @@ class VeedorEstudiante(models.Model):
 
 
 class Jurado(models.Model):
-    """
-    Jurado reutilizable para evaluación de múltiples Carreras Académicas.
-    Compuesto por 3 profesores titulares (con suplentes) + veedores.
-    """
+    """Jurado evaluador reutilizable para Carreras Académicas."""
     nombre = models.CharField(
         max_length=300,
-        unique=True,
         editable=False,
-        help_text="Generado automáticamente: Apellido1 - Apellido2 - Apellido3"
+        help_text="Se genera automáticamente con los apellidos de los 3 titulares"
     )
-
-    # Departamento al que pertenece
     departamento = models.CharField(
         max_length=15,
         choices=Asignatura.DEPTO_CHOICES,
-        default='civil',
         help_text="Departamento al que pertenece este jurado"
     )
 
-    # ===== PROFESORES TITULARES =====
+    # PROFESOR 1: Interno obligatorio (Docente de UTN-FRLP)
     profesor_titular_1 = models.ForeignKey(
         'planta_docente.Docente',
         on_delete=models.PROTECT,
-        related_name='jurado_titular_1',
-        verbose_name="Profesor Titular 1"
+        related_name='jurados_como_titular_1',
+        verbose_name="Profesor Titular 1 (Interno)",
+        help_text="Debe ser docente de la planta de UTN-FRLP"
     )
     profesor_suplente_1 = models.ForeignKey(
         'planta_docente.Docente',
-        on_delete=models.PROTECT,
-        related_name='jurado_suplente_1',
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        verbose_name="Profesor Suplente 1"
+        related_name='jurados_como_suplente_1',
+        verbose_name="Suplente 1"
     )
 
+    # PROFESOR 2: Externo (puede ser UTN otra regional u otra universidad)
     profesor_titular_2 = models.ForeignKey(
-        'planta_docente.Docente',
+        'JuradoExterno',
         on_delete=models.PROTECT,
-        related_name='jurado_titular_2',
-        verbose_name="Profesor Titular 2"
+        related_name='jurados_como_titular_2',
+        verbose_name="Profesor Titular 2 (Externo)",
+        help_text="Puede ser de otra regional UTN u otra universidad"
     )
     profesor_suplente_2 = models.ForeignKey(
-        'planta_docente.Docente',
-        on_delete=models.PROTECT,
-        related_name='jurado_suplente_2',
+        'JuradoExterno',
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        verbose_name="Profesor Suplente 2"
+        related_name='jurados_como_suplente_2',
+        verbose_name="Suplente 2"
     )
 
+    # PROFESOR 3: Externo obligatorio de Universidad Nacional (no UTN)
     profesor_titular_3 = models.ForeignKey(
-        'planta_docente.Docente',
+        'JuradoExterno',
         on_delete=models.PROTECT,
-        related_name='jurado_titular_3',
-        verbose_name="Profesor Titular 3"
+        related_name='jurados_como_titular_3',
+        verbose_name="Profesor Titular 3 (Universidad Externa)",
+        help_text="Debe ser de otra Universidad Nacional (UBA, UNLP, etc.)"
     )
     profesor_suplente_3 = models.ForeignKey(
-        'planta_docente.Docente',
-        on_delete=models.PROTECT,
-        related_name='jurado_suplente_3',
+        'JuradoExterno',
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        verbose_name="Profesor Suplente 3"
+        related_name='jurados_como_suplente_3',
+        verbose_name="Suplente 3"
     )
 
-    # ===== VEEDORES =====
+    # Veedores (sin cambios)
     veedor_graduado_titular = models.ForeignKey(
         'VeedorGraduado',
-        on_delete=models.PROTECT,
-        related_name='jurado_graduado_titular',
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
+        related_name='jurados_como_graduado_titular',
         verbose_name="Veedor Graduado Titular"
     )
     veedor_graduado_suplente = models.ForeignKey(
         'VeedorGraduado',
-        on_delete=models.PROTECT,
-        related_name='jurado_graduado_suplente',
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
+        related_name='jurados_como_graduado_suplente',
         verbose_name="Veedor Graduado Suplente"
     )
-
     veedor_estudiante_titular = models.ForeignKey(
         'VeedorEstudiante',
-        on_delete=models.PROTECT,
-        related_name='jurado_estudiante_titular',
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
+        related_name='jurados_como_estudiante_titular',
         verbose_name="Veedor Estudiante Titular"
     )
     veedor_estudiante_suplente = models.ForeignKey(
         'VeedorEstudiante',
-        on_delete=models.PROTECT,
-        related_name='jurado_estudiante_suplente',
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
+        related_name='jurados_como_estudiante_suplente',
         verbose_name="Veedor Estudiante Suplente"
     )
 
-    # ===== METADATA =====
+    notas = models.TextField(blank=True, verbose_name="Notas")
+    activo = models.BooleanField(default=True, verbose_name="Activo")
     fecha_creacion = models.DateTimeField(auto_now_add=True)
-    activo = models.BooleanField(default=True)
-    notas = models.TextField(
-        blank=True,
-        help_text="Observaciones o notas internas sobre este jurado"
-    )
-
-    def save(self, *args, **kwargs):
-        """Generar nombre automáticamente con apellidos de los 3 titulares."""
-        if not self.nombre or not self.pk:  # Solo al crear o si está vacío
-            apellidos = [
-                self.profesor_titular_1.apellido,
-                self.profesor_titular_2.apellido,
-                self.profesor_titular_3.apellido,
-            ]
-            self.nombre = " - ".join(apellidos)
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.nombre} ({self.get_departamento_display()})"
-
-    def get_cas_asignadas(self):
-        """Retorna las CAs que usan este jurado."""
-        return self.carreras_academicas.all()
-
-    def get_cantidad_cas(self):
-        """Cantidad de CAs asignadas a este jurado."""
-        return self.carreras_academicas.count()
 
     class Meta:
         verbose_name = "Jurado"
         verbose_name_plural = "Jurados"
         ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return self.nombre
+
+    def save(self, *args, **kwargs):
+        # Auto-generar nombre con apellidos de los 3 titulares
+        if not self.nombre or self.nombre == '':
+            apellidos = []
+            if self.profesor_titular_1:
+                apellidos.append(self.profesor_titular_1.apellido)
+            if self.profesor_titular_2:
+                apellidos.append(self.profesor_titular_2.apellido)
+            if self.profesor_titular_3:
+                apellidos.append(self.profesor_titular_3.apellido)
+
+            self.nombre = ' - '.join(apellidos) if apellidos else 'Jurado sin nombre'
+
+        super().save(*args, **kwargs)
+
+    def clean(self):
+        """Validaciones según ordenanza."""
+        from django.core.exceptions import ValidationError
+
+        # Validar que profesor 3 sea de universidad externa (no UTN)
+        if self.profesor_titular_3 and not self.profesor_titular_3.es_universidad_externa():
+            raise ValidationError({
+                'profesor_titular_3': 'El Profesor Titular 3 debe ser de una Universidad Nacional externa (no UTN)'
+            })
+
+    def get_cantidad_cas(self):
+        """Retorna cantidad de CAs asignadas a este jurado."""
+        return self.carreras_academicas.count()
+
+
+class Universidad(models.Model):
+    """Universidades e instituciones académicas."""
+    sigla = models.CharField(
+        max_length=20,
+        unique=True,
+        help_text="Ej: UTN, UBA, UNLP, UNC, etc."
+    )
+    nombre_completo = models.CharField(max_length=200)
+
+    # Para UTN, especificar regional
+    es_utn = models.BooleanField(default=False)
+    regional = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Ej: FRLP, FRC, FRA, etc. Solo para UTN"
+    )
+
+    class Meta:
+        verbose_name = "Universidad"
+        verbose_name_plural = "Universidades"
+        ordering = ['sigla']
+
+    def __str__(self):
+        if self.es_utn and self.regional:
+            return f"{self.sigla} - {self.regional}"
+        return self.sigla
+
+
+class JuradoExterno(models.Model):
+    """Profesores externos a la planta docente de UTN-FRLP."""
+    apellido = models.CharField(max_length=100)
+    nombre = models.CharField(max_length=100)
+    email = models.EmailField()
+    telefono = models.CharField(max_length=20, blank=True)
+
+    # Origen institucional
+    universidad = models.ForeignKey(
+        Universidad,
+        on_delete=models.PROTECT,
+        related_name='jurados_externos'
+    )
+
+    # Características del cargo
+    CATEGORIA_CHOICES = [
+        ('titular', 'Profesor Titular'),
+        ('asociado', 'Profesor Asociado'),
+        ('adjunto', 'Profesor Adjunto'),
+    ]
+    categoria = models.CharField(max_length=20, choices=CATEGORIA_CHOICES)
+    es_investigador = models.BooleanField(
+        default=False,
+        help_text="¿Es Docente Investigador?"
+    )
+    es_jubilado = models.BooleanField(default=False)
+
+    # Resolución que avala el cargo
+    archivo_resolucion = models.FileField(
+        upload_to='jurados_externos/resoluciones/',
+        blank=True,
+        null=True,
+        help_text="PDF de la resolución que avala el cargo"
+    )
+
+    notas = models.TextField(blank=True)
+    activo = models.BooleanField(default=True)
+    fecha_alta = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Jurado Externo"
+        verbose_name_plural = "Jurados Externos"
+        ordering = ['apellido', 'nombre']
+
+    def __str__(self):
+        return f"{self.apellido}, {self.nombre} ({self.universidad})"
+
+    def es_utn_otra_regional(self):
+        """Verifica si es de UTN pero no de FRLP."""
+        return self.universidad.es_utn and self.universidad.regional != 'FRLP'
+
+    def es_universidad_externa(self):
+        """Verifica si es de universidad externa (no UTN)."""
+        return not self.universidad.es_utn

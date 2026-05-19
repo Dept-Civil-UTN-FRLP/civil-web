@@ -11,7 +11,7 @@ from .models import (
     VeedorEstudiante,
     Jurado,
 )
-from planta_docente.models import Asignatura, Cargo, Docente, Resolucion
+from planta_docente.models import Cargo, Docente, Resolucion, JuradoExterno, Universidad
 
 class ResolucionForm(forms.ModelForm):
     # Campos opcionales para prórroga (uno u otro)
@@ -323,7 +323,7 @@ class JuradoForm(forms.ModelForm):
             'profesor_titular_3', 'profesor_suplente_3',
             'veedor_graduado_titular', 'veedor_graduado_suplente',
             'veedor_estudiante_titular', 'veedor_estudiante_suplente',
-            'notas',
+            'notas'
         ]
         widgets = {
             'departamento': forms.Select(attrs={'class': 'form-select'}),
@@ -342,13 +342,60 @@ class JuradoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Filtrar solo docentes con categoría de profesor
-        from planta_docente.models import Docente
-        profesores = Docente.objects.filter(
-            cargo_docente__categoria__in=['tit', 'aso', 'adj']
-        ).distinct().order_by('apellido', 'nombre')
 
-        for field_name in ['profesor_titular_1', 'profesor_suplente_1',
-                           'profesor_titular_2', 'profesor_suplente_2',
-                           'profesor_titular_3', 'profesor_suplente_3']:
-            self.fields[field_name].queryset = profesores
+        # Filtrar solo profesores Titulares/Asociados/Adjuntos para profesor interno
+        from planta_docente.models import Docente
+        profesores_internos = Docente.objects.filter(
+            categoria__in=['tit', 'aso', 'adj']
+        ).order_by('apellido', 'nombre')
+
+        self.fields['profesor_titular_1'].queryset = profesores_internos
+        self.fields['profesor_suplente_1'].queryset = profesores_internos
+
+        # Jurados externos activos
+        jurados_externos = JuradoExterno.objects.filter(
+            activo=True).order_by('apellido', 'nombre')
+        self.fields['profesor_titular_2'].queryset = jurados_externos
+        self.fields['profesor_suplente_2'].queryset = jurados_externos
+
+        # Profesor 3: solo externos de universidades NO UTN
+        externos_no_utn = jurados_externos.filter(universidad__es_utn=False)
+        self.fields['profesor_titular_3'].queryset = externos_no_utn
+        self.fields['profesor_suplente_3'].queryset = externos_no_utn
+
+
+# ===== FORMULARIOS JURADOS EXTERNOS =====
+
+class UniversidadForm(forms.ModelForm):
+    class Meta:
+        model = Universidad
+        fields = ['sigla', 'nombre_completo', 'es_utn', 'regional']
+        widgets = {
+            'sigla': forms.TextInput(attrs={'class': 'form-control'}),
+            'nombre_completo': forms.TextInput(attrs={'class': 'form-control'}),
+            'es_utn': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'regional': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+
+class JuradoExternoForm(forms.ModelForm):
+    class Meta:
+        model = JuradoExterno
+        fields = [
+            'apellido', 'nombre', 'email', 'telefono',
+            'universidad', 'categoria', 'es_investigador', 'es_jubilado',
+            'archivo_resolucion', 'notas', 'activo'
+        ]
+        widgets = {
+            'apellido': forms.TextInput(attrs={'class': 'form-control'}),
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'telefono': forms.TextInput(attrs={'class': 'form-control'}),
+            'universidad': forms.Select(attrs={'class': 'form-select'}),
+            'categoria': forms.Select(attrs={'class': 'form-select'}),
+            'es_investigador': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'es_jubilado': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'archivo_resolucion': forms.FileInput(attrs={'class': 'form-control', 'accept': '.pdf'}),
+            'notas': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
