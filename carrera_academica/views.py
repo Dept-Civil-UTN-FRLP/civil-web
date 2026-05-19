@@ -1218,3 +1218,171 @@ def crear_veedor_estudiante_ajax(request):
                 'error': str(form.errors)
             })
     return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+
+# ===== VISTAS JURADOS EXTERNOS =====
+
+@login_required
+def lista_jurados_externos_view(request):
+    """Lista de jurados externos."""
+    universidad_filter = request.GET.get('universidad', '')
+
+    jurados = JuradoExterno.objects.filter(
+        activo=True).select_related('universidad')
+
+    if universidad_filter:
+        jurados = jurados.filter(universidad__sigla=universidad_filter)
+
+    universidades = Universidad.objects.all().order_by('sigla')
+
+    context = {
+        'jurados': jurados,
+        'universidades': universidades,
+        'universidad_filter': universidad_filter,
+    }
+    return render(request, 'carrera_academica/jurados_externos/lista.html', context)
+
+
+@login_required
+def crear_jurado_externo_view(request):
+    """Crear jurado externo."""
+    if request.method == 'POST':
+        form = JuradoExternoForm(request.POST, request.FILES)
+        if form.is_valid():
+            jurado = form.save()
+            messages.success(
+                request, f'Jurado externo {jurado} creado exitosamente.')
+            return redirect('carrera_academica:lista_jurados_externos')
+    else:
+        form = JuradoExternoForm()
+
+    context = {
+        'form': form,
+        'titulo': 'Crear Jurado Externo'
+    }
+    return render(request, 'carrera_academica/jurados_externos/form.html', context)
+
+
+@login_required
+def editar_jurado_externo_view(request, pk):
+    """Editar jurado externo."""
+    jurado = get_object_or_404(JuradoExterno, pk=pk)
+
+    if request.method == 'POST':
+        form = JuradoExternoForm(request.POST, request.FILES, instance=jurado)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Jurado externo {jurado} actualizado.')
+            return redirect('carrera_academica:lista_jurados_externos')
+    else:
+        form = JuradoExternoForm(instance=jurado)
+
+    context = {
+        'form': form,
+        'jurado': jurado,
+        'titulo': f'Editar: {jurado}'
+    }
+    return render(request, 'carrera_academica/jurados_externos/form.html', context)
+
+
+@login_required
+def detalle_jurado_externo_view(request, pk):
+    """Detalle de jurado externo."""
+    jurado = get_object_or_404(JuradoExterno, pk=pk)
+
+    # Jurados donde participa como titular 2
+    jurados_titular_2 = Jurado.objects.filter(profesor_titular_2=jurado)
+
+    # Jurados donde participa como titular 3
+    jurados_titular_3 = Jurado.objects.filter(profesor_titular_3=jurado)
+
+    # Jurados como suplente
+    jurados_suplente_2 = Jurado.objects.filter(profesor_suplente_2=jurado)
+    jurados_suplente_3 = Jurado.objects.filter(profesor_suplente_3=jurado)
+
+    context = {
+        'jurado': jurado,
+        'jurados_titular_2': jurados_titular_2,
+        'jurados_titular_3': jurados_titular_3,
+        'jurados_suplente_2': jurados_suplente_2,
+        'jurados_suplente_3': jurados_suplente_3,
+    }
+    return render(request, 'carrera_academica/jurados_externos/detalle.html', context)
+
+
+@login_required
+def crear_jurado_externo_ajax(request):
+    """Crear jurado externo vía AJAX desde modal."""
+    if request.method == 'POST':
+        form = JuradoExternoForm(request.POST, request.FILES)
+        if form.is_valid():
+            jurado = form.save()
+            return JsonResponse({
+                'success': True,
+                'jurado': {
+                    'id': jurado.pk,
+                    'texto': str(jurado)
+                }
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': form.errors
+            })
+    return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+
+# ===== VISTAS UNIVERSIDADES =====
+
+@login_required
+def lista_universidades_view(request):
+    """Lista de universidades."""
+    universidades = Universidad.objects.all().order_by('sigla')
+
+    context = {
+        'universidades': universidades,
+    }
+    return render(request, 'carrera_academica/universidades/lista.html', context)
+
+
+@login_required
+def crear_universidad_view(request):
+    """Crear universidad."""
+    if request.method == 'POST':
+        form = UniversidadForm(request.POST)
+        if form.is_valid():
+            universidad = form.save()
+            messages.success(
+                request, f'Universidad {universidad} creada exitosamente.')
+            return redirect('carrera_academica:lista_universidades')
+    else:
+        form = UniversidadForm()
+
+    context = {
+        'form': form,
+        'titulo': 'Crear Universidad'
+    }
+    return render(request, 'carrera_academica/universidades/form.html', context)
+
+
+@login_required
+def editar_universidad_view(request, pk):
+    """Editar universidad."""
+    universidad = get_object_or_404(Universidad, pk=pk)
+
+    if request.method == 'POST':
+        form = UniversidadForm(request.POST, instance=universidad)
+        if form.is_valid():
+            form.save()
+            messages.success(
+                request, f'Universidad {universidad} actualizada.')
+            return redirect('carrera_academica:lista_universidades')
+    else:
+        form = UniversidadForm(instance=universidad)
+
+    context = {
+        'form': form,
+        'universidad': universidad,
+        'titulo': f'Editar: {universidad}'
+    }
+    return render(request, 'carrera_academica/universidades/form.html', context)

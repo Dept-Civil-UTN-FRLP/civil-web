@@ -69,4 +69,23 @@ urlpatterns = [
     path('veedores/estudiantes/crear/', views.crear_veedor_estudiante_view, name='crear_veedor_estudiante'),
     path('veedores/graduados/ajax/', views.crear_veedor_graduado_ajax, name='crear_veedor_graduado_ajax'),
     path('veedores/estudiantes/ajax/', views.crear_veedor_estudiante_ajax, name='crear_veedor_estudiante_ajax'),
+    # ===== JURADOS EXTERNOS =====
+    path('jurados-externos/', views.lista_jurados_externos_view,
+         name='lista_jurados_externos'),
+    path('jurados-externos/crear/', views.crear_jurado_externo_view,
+         name='crear_jurado_externo'),
+    path('jurados-externos/<int:pk>/', views.detalle_jurado_externo_view,
+         name='detalle_jurado_externo'),
+    path('jurados-externos/<int:pk>/editar/',
+         views.editar_jurado_externo_view, name='editar_jurado_externo'),
+    path('jurados-externos/ajax/', views.crear_jurado_externo_ajax,
+         name='crear_jurado_externo_ajax'),
+
+    # ===== UNIVERSIDADES =====
+    path('universidades/', views.lista_universidades_view,
+         name='lista_universidades'),
+    path('universidades/crear/', views.crear_universidad_view,
+         name='crear_universidad'),
+    path('universidades/<int:pk>/editar/',
+         views.editar_universidad_view, name='editar_universidad'),
 ]
