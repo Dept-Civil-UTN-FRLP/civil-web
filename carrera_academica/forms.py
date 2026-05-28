@@ -10,8 +10,10 @@ from .models import (
     VeedorGraduado,
     VeedorEstudiante,
     Jurado,
+    JuradoExterno,
+    Universidad,
 )
-from planta_docente.models import Cargo, Docente, Resolucion, JuradoExterno, Universidad
+from planta_docente.models import Cargo, Docente, Resolucion
 
 class ResolucionForm(forms.ModelForm):
     # Campos opcionales para prórroga (uno u otro)

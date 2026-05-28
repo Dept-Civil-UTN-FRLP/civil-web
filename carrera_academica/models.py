@@ -1159,11 +1159,46 @@ class Jurado(models.Model):
         """Validaciones según ordenanza."""
         from django.core.exceptions import ValidationError
 
+        errors = {}
+
+        # Validar que profesor titular 1 (interno) exista
+        if not getattr(self, 'profesor_titular_1_id', None):
+            errors['profesor_titular_1'] = 'Profesor Titular 1 (Interno) es requerido'
+
+        # Validar que profesor titular 2 (externo) exista
+        if not getattr(self, 'profesor_titular_2_id', None):
+            errors['profesor_titular_2'] = 'Profesor Titular 2 (Externo) es requerido'
+
+        # Validar que profesor titular 3 (externo no-UTN) exista
+        if not getattr(self, 'profesor_titular_3_id', None):
+            errors['profesor_titular_3'] = 'Profesor Titular 3 (Universidad Externa) es requerido'
+
         # Validar que profesor 3 sea de universidad externa (no UTN)
-        if self.profesor_titular_3 and not self.profesor_titular_3.es_universidad_externa():
-            raise ValidationError({
-                'profesor_titular_3': 'El Profesor Titular 3 debe ser de una Universidad Nacional externa (no UTN)'
-            })
+        profesor_3 = getattr(self, 'profesor_titular_3', None)
+        if profesor_3 and not profesor_3.es_universidad_externa():
+            errors['profesor_titular_3'] = 'El Profesor Titular 3 debe ser de una Universidad Nacional externa (no UTN)'
+
+        # Validar distribución: debe haber al menos 1 profesor de universidad NO UTN
+        externos_no_utn = []
+        prof_2 = getattr(self, 'profesor_titular_2', None)
+        prof_3 = getattr(self, 'profesor_titular_3', None)
+        prof_sup_2 = getattr(self, 'profesor_suplente_2', None)
+        prof_sup_3 = getattr(self, 'profesor_suplente_3', None)
+
+        if prof_2 and prof_2.es_universidad_externa():
+            externos_no_utn.append(prof_2)
+        if prof_3 and prof_3.es_universidad_externa():
+            externos_no_utn.append(prof_3)
+        if prof_sup_2 and prof_sup_2.es_universidad_externa():
+            externos_no_utn.append(prof_sup_2)
+        if prof_sup_3 and prof_sup_3.es_universidad_externa():
+            externos_no_utn.append(prof_sup_3)
+
+        if not externos_no_utn:
+            errors['profesor_titular_2'] = 'Debe haber al menos un profesor de una Universidad Nacional (no UTN)'
+
+        if errors:
+            raise ValidationError(errors)
 
     def get_cantidad_cas(self):
         """Retorna cantidad de CAs asignadas a este jurado."""
