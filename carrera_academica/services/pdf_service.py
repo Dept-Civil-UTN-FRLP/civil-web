@@ -212,3 +212,68 @@ class PDFService:
         """Obtiene el email principal de un docente."""
         correo = docente.correos.filter(principal=True).first()
         return correo.email if correo else "N/A"
+
+    @staticmethod
+    def generar_planilla_jurado(jurado) -> Optional[bytes]:
+        """Genera PDF de planilla de composición del jurado (nuevo modelo Jurado)."""
+        titulares = []
+        suplentes = []
+
+        # Titular 1: interno
+        d = jurado.profesor_titular_1
+        cargo = d.cargo_docente.first()
+        titulares.append({
+            "nombre": str(d),
+            "dependencia": "UTN-FRLP",
+            "cargo": cargo.get_categoria_display() if cargo else "N/A",
+            "email": PDFService._obtener_email_docente(d),
+        })
+
+        # Titular 2 y 3: externos
+        for ext in [jurado.profesor_titular_2, jurado.profesor_titular_3]:
+            if ext:
+                titulares.append({
+                    "nombre": f"{ext.apellido}, {ext.nombre}",
+                    "dependencia": str(ext.universidad),
+                    "cargo": ext.get_categoria_display(),
+                    "email": ext.email,
+                })
+
+        # Suplente 1: interno
+        if jurado.profesor_suplente_1:
+            d = jurado.profesor_suplente_1
+            cargo = d.cargo_docente.first()
+            suplentes.append({
+                "nombre": str(d),
+                "dependencia": "UTN-FRLP",
+                "cargo": cargo.get_categoria_display() if cargo else "N/A",
+                "email": PDFService._obtener_email_docente(d),
+            })
+
+        # Suplentes 2 y 3: externos
+        for ext in [jurado.profesor_suplente_2, jurado.profesor_suplente_3]:
+            if ext:
+                suplentes.append({
+                    "nombre": f"{ext.apellido}, {ext.nombre}",
+                    "dependencia": str(ext.universidad),
+                    "cargo": ext.get_categoria_display(),
+                    "email": ext.email,
+                })
+
+        context = {
+            "jurado": jurado,
+            "jurados_titulares": titulares,
+            "jurados_suplentes": suplentes,
+        }
+
+        try:
+            html_string = render_to_string(
+                "carrera_academica/jurados/planilla.html", context
+            )
+            with open(os.devnull, "w") as f, redirect_stderr(f):
+                pdf_file = HTML(string=html_string).write_pdf()
+            logger.info(f"Planilla de jurado {jurado.pk} generada")
+            return pdf_file
+        except Exception as e:
+            logger.error(f"Error generando planilla de jurado {jurado.pk}: {e}")
+            return None

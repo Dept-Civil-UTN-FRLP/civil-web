@@ -348,8 +348,8 @@ class JuradoForm(forms.ModelForm):
         # Filtrar solo profesores Titulares/Asociados/Adjuntos para profesor interno
         from planta_docente.models import Docente
         profesores_internos = Docente.objects.filter(
-            categoria__in=['tit', 'aso', 'adj']
-        ).order_by('apellido', 'nombre')
+            cargo_docente__categoria__in=['tit', 'aso', 'adj']
+        ).distinct().order_by('apellido', 'nombre')
 
         self.fields['profesor_titular_1'].queryset = profesores_internos
         self.fields['profesor_suplente_1'].queryset = profesores_internos

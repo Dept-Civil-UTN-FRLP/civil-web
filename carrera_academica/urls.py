@@ -60,6 +60,7 @@ urlpatterns = [
     path('jurados/crear/', views.crear_jurado_view, name='crear_jurado'),
     path('jurados/<int:pk>/', views.detalle_jurado_view, name='detalle_jurado'),
     path('jurados/<int:pk>/editar/', views.editar_jurado_view, name='editar_jurado'),
+    path('jurados/<int:pk>/planilla/', views.descargar_planilla_jurado_view, name='descargar_planilla_jurado'),
     path('ca/<int:ca_pk>/asignar-jurado/', views.asignar_jurado_ca_view, name='asignar_jurado_ca'),
 
     # ===== VEEDORES =====

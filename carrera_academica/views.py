@@ -37,7 +37,9 @@ from .forms import (
     ResolucionForm,
     JuradoForm,
     VeedorGraduadoForm,
-    VeedorEstudianteForm
+    VeedorEstudianteForm,
+    JuradoExternoForm,
+    UniversidadForm,
 )
 from .models import (
     Cargo,
@@ -51,7 +53,9 @@ from .models import (
     Jurado,
     VeedorEstudiante,
     VeedorGraduado,
-    Asignatura
+    Asignatura,
+    JuradoExterno,
+    Universidad,
 )
 
 logger = logging.getLogger(__name__)
@@ -1091,6 +1095,32 @@ def detalle_jurado_view(request, pk):
 
     context = {'jurado': jurado}
     return render(request, 'carrera_academica/jurados/detalle.html', context)
+
+
+@login_required
+def descargar_planilla_jurado_view(request, pk):
+    """Descarga la planilla PDF de composición del jurado."""
+    jurado = get_object_or_404(
+        Jurado.objects.select_related(
+            'profesor_titular_1', 'profesor_suplente_1',
+            'profesor_titular_2__universidad', 'profesor_suplente_2__universidad',
+            'profesor_titular_3__universidad', 'profesor_suplente_3__universidad',
+            'veedor_graduado_titular', 'veedor_graduado_suplente',
+            'veedor_estudiante_titular', 'veedor_estudiante_suplente',
+        ),
+        pk=pk
+    )
+
+    pdf_file = PDFService.generar_planilla_jurado(jurado)
+
+    if not pdf_file:
+        messages.error(request, "No se pudo generar la planilla del jurado.")
+        return redirect('carrera_academica:detalle_jurado', pk=pk)
+
+    nombre_archivo = slugify(jurado.nombre) or f"jurado_{pk}"
+    response = HttpResponse(pdf_file, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="planilla_jurado_{nombre_archivo}.pdf"'
+    return response
 
 
 @login_required
