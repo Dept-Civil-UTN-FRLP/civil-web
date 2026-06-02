@@ -1,0 +1,78 @@
+{% extends 'carrera_academica/base_ca.html' %}
+
+{% block title %}Universidades{% endblock %}
+
+{% block ca_content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-bank"></i> Universidades</h2>
+        <a href="{% url 'carrera_academica:crear_universidad' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Agregar Universidad
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {% if universidades %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Sigla</th>
+                            <th>Nombre Completo</th>
+                            <th>Tipo</th>
+                            <th>Regional</th>
+                            <th>Jurados Externos</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for uni in universidades %}
+                        <tr>
+                            <td><strong>{{ uni.sigla }}</strong></td>
+                            <td>{{ uni.nombre_completo }}</td>
+                            <td>
+                                {% if uni.es_utn %}
+                                <span class="badge bg-primary">UTN</span>
+                                {% else %}
+                                <span class="badge bg-success">Externa</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if uni.regional %}
+                                {{ uni.regional }}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ uni.jurados_externos.count }}</span>
+                            </td>
+                            <td>
+                                <a href="{% url 'carrera_academica:editar_universidad' uni.pk %}" 
+                                   class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i> 
+                No hay universidades registradas. 
+                Ejecutá el comando: <code>python manage.py cargar_universidades</code>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <a href="{% url 'carrera_academica:lista_jurados_externos' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver a Jurados Externos
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -293,7 +293,7 @@ def obtener_estado_vencimiento(cargo):
         dias_vencido = abs(dias_restantes)
         return {
             "tipo": "vencido",
-            "dias_vencido": dias_vencido,
+            "dias": dias_vencido,
             "mensaje": f"Vencido hace {dias_vencido} día{'s' if dias_vencido != 1 else ''}",
             "badge_class": "bg-danger",
             "icono": "bi-exclamation-triangle-fill",
@@ -304,7 +304,7 @@ def obtener_estado_vencimiento(cargo):
     if dias_restantes <= 60:
         return {
             "tipo": "critico",
-            "dias_restantes": dias_restantes,
+            "dias": dias_restantes,
             "fecha_vencimiento": cargo.fecha_vencimiento,
             "mensaje": f"Vence en {dias_restantes} día{'s' if dias_restantes != 1 else ''}",
             "badge_class": "bg-danger",
@@ -316,7 +316,7 @@ def obtener_estado_vencimiento(cargo):
     if dias_restantes <= 180:
         return {
             "tipo": "proximo",
-            "dias_restantes": dias_restantes,
+            "dias": dias_restantes,
             "fecha_vencimiento": cargo.fecha_vencimiento,
             "mensaje": f"Vence en {dias_restantes} días",
             "badge_class": "bg-warning text-dark",
@@ -327,10 +327,10 @@ def obtener_estado_vencimiento(cargo):
     # Vencimiento lejano (más de 180 días)
     return {
         "tipo": "vigente",
-        "dias_restantes": dias_restantes,
+        "dias": dias_restantes,
         "fecha_vencimiento": cargo.fecha_vencimiento,
         "mensaje": f"Vigente ({dias_restantes} días)",
-        "clase_badge": "bg-success",
+        "badge_class": "bg-success",
         "icono": "bi-check-circle",
         "urgente": False,
     }

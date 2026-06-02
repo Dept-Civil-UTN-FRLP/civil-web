@@ -7,8 +7,13 @@ from django.utils import timezone
 from .models import (
     CarreraAcademica,
     JuntaEvaluadora,
+    VeedorGraduado,
+    VeedorEstudiante,
+    Jurado,
+    JuradoExterno,
+    Universidad,
 )
-from planta_docente.models import Asignatura, Cargo, Docente, Resolucion
+from planta_docente.models import Cargo, Docente, Resolucion
 
 class ResolucionForm(forms.ModelForm):
     # Campos opcionales para prórroga (uno u otro)
@@ -281,3 +286,118 @@ class NotificacionJuntaForm(forms.Form):
 
         for key, miembro in miembros:
             self.fields[key] = forms.BooleanField(label=str(miembro), required=False)
+
+
+class VeedorGraduadoForm(forms.ModelForm):
+    class Meta:
+        model = VeedorGraduado
+        fields = ['apellido', 'nombre', 'email',
+                  'telefono', 'titulo', 'año_egreso']
+        widgets = {
+            'apellido': forms.TextInput(attrs={'class': 'form-control'}),
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'telefono': forms.TextInput(attrs={'class': 'form-control'}),
+            'titulo': forms.TextInput(attrs={'class': 'form-control'}),
+            'año_egreso': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
+
+
+class VeedorEstudianteForm(forms.ModelForm):
+    class Meta:
+        model = VeedorEstudiante
+        fields = ['apellido', 'nombre', 'email', 'legajo']
+        widgets = {
+            'apellido': forms.TextInput(attrs={'class': 'form-control'}),
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'legajo': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+
+class JuradoForm(forms.ModelForm):
+    class Meta:
+        model = Jurado
+        fields = [
+            'departamento',
+            'profesor_titular_1', 'profesor_suplente_1',
+            'profesor_titular_2', 'profesor_suplente_2',
+            'profesor_titular_3', 'profesor_suplente_3',
+            'veedor_graduado_titular', 'veedor_graduado_suplente',
+            'veedor_estudiante_titular', 'veedor_estudiante_suplente',
+            'notas'
+        ]
+        widgets = {
+            'departamento': forms.Select(attrs={'class': 'form-select'}),
+            'profesor_titular_1': forms.Select(attrs={'class': 'form-select'}),
+            'profesor_suplente_1': forms.Select(attrs={'class': 'form-select'}),
+            'profesor_titular_2': forms.Select(attrs={'class': 'form-select'}),
+            'profesor_suplente_2': forms.Select(attrs={'class': 'form-select'}),
+            'profesor_titular_3': forms.Select(attrs={'class': 'form-select'}),
+            'profesor_suplente_3': forms.Select(attrs={'class': 'form-select'}),
+            'veedor_graduado_titular': forms.Select(attrs={'class': 'form-select'}),
+            'veedor_graduado_suplente': forms.Select(attrs={'class': 'form-select'}),
+            'veedor_estudiante_titular': forms.Select(attrs={'class': 'form-select'}),
+            'veedor_estudiante_suplente': forms.Select(attrs={'class': 'form-select'}),
+            'notas': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Filtrar solo profesores Titulares/Asociados/Adjuntos para profesor interno
+        from planta_docente.models import Docente
+        profesores_internos = Docente.objects.filter(
+            cargo_docente__categoria__in=['tit', 'aso', 'adj']
+        ).distinct().order_by('apellido', 'nombre')
+
+        self.fields['profesor_titular_1'].queryset = profesores_internos
+        self.fields['profesor_suplente_1'].queryset = profesores_internos
+
+        # Jurados externos activos
+        jurados_externos = JuradoExterno.objects.filter(
+            activo=True).order_by('apellido', 'nombre')
+        self.fields['profesor_titular_2'].queryset = jurados_externos
+        self.fields['profesor_suplente_2'].queryset = jurados_externos
+
+        # Profesor 3: solo externos de universidades NO UTN
+        externos_no_utn = jurados_externos.filter(universidad__es_utn=False)
+        self.fields['profesor_titular_3'].queryset = externos_no_utn
+        self.fields['profesor_suplente_3'].queryset = externos_no_utn
+
+
+# ===== FORMULARIOS JURADOS EXTERNOS =====
+
+class UniversidadForm(forms.ModelForm):
+    class Meta:
+        model = Universidad
+        fields = ['sigla', 'nombre_completo', 'es_utn', 'regional']
+        widgets = {
+            'sigla': forms.TextInput(attrs={'class': 'form-control'}),
+            'nombre_completo': forms.TextInput(attrs={'class': 'form-control'}),
+            'es_utn': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'regional': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+
+class JuradoExternoForm(forms.ModelForm):
+    class Meta:
+        model = JuradoExterno
+        fields = [
+            'apellido', 'nombre', 'email', 'telefono',
+            'universidad', 'categoria', 'es_investigador', 'es_jubilado',
+            'archivo_resolucion', 'notas', 'activo'
+        ]
+        widgets = {
+            'apellido': forms.TextInput(attrs={'class': 'form-control'}),
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'telefono': forms.TextInput(attrs={'class': 'form-control'}),
+            'universidad': forms.Select(attrs={'class': 'form-select'}),
+            'categoria': forms.Select(attrs={'class': 'form-select'}),
+            'es_investigador': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'es_jubilado': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'archivo_resolucion': forms.FileInput(attrs={'class': 'form-control', 'accept': '.pdf'}),
+            'notas': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }

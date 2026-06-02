@@ -273,9 +273,10 @@ class ObtenerEstadoJubilacionTestCase(TestCase):
         """Test docente próximo a cumplir 65."""
         hoy = timezone.now().date()
         # Nació hace 64 años y 6 meses
-        fecha_nac = date(
-            hoy.year - 64, hoy.month - 6 if hoy.month > 6 else hoy.month + 6, hoy.day
-        )
+        if hoy.month > 6:
+            fecha_nac = date(hoy.year - 64, hoy.month - 6, hoy.day)
+        else:
+            fecha_nac = date(hoy.year - 65, hoy.month + 6, hoy.day)
 
         docente = Docente.objects.create(
             nombre="Proximo",

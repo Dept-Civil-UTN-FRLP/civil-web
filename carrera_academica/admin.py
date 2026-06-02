@@ -267,3 +267,85 @@ admin.site.register(Resolucion, ResolucionAdmin)
 admin.site.register(CarreraAcademica, CarreraAcademicaAdmin)
 admin.site.register(PlantillaDocumento, PlantillaDocumentoAdmin)
 admin.site.register(Evaluacion, EvaluacionAdmin)
+
+
+@admin.register(VeedorGraduado)
+class VeedorGraduadoAdmin(admin.ModelAdmin):
+    list_display = ['apellido', 'nombre', 'email', 'titulo', 'año_egreso']
+    search_fields = ['apellido', 'nombre', 'email']
+    list_filter = ['año_egreso']
+
+
+@admin.register(VeedorEstudiante)
+class VeedorEstudianteAdmin(admin.ModelAdmin):
+    list_display = ['apellido', 'nombre', 'legajo', 'email']
+    search_fields = ['apellido', 'nombre', 'legajo', 'email']
+
+
+@admin.register(Jurado)
+class JuradoAdmin(admin.ModelAdmin):
+    list_display = ['nombre', 'departamento',
+                    'activo', 'fecha_creacion', 'cantidad_cas']
+    list_filter = ['departamento', 'activo', 'fecha_creacion']
+    search_fields = ['nombre', 'notas']
+    readonly_fields = ['nombre', 'fecha_creacion']
+
+    fieldsets = (
+        ('Información General', {
+            'fields': ('nombre', 'departamento', 'activo', 'fecha_creacion', 'notas')
+        }),
+        ('Profesores Titulares', {
+            'fields': (
+                ('profesor_titular_1', 'profesor_suplente_1'),
+                ('profesor_titular_2', 'profesor_suplente_2'),
+                ('profesor_titular_3', 'profesor_suplente_3'),
+            )
+        }),
+        ('Veedores', {
+            'fields': (
+                ('veedor_graduado_titular', 'veedor_graduado_suplente'),
+                ('veedor_estudiante_titular', 'veedor_estudiante_suplente'),
+            )
+        }),
+    )
+
+    def cantidad_cas(self, obj):
+        return obj.get_cantidad_cas()
+    cantidad_cas.short_description = 'CAs Asignadas'
+
+
+@admin.register(Universidad)
+class UniversidadAdmin(admin.ModelAdmin):
+    list_display = ['sigla', 'nombre_completo',
+                    'es_utn', 'regional', 'cantidad_jurados']
+    list_filter = ['es_utn']
+    search_fields = ['sigla', 'nombre_completo']
+
+    def cantidad_jurados(self, obj):
+        return obj.jurados_externos.count()
+    cantidad_jurados.short_description = 'Jurados Externos'
+
+
+@admin.register(JuradoExterno)
+class JuradoExternoAdmin(admin.ModelAdmin):
+    list_display = ['apellido', 'nombre', 'universidad',
+                    'categoria', 'es_investigador', 'es_jubilado', 'activo']
+    list_filter = ['categoria', 'es_investigador',
+                   'es_jubilado', 'activo', 'universidad']
+    search_fields = ['apellido', 'nombre', 'email']
+    readonly_fields = ['fecha_alta']
+
+    fieldsets = (
+        ('Información Personal', {
+            'fields': ('apellido', 'nombre', 'email', 'telefono')
+        }),
+        ('Datos Institucionales', {
+            'fields': ('universidad', 'categoria', 'es_investigador', 'es_jubilado')
+        }),
+        ('Documentación', {
+            'fields': ('archivo_resolucion', 'notas')
+        }),
+        ('Estado', {
+            'fields': ('activo', 'fecha_alta')
+        }),
+    )

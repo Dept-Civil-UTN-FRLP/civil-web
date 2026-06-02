@@ -1,0 +1,155 @@
+{% extends 'carrera_academica/base_ca.html' %}
+
+{% block title %}Jurado: {{ jurado.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-people-fill"></i> {{ jurado.nombre }}</h2>
+        <div>
+            <a href="{% url 'carrera_academica:descargar_planilla_jurado' jurado.pk %}" class="btn btn-success">
+                <i class="bi bi-file-earmark-pdf"></i> Descargar Planilla
+            </a>
+            <a href="{% url 'carrera_academica:editar_jurado' jurado.pk %}" class="btn btn-primary">
+                <i class="bi bi-pencil"></i> Editar
+            </a>
+            <a href="{% url 'carrera_academica:lista_jurados' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Información del Jurado -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Información General</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Departamento:</strong> {{ jurado.get_departamento_display }}</p>
+                    <p><strong>Fecha de Creación:</strong> {{ jurado.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                    <p><strong>Estado:</strong> 
+                        {% if jurado.activo %}
+                        <span class="badge bg-success">Activo</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Inactivo</span>
+                        {% endif %}
+                    </p>
+                    
+                    {% if jurado.notas %}
+                    <hr>
+                    <p><strong>Notas:</strong></p>
+                    <div class="alert alert-info">{{ jurado.notas }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Composición del Jurado -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-mortarboard-fill"></i> Composición del Jurado</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="text-muted mb-3">Profesores Titulares:</h6>
+                    <ol class="mb-3">
+                        <li>
+                            <strong>{{ jurado.profesor_titular_1 }}</strong>
+                            {% if jurado.profesor_suplente_1 %}
+                            <br><small class="text-muted">Suplente: {{ jurado.profesor_suplente_1 }}</small>
+                            {% endif %}
+                        </li>
+                        <li>
+                            <strong>{{ jurado.profesor_titular_2 }}</strong>
+                            {% if jurado.profesor_suplente_2 %}
+                            <br><small class="text-muted">Suplente: {{ jurado.profesor_suplente_2 }}</small>
+                            {% endif %}
+                        </li>
+                        <li>
+                            <strong>{{ jurado.profesor_titular_3 }}</strong>
+                            {% if jurado.profesor_suplente_3 %}
+                            <br><small class="text-muted">Suplente: {{ jurado.profesor_suplente_3 }}</small>
+                            {% endif %}
+                        </li>
+                    </ol>
+
+                    <h6 class="text-muted mb-2">Veedores:</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            🎓 <strong>Graduado Titular:</strong> 
+                            {{ jurado.veedor_graduado_titular|default:"Sin asignar" }}
+                            {% if jurado.veedor_graduado_suplente %}
+                            <br><small class="text-muted ms-4">Suplente: {{ jurado.veedor_graduado_suplente }}</small>
+                            {% endif %}
+                        </li>
+                        <li>
+                            📚 <strong>Estudiante Titular:</strong> 
+                            {{ jurado.veedor_estudiante_titular|default:"Sin asignar" }}
+                            {% if jurado.veedor_estudiante_suplente %}
+                            <br><small class="text-muted ms-4">Suplente: {{ jurado.veedor_estudiante_suplente }}</small>
+                            {% endif %}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CAs Asignadas -->
+    <div class="card">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-file-earmark-text"></i> 
+                Carreras Académicas Asignadas ({{ jurado.get_cantidad_cas }})
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if jurado.carreras_academicas.exists %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Docente</th>
+                            <th>Asignatura</th>
+                            <th>Cargo</th>
+                            <th>Estado</th>
+                            <th>Expediente</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ca in jurado.carreras_academicas.all %}
+                        <tr>
+                            <td>{{ ca.cargo.docente }}</td>
+                            <td>{{ ca.cargo.asignatura.nombre|title }}</td>
+                            <td>{{ ca.cargo.get_categoria_display }}</td>
+                            <td>
+                                <span class="badge bg-{{ ca.get_estado_color }}">
+                                    {{ ca.get_estado_display }}
+                                </span>
+                            </td>
+                            <td>{{ ca.numero_expediente|default:"S/N" }}</td>
+                            <td>
+                                <a href="{% url 'carrera_academica:detalle_ca' ca.pk %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> Ver
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-warning mb-0">
+                <i class="bi bi-exclamation-triangle"></i> 
+                Este jurado aún no ha sido asignado a ninguna Carrera Académica.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

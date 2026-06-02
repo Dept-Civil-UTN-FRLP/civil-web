@@ -76,7 +76,7 @@ class CargoManagerTestCase(TestCase):
             dedicacion="ds",
             cantidad_horas=10,
             fecha_inicio=date(2018, 1, 1),
-            fecha_vencimiento=date(2025, 12, 31),
+            fecha_vencimiento=timezone.now().date() + timedelta(days=365),
             estado="licencia",
         )
 

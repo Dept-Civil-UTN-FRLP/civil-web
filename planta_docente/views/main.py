@@ -668,7 +668,7 @@ def cargo_info_api_view(request, pk):
             },
             "asignatura": {
                 "nombre": cargo.asignatura.nombre,
-                "departamento": cargo.get_asignatura.get_departamento_display(),
+                "departamento": cargo.asignatura.get_departamento_display(),
             },
             "cargo": {
                 "caracter": cargo.get_caracter_display(),

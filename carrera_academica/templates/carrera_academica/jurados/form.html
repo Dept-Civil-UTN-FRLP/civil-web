@@ -1,0 +1,367 @@
+{% extends 'carrera_academica/base_ca.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">{{ titulo }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Departamento -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">{{ form.departamento.label }}</label>
+                            {{ form.departamento }}
+                            {% if form.departamento.errors %}
+                            <div class="text-danger">{{ form.departamento.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <hr>
+
+                        <!-- Profesores Titulares -->
+                        <h5 class="mb-3">
+                            <i class="bi bi-mortarboard-fill"></i> Profesores Titulares
+                        </h5>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Profesor Titular 1 *</label>
+                                {{ form.profesor_titular_1 }}
+                                {% if form.profesor_titular_1.errors %}
+                                <div class="text-danger">{{ form.profesor_titular_1.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Suplente</label>
+                                {{ form.profesor_suplente_1 }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Profesor Titular 2 *</label>
+                                {{ form.profesor_titular_2 }}
+                                {% if form.profesor_titular_2.errors %}
+                                <div class="text-danger">{{ form.profesor_titular_2.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Suplente</label>
+                                {{ form.profesor_suplente_2 }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Profesor Titular 3 *</label>
+                                {{ form.profesor_titular_3 }}
+                                {% if form.profesor_titular_3.errors %}
+                                <div class="text-danger">{{ form.profesor_titular_3.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Suplente</label>
+                                {{ form.profesor_suplente_3 }}
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Veedores -->
+                        <h5 class="mb-3">
+                            <i class="bi bi-eye-fill"></i> Veedores
+                        </h5>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Veedor Graduado Titular</label>
+                                {{ form.veedor_graduado_titular }}
+                                <button type="button" class="btn btn-sm btn-outline-primary mt-1" 
+                                        data-bs-toggle="modal" data-bs-target="#modalGraduado">
+                                    <i class="bi bi-plus-circle"></i> Crear nuevo graduado
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Suplente</label>
+                                {{ form.veedor_graduado_suplente }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Veedor Estudiante Titular</label>
+                                {{ form.veedor_estudiante_titular }}
+                                <button type="button" class="btn btn-sm btn-outline-primary mt-1" 
+                                        data-bs-toggle="modal" data-bs-target="#modalEstudiante">
+                                    <i class="bi bi-plus-circle"></i> Crear nuevo estudiante
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Suplente</label>
+                                {{ form.veedor_estudiante_suplente }}
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Notas -->
+                        <div class="mb-4">
+                            <label class="form-label">{{ form.notas.label }}</label>
+                            {{ form.notas }}
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'carrera_academica:lista_jurados' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Guardar Jurado
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Graduado -->
+<div class="modal fade" id="modalGraduado" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Crear Veedor Graduado</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formGraduado">
+                    {% csrf_token %}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Apellido *</label>
+                            <input type="text" name="apellido" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nombre *</label>
+                            <input type="text" name="nombre" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email *</label>
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Teléfono</label>
+                        <input type="text" name="telefono" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Título *</label>
+                        <input type="text" name="titulo" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Año de Egreso</label>
+                        <input type="number" name="año_egreso" class="form-control">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarGraduado()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Estudiante -->
+<div class="modal fade" id="modalEstudiante" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Crear Veedor Estudiante</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEstudiante">
+                    {% csrf_token %}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Apellido *</label>
+                            <input type="text" name="apellido" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nombre *</label>
+                            <input type="text" name="nombre" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Legajo *</label>
+                        <input type="text" name="legajo" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email *</label>
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarEstudiante()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function guardarGraduado() {
+    const form = document.getElementById('formGraduado');
+    
+    // ✅ Validar formulario antes de enviar
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const formData = new FormData(form);
+    
+    fetch('{% url "carrera_academica:crear_veedor_graduado_ajax" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Agregar al select titular
+            const selectTitular = document.querySelector('select[name="veedor_graduado_titular"]');
+            const option1 = new Option(data.veedor.texto, data.veedor.id, true, true);
+            selectTitular.add(option1);
+            
+            // También agregarlo al select suplente
+            const selectSuplente = document.querySelector('select[name="veedor_graduado_suplente"]');
+            const option2 = new Option(data.veedor.texto, data.veedor.id);
+            selectSuplente.add(option2);
+            
+            // Cerrar modal y resetear form
+            bootstrap.Modal.getInstance(document.getElementById('modalGraduado')).hide();
+            form.reset();
+            
+            // ✅ Mensaje de éxito más sutil
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+            alertDiv.style.zIndex = '9999';
+            alertDiv.innerHTML = `
+                <i class="bi bi-check-circle"></i> Veedor graduado creado exitosamente
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            setTimeout(() => alertDiv.remove(), 3000);
+        } else {
+            // ✅ Mostrar errores específicos
+            let errorMsg = 'Errores:\n';
+            if (typeof data.error === 'object') {
+                for (const [field, errors] of Object.entries(data.error)) {
+                    errorMsg += `${field}: ${errors.join(', ')}\n`;
+                }
+            } else {
+                errorMsg = data.error;
+            }
+            alert(errorMsg);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al guardar. Revisa la consola.');
+    });
+}
+
+function guardarEstudiante() {
+    const form = document.getElementById('formEstudiante');
+    
+    // ✅ Validar formulario antes de enviar
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const formData = new FormData(form);
+    
+    fetch('{% url "carrera_academica:crear_veedor_estudiante_ajax" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Agregar al select titular
+            const selectTitular = document.querySelector('select[name="veedor_estudiante_titular"]');
+            const option1 = new Option(data.veedor.texto, data.veedor.id, true, true);
+            selectTitular.add(option1);
+            
+            // También agregarlo al select suplente
+            const selectSuplente = document.querySelector('select[name="veedor_estudiante_suplente"]');
+            const option2 = new Option(data.veedor.texto, data.veedor.id);
+            selectSuplente.add(option2);
+            
+            // Cerrar modal y resetear form
+            bootstrap.Modal.getInstance(document.getElementById('modalEstudiante')).hide();
+            form.reset();
+            
+            // ✅ Mensaje de éxito
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+            alertDiv.style.zIndex = '9999';
+            alertDiv.innerHTML = `
+                <i class="bi bi-check-circle"></i> Veedor estudiante creado exitosamente
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            setTimeout(() => alertDiv.remove(), 3000);
+        } else {
+            // ✅ Mostrar errores específicos
+            let errorMsg = 'Errores:\n';
+            if (typeof data.error === 'object') {
+                for (const [field, errors] of Object.entries(data.error)) {
+                    errorMsg += `${field}: ${errors.join(', ')}\n`;
+                }
+            } else {
+                errorMsg = data.error;
+            }
+            alert(errorMsg);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al guardar. Revisa la consola.');
+    });
+}
+</script>
+
+{% endblock %}

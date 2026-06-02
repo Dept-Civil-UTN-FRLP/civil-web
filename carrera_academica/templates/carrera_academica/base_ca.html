@@ -20,6 +20,31 @@
                             <i class="bi bi-grid"></i> Dashboard
                         </a>
                     </li>
+                    <!-- ✅ AGREGAR LINKS DE JURADOS Y VEEDORES -->
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'lista_jurados' %}active{% endif %}" 
+                           href="{% url 'carrera_academica:lista_jurados' %}">
+                            <i class="bi bi-people-fill"></i> Jurados
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="veedoresDropdown" 
+                           role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-eye-fill"></i> Veedores
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'carrera_academica:lista_veedores_graduados' %}">
+                                    <i class="bi bi-mortarboard-fill"></i> Graduados
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'carrera_academica:lista_veedores_estudiantes' %}">
+                                    <i class="bi bi-book-fill"></i> Estudiantes
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                 </ul>
             </div>
         </div>
