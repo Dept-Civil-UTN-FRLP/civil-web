@@ -205,6 +205,8 @@ def detalle_ca_view(request, pk):
 
         if formulario_id and archivo:
             formulario = ca.formularios.get(pk=formulario_id)
+            if formulario.archivo:
+                formulario.archivo.delete(save=False)
             formulario.archivo = archivo
             formulario.estado = "ENT"
             formulario.fecha_entrega = timezone.now()

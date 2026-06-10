@@ -1,6 +1,8 @@
 # carrera_academica/models.py
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.text import slugify
 
@@ -1301,3 +1303,9 @@ class JuradoExterno(models.Model):
     def es_universidad_externa(self):
         """Verifica si es de universidad externa (no UTN)."""
         return not self.universidad.es_utn
+
+
+@receiver(post_delete, sender=Formulario)
+def borrar_archivo_al_eliminar_formulario(sender, instance, **kwargs):
+    if instance.archivo:
+        instance.archivo.delete(save=False)
