@@ -335,6 +335,12 @@ class JuradoExternoAdmin(admin.ModelAdmin):
     search_fields = ['apellido', 'nombre', 'email']
     readonly_fields = ['fecha_alta']
 
+
+@admin.register(TipoFormulario)
+class TipoFormularioAdmin(admin.ModelAdmin):
+    list_display = ['codigo', 'nombre', 'descripcion']
+    search_fields = ['codigo', 'nombre']
+
     fieldsets = (
         ('Información Personal', {
             'fields': ('apellido', 'nombre', 'email', 'telefono')

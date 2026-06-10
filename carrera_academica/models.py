@@ -973,6 +973,20 @@ class MembreteAnual(models.Model):
         verbose_name_plural = "Membretes Anuales"
 
 
+class TipoFormulario(models.Model):
+    codigo = models.CharField(max_length=4, unique=True)
+    nombre = models.CharField(max_length=100)
+    descripcion = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = "Tipo de Formulario"
+        verbose_name_plural = "Tipos de Formulario"
+        ordering = ["codigo"]
+
+    def __str__(self):
+        return f"{self.codigo} – {self.nombre}"
+
+
 class PlantillaDocumento(models.Model):
     TIPO_FORMULARIO_CHOICES = [
         ("F02", "F02"),

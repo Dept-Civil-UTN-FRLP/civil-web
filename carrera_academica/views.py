@@ -56,6 +56,7 @@ from .models import (
     Asignatura,
     JuradoExterno,
     Universidad,
+    TipoFormulario,
 )
 
 logger = logging.getLogger(__name__)
@@ -126,12 +127,18 @@ def _preparar_contexto_detalle(ca):
         estado="PEN", tipo_formulario__in=tipos_a_notificar
     ).exists()
 
+    descripciones_formularios = {
+        tf.codigo: tf.descripcion
+        for tf in TipoFormulario.objects.all()
+    }
+
     return {
         "form_cv": form_cv,
         "form_unicos": form_unicos,
         "anios_pendientes_evaluacion": anios_pendientes,
         "hay_formularios_pendientes": hay_formularios_pendientes,
         "resumen_anios": resumen_anios,
+        "descripciones_formularios": descripciones_formularios,
     }
 
 
