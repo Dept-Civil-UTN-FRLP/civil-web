@@ -640,7 +640,7 @@ def notificar_pendientes_view(request, pk):
     """Vista para notificar formularios pendientes."""
     ca = get_object_or_404(CarreraAcademica, pk=pk)
 
-    exito, mensaje = EmailService.enviar_recordatorio_formularios_pendientes(ca)
+    exito, mensaje = EmailService.enviar_primera_notificacion(ca)
 
     if exito:
         messages.success(request, mensaje)
