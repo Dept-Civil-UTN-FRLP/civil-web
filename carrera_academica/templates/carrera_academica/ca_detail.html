@@ -14,46 +14,68 @@
         {# Cadena de CAs #}
         {% include 'carrera_academica/components/ca/cadena_ca.html' with ca=ca %}
 
-        {# CV #}
-        <div class="card mb-4">
-            <div class="card-header">Curriculum Vitae</div>
-            <div class="card-body">
-                {% if form_cv %}
-                    <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
-                        {% if form_cv.estado == 'ENT' %}
-                            <span class="badge bg-success">Entregado</span>
-                            <small class="text-muted">el {{ form_cv.fecha_entrega|date:"d/m/Y" }}</small>
-                            {% if form_cv.archivo %}
-                                <a href="{% url 'serve_private_media' path=form_cv.archivo.name|slice:'8:' %}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-file-pdf"></i> Ver
-                                </a>
-                                <a href="{% url 'carrera_academica:borrar_archivo_formulario' pk=form_cv.pk %}" class="btn btn-sm btn-outline-danger">
-                                    <i class="bi bi-trash"></i>
-                                </a>
-                            {% endif %}
-                        {% else %}
-                            <span class="badge bg-warning text-dark">Pendiente</span>
-                        {% endif %}
-                    </div>
-                    {% if ca.estado != 'FIN' %}
-                    <form method="POST" enctype="multipart/form-data" class="d-flex">
-                        {% csrf_token %}
-                        <input type="hidden" name="formulario_id" value="{{ form_cv.pk }}">
-                        <input type="file" name="archivo" class="form-control form-control-sm" required>
-                        <button type="submit" class="btn btn-primary btn-sm ms-2">
-                            {% if form_cv.estado == 'ENT' %}Actualizar{% else %}Subir{% endif %}
-                        </button>
-                    </form>
-                    {% endif %}
-                {% else %}
-                    <p class="text-muted mb-0">El formulario para el CV no ha sido generado.</p>
-                {% endif %}
-            </div>
-        </div>
-        
         {# Formularios de Inicio #}
         <h4>Checklist de Formularios</h4>
         <h5>Formularios de Inicio</h5>
+
+        <table class="table table-sm table-bordered align-middle mb-0">
+            <tbody>
+                {# Res. Designación #}
+                <tr>
+                    <td class="fw-bold" style="width: 20%;">Res. Designación</td>
+                    <td>
+                        {% if ca.resolucion_designacion %}
+                            <span class="badge bg-success">Asignada</span>
+                            <small class="text-muted ms-1">{{ ca.resolucion_designacion }}</small>
+                            {% if ca.resolucion_designacion.file %}
+                                <a href="/file/{{ ca.resolucion_designacion.file.name|slice:'8:' }}" target="_blank" class="btn btn-sm btn-outline-primary ms-1">
+                                    <i class="bi bi-file-pdf"></i> Ver
+                                </a>
+                            {% endif %}
+                            <form action="{% url 'carrera_academica:desvincular_resolucion_ca' pk=ca.pk campo='designacion' %}" method="POST" class="d-inline ms-1">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1"
+                                    onclick="return confirm('¿Desvincular la Resolución de Designación?')" title="Quitar">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </form>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Pendiente</span>
+                        {% endif %}
+                    </td>
+                    <td style="width: 45%;">
+                        <small class="text-muted">Registrar desde "Registrar Resolución / Evento"</small>
+                    </td>
+                </tr>
+                {# Res. Puesta en Función #}
+                <tr>
+                    <td class="fw-bold">Res. Puesta en Función</td>
+                    <td>
+                        {% if ca.resolucion_puesta_en_funcion %}
+                            <span class="badge bg-success">Asignada</span>
+                            <small class="text-muted ms-1">{{ ca.resolucion_puesta_en_funcion }}</small>
+                            {% if ca.resolucion_puesta_en_funcion.file %}
+                                <a href="/file/{{ ca.resolucion_puesta_en_funcion.file.name|slice:'8:' }}" target="_blank" class="btn btn-sm btn-outline-primary ms-1">
+                                    <i class="bi bi-file-pdf"></i> Ver
+                                </a>
+                            {% endif %}
+                            <form action="{% url 'carrera_academica:desvincular_resolucion_ca' pk=ca.pk campo='puesta_en_funcion' %}" method="POST" class="d-inline ms-1">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1"
+                                    onclick="return confirm('¿Desvincular la Resolución de Puesta en Función?')" title="Quitar">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </form>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Pendiente</span>
+                        {% endif %}
+                    </td>
+                    <td style="width: 45%;">
+                        <small class="text-muted">Registrar desde "Registrar Resolución / Evento"</small>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
         {% include 'carrera_academica/components/form_list.html' with formularios=form_unicos ca=ca %}
 
         {# Formularios Anuales #}

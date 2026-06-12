@@ -94,9 +94,8 @@ def _preparar_contexto_detalle(ca):
         anio_correspondiente__isnull=True
     ).order_by("tipo_formulario")
 
-    form_cv = formularios_sin_anio.filter(tipo_formulario="CV").first()
     form_unicos = list(formularios_sin_anio.filter(
-        tipo_formulario__in=["F01", "F02", "F03"]))
+        tipo_formulario__in=["CV", "F01", "F02", "F03"]))
 
     # Años pendientes de evaluación
     start_year = ca.fecha_inicio.year
@@ -133,7 +132,6 @@ def _preparar_contexto_detalle(ca):
     }
 
     return {
-        "form_cv": form_cv,
         "form_unicos": form_unicos,
         "anios_pendientes_evaluacion": anios_pendientes,
         "hay_formularios_pendientes": hay_formularios_pendientes,
