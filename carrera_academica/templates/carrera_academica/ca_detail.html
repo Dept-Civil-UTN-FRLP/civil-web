@@ -19,9 +19,34 @@
             <div class="card-header">Curriculum Vitae</div>
             <div class="card-body">
                 {% if form_cv %}
-                    {% include 'carrera_academica/components/form_list.html' with formularios=form_cv|as_list ca=ca %}
+                    <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+                        {% if form_cv.estado == 'ENT' %}
+                            <span class="badge bg-success">Entregado</span>
+                            <small class="text-muted">el {{ form_cv.fecha_entrega|date:"d/m/Y" }}</small>
+                            {% if form_cv.archivo %}
+                                <a href="{% url 'serve_private_media' path=form_cv.archivo.name|slice:'8:' %}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-file-pdf"></i> Ver
+                                </a>
+                                <a href="{% url 'carrera_academica:borrar_archivo_formulario' pk=form_cv.pk %}" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Pendiente</span>
+                        {% endif %}
+                    </div>
+                    {% if ca.estado != 'FIN' %}
+                    <form method="POST" enctype="multipart/form-data" class="d-flex">
+                        {% csrf_token %}
+                        <input type="hidden" name="formulario_id" value="{{ form_cv.pk }}">
+                        <input type="file" name="archivo" class="form-control form-control-sm" required>
+                        <button type="submit" class="btn btn-primary btn-sm ms-2">
+                            {% if form_cv.estado == 'ENT' %}Actualizar{% else %}Subir{% endif %}
+                        </button>
+                    </form>
+                    {% endif %}
                 {% else %}
-                    <p class="text-muted">El formulario para el CV no ha sido generado.</p>
+                    <p class="text-muted mb-0">El formulario para el CV no ha sido generado.</p>
                 {% endif %}
             </div>
         </div>
