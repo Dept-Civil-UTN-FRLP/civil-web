@@ -248,3 +248,4 @@ config/local.py
 # ❌ Backups de base de datos
 # ❌ Archivos temporales
 issues.md
+.claude/sessions
