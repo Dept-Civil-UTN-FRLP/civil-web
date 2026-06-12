@@ -83,6 +83,110 @@ class EmailService:
         return emails_enviados, errores
 
     @staticmethod
+    def enviar_primera_notificacion(
+        ca: CarreraAcademica,
+        fecha_limite: str = None,
+    ) -> tuple[bool, str]:
+        """
+        Envía la primera notificación formal al docente al abrir el expediente de CA.
+        Usa el template HTML ca_primera_notificacion.html con el diseño institucional.
+
+        Args:
+            ca: Instancia de CarreraAcademica
+            fecha_limite: Fecha límite de presentación (texto, ej: "30 de agosto de 2026")
+
+        Returns:
+            tuple: (exito, mensaje)
+        """
+        from django.utils import timezone
+        from carrera_academica.services.document_service import DocumentService
+        from collections import defaultdict
+
+        docente = ca.cargo.docente
+        correo_principal = docente.correos.filter(principal=True).first()
+
+        if not correo_principal:
+            return False, f"El docente {docente} no tiene correo principal registrado"
+
+        anio_actual = timezone.now().year
+        tipos_a_notificar = ["F02", "F04", "F05"]
+
+        formularios_pendientes = Formulario.objects.filter(
+            carrera_academica=ca,
+            estado="PEN",
+            tipo_formulario__in=tipos_a_notificar,
+        ).filter(
+            Q(anio_correspondiente__isnull=True) | Q(anio_correspondiente__lte=anio_actual)
+        )
+
+        if not formularios_pendientes.exists():
+            return False, "No hay formularios pendientes para notificar"
+
+        formularios_por_tipo = defaultdict(list)
+        for f in formularios_pendientes:
+            formularios_por_tipo[f.tipo_formulario].append(f)
+
+        def _anios_texto(tipo):
+            anios = sorted(
+                f.anio_correspondiente
+                for f in formularios_por_tipo.get(tipo, [])
+                if f.anio_correspondiente
+            )
+            return ", ".join(str(a) for a in anios) if anios else ""
+
+        cargo_info = (
+            f"{ca.cargo.get_categoria_display()} {ca.cargo.get_caracter_display()} "
+            f"en la asignatura {ca.cargo.asignatura.nombre.title()}"
+        )
+
+        context = {
+            "docente": docente,
+            "asignatura": ca.cargo.asignatura.nombre.title(),
+            "cargo_info": cargo_info,
+            "fecha_limite": fecha_limite,
+            "tiene_f02": "F02" in formularios_por_tipo,
+            "tiene_f04": "F04" in formularios_por_tipo,
+            "tiene_f05": "F05" in formularios_por_tipo,
+            "anios_f04": _anios_texto("F04"),
+            "anios_f05": _anios_texto("F05"),
+        }
+
+        html_body = render_to_string("emails/ca_primera_notificacion.html", context)
+
+        email = EmailMessage(
+            subject=f"Apertura de Expediente de Carrera Académica – {ca.cargo.asignatura.nombre.title()}",
+            body=html_body,
+            from_email=None,
+            to=[correo_principal.email],
+        )
+        email.content_subtype = "html"
+
+        tipos_dinamicos = ["F04", "F05"]
+        for tipo in tipos_dinamicos:
+            for formulario in formularios_por_tipo.get(tipo, []):
+                buffer, filename = DocumentService.generar_documento_dinamico(formulario)
+                if buffer:
+                    email.attach(
+                        filename,
+                        buffer.read(),
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    )
+                else:
+                    logger.warning(f"No se pudo generar documento para {tipo} al enviar primera notificación CA {ca.pk}")
+
+        try:
+            email.send()
+            from django.utils import timezone as tz
+            ca.fecha_ultima_notificacion = tz.now()
+            ca.cantidad_notificaciones += 1
+            ca.save(update_fields=["fecha_ultima_notificacion", "cantidad_notificaciones"])
+            logger.info(f"Primera notificación CA enviada a {docente} para CA {ca.pk}")
+            return True, f"Correo enviado exitosamente a {correo_principal.email}"
+        except Exception as e:
+            logger.error(f"Error enviando primera notificación CA {ca.pk}: {e}")
+            return False, f"Error al enviar: {str(e)}"
+
+    @staticmethod
     def enviar_recordatorio_formularios_pendientes(
         ca: CarreraAcademica,
     ) -> tuple[bool, str]:
@@ -126,6 +230,11 @@ class EmailService:
                 ca, correo_principal.email, formularios_pendientes
             )
             email.send()
+
+            from django.utils import timezone as tz
+            ca.fecha_ultima_notificacion = tz.now()
+            ca.cantidad_notificaciones += 1
+            ca.save(update_fields=["fecha_ultima_notificacion", "cantidad_notificaciones"])
 
             logger.info(f"Recordatorio enviado a {docente} para CA {ca.pk}")
             return True, f"Correo enviado exitosamente a {correo_principal.email}"

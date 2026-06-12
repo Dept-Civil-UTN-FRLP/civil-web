@@ -158,6 +158,18 @@ class CarreraAcademica(models.Model):
         help_text="Jurado asignado para la evaluación de esta CA"
     )
     
+    fecha_ultima_notificacion = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Última Notificación",
+        help_text="Última vez que se envió una notificación al docente sobre documentación pendiente",
+    )
+    cantidad_notificaciones = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Cantidad de Notificaciones",
+        help_text="Número de notificaciones enviadas al docente",
+    )
+
     objects = CarreraAcademicaManager()
 
     def clean(self):

@@ -161,6 +161,16 @@
                 {% else %}
                     <p class="text-muted mb-0">No hay formularios (F02, F04, F05) pendientes de notificar.</p>
                 {% endif %}
+                {% if ca.cantidad_notificaciones > 0 %}
+                    <div class="mt-3 pt-2 border-top">
+                        <small class="text-muted">
+                            <i class="bi bi-envelope-check"></i>
+                            <strong>{{ ca.cantidad_notificaciones }}</strong>
+                            notificación{% if ca.cantidad_notificaciones != 1 %}es{% endif %} enviada{% if ca.cantidad_notificaciones != 1 %}s{% endif %} &mdash;
+                            última: {{ ca.fecha_ultima_notificacion|date:"d/m/Y H:i" }}
+                        </small>
+                    </div>
+                {% endif %}
             </div>
         </div>
 {# Registrar Resolución / Evento #}

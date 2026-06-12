@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notificación de Carrera Académica</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #2d3748;
+            margin: 0;
+            padding: 24px;
+            background-color: #ffffff;
+        }
+
+        .container { max-width: 680px; margin: 0 auto; }
+
+        .header-banner {
+            border-bottom: 2px solid #2b6cb0;
+            padding-bottom: 12px;
+            margin-bottom: 30px;
+        }
+
+        .institution-title {
+            font-size: 14pt;
+            font-weight: bold;
+            color: #2b6cb0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0 0 4px 0;
+        }
+
+        .department-title {
+            font-size: 12pt;
+            font-weight: normal;
+            color: #4a5568;
+            margin: 0;
+        }
+
+        .meta-info {
+            margin-bottom: 25px;
+            font-size: 10.5pt;
+        }
+
+        .meta-row { margin-bottom: 6px; }
+
+        .meta-label {
+            font-weight: bold;
+            color: #4a5568;
+            display: inline-block;
+            width: 80px;
+        }
+
+        .email-body { text-align: justify; }
+
+        .salutation {
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        p { margin-top: 0; margin-bottom: 16px; }
+
+        .section-title {
+            font-size: 11.5pt;
+            font-weight: bold;
+            color: #2b6cb0;
+            margin-top: 25px;
+            margin-bottom: 12px;
+        }
+
+        ul { margin-top: 0; margin-bottom: 16px; padding-left: 20px; }
+        li { margin-bottom: 12px; }
+
+        .component-title { font-weight: bold; color: #2d3748; }
+
+        .badge-interno {
+            background-color: #f7fafc;
+            color: #4a5568;
+            font-size: 8.5pt;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            display: inline-block;
+            margin-left: 5px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .pending-box {
+            background-color: #fffaf0;
+            border-left: 4px solid #dd6b20;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .pending-title {
+            font-weight: bold;
+            color: #dd6b20;
+            margin-bottom: 8px;
+        }
+
+        .closing { margin-top: 35px; margin-bottom: 40px; }
+
+        .signature-area { margin-top: 50px; }
+
+        .signature-line {
+            border-top: 1px solid #a0aec0;
+            width: 250px;
+            margin-bottom: 8px;
+        }
+
+        .signature-text {
+            font-size: 10pt;
+            color: #4a5568;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="header-banner">
+        <div class="institution-title">Universidad Tecnológica Nacional</div>
+        <div class="department-title">Facultad Regional La Plata &bull; Departamento de Ingeniería Civil</div>
+    </div>
+
+    <div class="meta-info">
+        <div class="meta-row"><span class="meta-label">Para:</span> {{ docente.apellido }}, {{ docente.nombre }}</div>
+        <div class="meta-row"><span class="meta-label">De:</span> Secretaría del Departamento de Ingeniería Civil</div>
+        <div class="meta-row"><span class="meta-label">Asunto:</span> Apertura de Expediente de Carrera Académica &ndash; Asignatura: {{ asignatura }}</div>
+    </div>
+
+    <div class="email-body">
+
+        <div class="salutation">Estimado/a {{ docente.apellido }}:</div>
+
+        <p>Nos comunicamos desde la Secretaría del Departamento con el propósito de dar inicio al proceso institucional de su evaluación periódica de <strong>Carrera Académica</strong>.</p>
+
+        <p>Le informamos que se ha abierto el expediente digital correspondiente a su cargo de <strong>{{ cargo_info }}</strong>. A fin de avanzar con el trámite, le solicitamos tenga a bien confeccionar y remitir la documentación técnica obligatoria que se detalla a continuación.</p>
+
+        <div class="pending-box">
+            <div class="pending-title">Formularios a presentar:</div>
+            <ul>
+                {% if tiene_f02 %}
+                <li><strong>F02 - Planificación de Cátedra</strong> <span style="color: #718096; font-weight: normal;">(sin plantilla disponible, formato libre institucional)</span></li>
+                {% endif %}
+                {% if tiene_f04 %}
+                <li><strong>F04 - Plan Anual de Actividades</strong>{% if anios_f04 %} correspondientes a los años: <strong>{{ anios_f04 }}</strong>{% endif %} <span style="color: #4a5568; font-weight: normal;">(se adjunta modelo)</span></li>
+                {% endif %}
+                {% if tiene_f05 %}
+                <li><strong>F05 - Informe Anual de Actividades</strong>{% if anios_f05 %} correspondientes a los años: <strong>{{ anios_f05 }}</strong>{% endif %} <span style="color: #4a5568; font-weight: normal;">(se adjunta modelo)</span></li>
+                {% endif %}
+            </ul>
+        </div>
+
+        <p>Queremos enfatizar que los formularios arriba detallados constituyen <strong>la única documentación que usted debe confeccionar y presentar de manera activa, y poseen el carácter formal de Declaración Jurada</strong>. Su confección debe reflejar fehacientemente las actividades desarrolladas en los períodos declarados.</p>
+
+        <p>Los demás componentes requeridos normativamente para la conformación definitiva de su expediente se tramitarán internamente y serán incorporados de oficio por las áreas correspondientes:</p>
+
+        <ul>
+            <li>
+                <span class="component-title">Encuestas de Opinión Estudiantil</span> <span class="badge-interno">Gestión Interna</span><br>
+                Los resultados históricos sistematizados del período evaluado serán adosados directamente al legajo por Bedelía / Secretaría Académica.
+            </li>
+            <li>
+                <span class="component-title">Evaluación de la Gestión Departamental y de la Secretaría Académica</span> <span class="badge-interno">Gestión Interna</span><br>
+                Tanto la Dirección del Departamento como la Secretaría Académica emitirán e incluirán de oficio sus respectivos informes de desempeño.
+            </li>
+            <li>
+                <span class="component-title">Evaluación de la Secretaría de Ciencia, Tecnología y Posgrado</span> <span class="badge-interno">Gestión Interna</span><br>
+                Al tratarse de una dedicación que contempla funciones de investigación o categorización, dicha Secretaría elevará su informe directamente al expediente digital.
+            </li>
+        </ul>
+
+        <div class="section-title">Plazos y modalidad de envío</div>
+
+        {% if fecha_limite %}
+        <p>Le solicitamos remitir la documentación pendiente debidamente completada antes del <strong>{{ fecha_limite }}</strong> a través del correo electrónico de la Secretaría del Departamento. Se adjuntan a este mensaje las plantillas vigentes para los formularios F04 y F05.</p>
+        {% else %}
+        <p>Le solicitamos remitir la documentación pendiente debidamente completada a la brevedad posible a través del correo electrónico de la Secretaría del Departamento. Se adjuntan a este mensaje las plantillas vigentes para los formularios F04 y F05.</p>
+        {% endif %}
+
+        <p>Quedo a su entera disposición en la Secretaría para asistirlo/a ante cualquier duda o consulta técnica sobre los formularios.</p>
+
+        <div class="closing">Atentamente,</div>
+
+        <div class="signature-area">
+            <div class="signature-line"></div>
+            <div class="signature-text">
+                <strong>Secretaría del Departamento de Ingeniería Civil</strong><br>
+                UTN – Facultad Regional La Plata
+            </div>
+        </div>
+
+    </div>
+</div>
+</body>
+</html>
