@@ -41,20 +41,6 @@
             margin: 0;
         }
 
-        .meta-info {
-            margin-bottom: 25px;
-            font-size: 10.5pt;
-        }
-
-        .meta-row { margin-bottom: 6px; }
-
-        .meta-label {
-            font-weight: bold;
-            color: #4a5568;
-            display: inline-block;
-            width: 80px;
-        }
-
         .email-body { text-align: justify; }
 
         .salutation {
@@ -129,15 +115,9 @@
         <div class="department-title">Facultad Regional La Plata &bull; Departamento de Ingeniería Civil</div>
     </div>
 
-    <div class="meta-info">
-        <div class="meta-row"><span class="meta-label">Para:</span> {{ docente.apellido }}, {{ docente.nombre }}</div>
-        <div class="meta-row"><span class="meta-label">De:</span> Secretaría del Departamento de Ingeniería Civil</div>
-        <div class="meta-row"><span class="meta-label">Asunto:</span> Apertura de Expediente de Carrera Académica &ndash; Asignatura: {{ asignatura }}</div>
-    </div>
-
     <div class="email-body">
 
-        <div class="salutation">Estimado/a {{ docente.apellido }}:</div>
+        <div class="salutation">Estimado/a {{ docente.apellido|upper }}:</div>
 
         <p>Nos comunicamos desde la Secretaría del Departamento con el propósito de dar inicio al proceso institucional de su evaluación periódica de <strong>Carrera Académica</strong>.</p>
 
