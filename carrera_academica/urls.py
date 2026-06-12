@@ -29,6 +29,11 @@ urlpatterns = [
         name="asignar_expediente",
     ),
     path(
+        "expediente/<int:pk>/desvincular_resolucion/<str:campo>/",
+        views.desvincular_resolucion_ca_view,
+        name="desvincular_resolucion_ca",
+    ),
+    path(
         "api/docentes_filtrados/",
         views.docentes_filtrados_api_view,
         name="api_docentes_filtrados",

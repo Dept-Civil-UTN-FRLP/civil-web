@@ -82,11 +82,18 @@ Uso:
                 {% if ca.resolucion_designacion.file %}
                     <a href="/file/{{ ca.resolucion_designacion.file.name|slice:'8:' }}" target="_blank" class="ms-2 fw-bold">(Ver Archivo)</a>
                 {% endif %}
+                <form action="{% url 'carrera_academica:desvincular_resolucion_ca' pk=ca.pk campo='designacion' %}" method="POST" class="d-inline ms-2">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1" title="Quitar resolución"
+                        onclick="return confirm('¿Desvincular la Resolución de Designación?')">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </form>
             {% else %}
                 No asignada.
             {% endif %}
         </p>
-        
+
         <p class="card-text small">
             <strong>Res. Puesta en Función:</strong>
             {% if ca.resolucion_puesta_en_funcion %}
@@ -94,6 +101,13 @@ Uso:
                 {% if ca.resolucion_puesta_en_funcion.file %}
                     <a href="/file/{{ ca.resolucion_puesta_en_funcion.file.name|slice:'8:' }}" target="_blank" class="ms-2 fw-bold">(Ver Archivo)</a>
                 {% endif %}
+                <form action="{% url 'carrera_academica:desvincular_resolucion_ca' pk=ca.pk campo='puesta_en_funcion' %}" method="POST" class="d-inline ms-2">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1" title="Quitar resolución"
+                        onclick="return confirm('¿Desvincular la Resolución de Puesta en Función?')">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </form>
             {% else %}
                 No asignada.
             {% endif %}

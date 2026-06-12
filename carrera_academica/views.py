@@ -489,6 +489,30 @@ def editar_junta_view(request, pk):
 
 
 @login_required
+def desvincular_resolucion_ca_view(request, pk, campo):
+    """Desvincula una resolución (designación o puesta en función) de una CA."""
+    if request.method != "POST":
+        return redirect("carrera_academica:detalle_ca", pk=pk)
+
+    ca = get_object_or_404(CarreraAcademica, pk=pk)
+
+    campos_validos = {
+        "designacion": ("resolucion_designacion", "Designación"),
+        "puesta_en_funcion": ("resolucion_puesta_en_funcion", "Puesta en Función"),
+    }
+
+    if campo not in campos_validos:
+        messages.error(request, "Campo no válido.")
+        return redirect("carrera_academica:detalle_ca", pk=pk)
+
+    field_name, label = campos_validos[campo]
+    setattr(ca, field_name, None)
+    ca.save(update_fields=[field_name])
+    messages.success(request, f"Resolución de {label} desvinculada correctamente.")
+    return redirect("carrera_academica:detalle_ca", pk=pk)
+
+
+@login_required
 def asignar_expediente_view(request, pk):
     ca = get_object_or_404(CarreraAcademica, pk=pk)
     if request.method == "POST":
