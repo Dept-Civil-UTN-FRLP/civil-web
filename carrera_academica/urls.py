@@ -60,6 +60,11 @@ urlpatterns = [
     path('ca/<int:pk>/archivar/', views.archivar_ca_view, name='archivar_ca'),
     path('ca/<int:pk>/gestionar-archivada/', views.gestionar_ca_archivada_view, name='gestionar_ca_archivada'),
     path('formulario/<int:pk>/borrar-archivo/', views.borrar_archivo_formulario_view, name='borrar_archivo_formulario'),
+    path(
+        'expediente/<int:ca_pk>/formulario/<int:formulario_pk>/subir/',
+        views.subir_formulario_view,
+        name='subir_formulario',
+    ),
     # ===== JURADOS =====
     path('jurados/', views.lista_jurados_view, name='lista_jurados'),
     path('jurados/crear/', views.crear_jurado_view, name='crear_jurado'),
