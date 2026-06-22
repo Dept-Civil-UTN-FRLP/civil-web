@@ -380,6 +380,53 @@ document.addEventListener('DOMContentLoaded', function() {
     tooltipTriggerList.map(function(el) { return new bootstrap.Tooltip(el); });
 });
 
+// Finalizar CA via modal + fetch
+const selectResultado = document.getElementById('selectResultadoCierre');
+if (selectResultado) {
+    selectResultado.addEventListener('change', function() {
+        const campoFecha = document.getElementById('campoNuevaFecha');
+        campoFecha.classList.toggle('d-none', this.value !== 'aprobada_redesigna');
+    });
+}
+
+const formFinalizar = document.getElementById('formFinalizar');
+if (formFinalizar) {
+    formFinalizar.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btnConfirmarFinalizar');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Finalizando...';
+
+        fetch(formFinalizar.action, {
+            method: 'POST',
+            body: new FormData(formFinalizar),
+            headers: { 'X-Requested-With': 'fetch' },
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                if (data.redesignacion) {
+                    window.location.href = data.redirect_url;
+                } else {
+                    bootstrap.Modal.getInstance(document.getElementById('modalFinalizar')).hide();
+                    document.querySelector('[data-estado-display]').textContent = data.estado_display;
+                    const acciones = document.getElementById('acciones-expediente');
+                    if (acciones) acciones.remove();
+                }
+            } else {
+                alert('Error: ' + data.error);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-circle"></i> Confirmar Finalización';
+            }
+        })
+        .catch(() => {
+            alert('Error al finalizar. Intente nuevamente.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle"></i> Confirmar Finalización';
+        });
+    });
+}
+
 // Archivar CA via modal + fetch
 const formArchivar = document.getElementById('formArchivar');
 if (formArchivar) {

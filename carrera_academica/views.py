@@ -595,12 +595,15 @@ def docentes_filtrados_api_view(request):
 @login_required
 def finalizar_ca_view(request, pk):
     ca = get_object_or_404(CarreraAcademica, pk=pk)
+    es_fetch = request.headers.get("X-Requested-With") == "fetch"
 
     if request.method == "POST":
         resultado = request.POST.get("resultado_cierre")
         observaciones = request.POST.get("observaciones_cierre", "")
 
         if not resultado:
+            if es_fetch:
+                return JsonResponse({"ok": False, "error": "Debe seleccionar un resultado de cierre."}, status=400)
             messages.error(request, "Debe seleccionar un resultado de cierre")
             return redirect("carrera_academica:finalizar_ca", pk=pk)
 
@@ -610,6 +613,8 @@ def finalizar_ca_view(request, pk):
             try:
                 nueva_fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
             except (ValueError, TypeError):
+                if es_fetch:
+                    return JsonResponse({"ok": False, "error": "Formato de fecha inválido."}, status=400)
                 messages.error(request, "Formato de fecha inválido")
                 return redirect("carrera_academica:finalizar_ca", pk=pk)
 
@@ -617,16 +622,31 @@ def finalizar_ca_view(request, pk):
             ca, resultado, observaciones, nueva_fecha, request.user)
 
         if not exito:
+            if es_fetch:
+                return JsonResponse({"ok": False, "error": mensaje}, status=400)
             messages.error(request, mensaje)
             return redirect("carrera_academica:finalizar_ca", pk=pk)
 
-        # Redesignación: redirigir a la nueva CA
+        # Redesignación: crear nueva CA y redirigir
         if mensaje.startswith("redesignacion:"):
+            from django.urls import reverse
             nueva_ca_pk = mensaje.split(":")[1]
-            messages.success(
-                request, f"CA finalizada y redesignada. Nuevo expediente #{nueva_ca_pk} creado.")
+            if es_fetch:
+                return JsonResponse({
+                    "ok": True,
+                    "redesignacion": True,
+                    "redirect_url": reverse("carrera_academica:detalle_ca", kwargs={"pk": nueva_ca_pk}),
+                    "mensaje": f"CA finalizada y redesignada. Nuevo expediente #{nueva_ca_pk} creado.",
+                })
+            messages.success(request, f"CA finalizada y redesignada. Nuevo expediente #{nueva_ca_pk} creado.")
             return redirect("carrera_academica:detalle_ca", pk=nueva_ca_pk)
 
+        if es_fetch:
+            return JsonResponse({
+                "ok": True,
+                "estado_display": ca.get_estado_display(),
+                "mensaje": f"Expediente finalizado: {mensaje}",
+            })
         messages.success(request, f"Expediente finalizado: {mensaje}")
         return redirect("carrera_academica:detalle_ca", pk=pk)
 
