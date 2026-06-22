@@ -5,6 +5,7 @@ Servicio para workflows de Carrera Académica: finalizar y archivar.
 import logging
 from datetime import date, datetime
 
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
@@ -60,6 +61,9 @@ class CAService:
 
                 return False, f"Resultado desconocido: {resultado}"
 
+        except ValidationError as e:
+            logger.warning(f"Validación al finalizar CA {ca.pk}: {e}")
+            return False, " ".join(e.messages)
         except Exception as e:
             logger.error(f"Error al finalizar CA {ca.pk}: {e}")
             return False, str(e)

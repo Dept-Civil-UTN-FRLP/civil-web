@@ -512,8 +512,10 @@ if (formFinalizar) {
     formFinalizar.addEventListener('submit', function(e) {
         e.preventDefault();
         const btn = document.getElementById('btnConfirmarFinalizar');
+        const errorDiv = document.getElementById('errorFinalizar');
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Finalizando...';
+        errorDiv.classList.add('d-none');
 
         fetch(formFinalizar.action, {
             method: 'POST',
@@ -532,13 +534,15 @@ if (formFinalizar) {
                     if (acciones) acciones.remove();
                 }
             } else {
-                alert('Error: ' + data.error);
+                errorDiv.textContent = data.error;
+                errorDiv.classList.remove('d-none');
                 btn.disabled = false;
                 btn.innerHTML = '<i class="bi bi-check-circle"></i> Confirmar Finalización';
             }
         })
         .catch(() => {
-            alert('Error al finalizar. Intente nuevamente.');
+            errorDiv.textContent = 'Error al finalizar. Intente nuevamente.';
+            errorDiv.classList.remove('d-none');
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-check-circle"></i> Confirmar Finalización';
         });
