@@ -401,6 +401,45 @@ document.addEventListener('DOMContentLoaded', function() {
     tooltipTriggerList.map(function(el) { return new bootstrap.Tooltip(el); });
 });
 
+// Iniciar evaluación via modal + fetch (inserta card HTML devuelto por la vista)
+const formIniciarEval = document.getElementById('formIniciarEvaluacion');
+if (formIniciarEval) {
+    formIniciarEval.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btnConfirmarEvaluacion');
+        const errorDiv = document.getElementById('errorIniciarEval');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Creando...';
+        errorDiv.classList.add('d-none');
+
+        fetch(formIniciarEval.action, {
+            method: 'POST',
+            body: new FormData(formIniciarEval),
+            headers: { 'X-Requested-With': 'fetch' },
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('modalIniciarEvaluacion')).hide();
+                const lista = document.getElementById('lista-evaluaciones');
+                lista.insertAdjacentHTML('beforeend', data.html);
+                formIniciarEval.reset();
+            } else {
+                errorDiv.textContent = data.error;
+                errorDiv.classList.remove('d-none');
+            }
+            btn.disabled = false;
+            btn.innerHTML = 'Crear Evaluación';
+        })
+        .catch(() => {
+            errorDiv.textContent = 'Error al crear la evaluación. Intente nuevamente.';
+            errorDiv.classList.remove('d-none');
+            btn.disabled = false;
+            btn.innerHTML = 'Crear Evaluación';
+        });
+    });
+}
+
 // Desvincular resolución via modal Bootstrap + fetch
 let desvinculaUrl = null;
 let desvinculaFila = null;

@@ -303,6 +303,20 @@ def iniciar_evaluacion_view(request, pk):
                         evaluacion=nueva_evaluacion,
                     )
 
+                es_fetch = request.headers.get("X-Requested-With") == "fetch"
+                if es_fetch:
+                    from django.template.loader import render_to_string
+                    descripciones_formularios = {
+                        tf.codigo: tf.descripcion for tf in TipoFormulario.objects.all()
+                    }
+                    html = render_to_string(
+                        "carrera_academica/components/ca/_evaluacion_card.html",
+                        {"evaluacion": nueva_evaluacion, "ca": ca,
+                         "descripciones_formularios": descripciones_formularios},
+                        request=request,
+                    )
+                    return JsonResponse({"ok": True, "html": html})
+
                 messages.success(
                     request,
                     f"Evaluación N°{nuevo_num} creada, cubriendo los años {', '.join(anios_seleccionados)}.",
@@ -311,11 +325,15 @@ def iniciar_evaluacion_view(request, pk):
 
             except ValidationError as e:
                 logger.warning(f"Error de validación al crear evaluación: {e}")
+                if request.headers.get("X-Requested-With") == "fetch":
+                    return JsonResponse({"ok": False, "error": " ".join(e.messages)}, status=400)
                 for error in e.messages:
                     messages.error(request, error)
 
             except Exception as e:
                 logger.error(f"Error inesperado al crear evaluación: {e}")
+                if request.headers.get("X-Requested-With") == "fetch":
+                    return JsonResponse({"ok": False, "error": "Error al crear la evaluación."}, status=500)
                 messages.error(
                     request, "Error al crear la evaluación. Contacte al administrador."
                 )

@@ -13,11 +13,52 @@ Uso:
 <div class="d-flex justify-content-between align-items-center mt-4">
     <h5>Evaluaciones</h5>
     {% if ca.estado != 'FIN' and anios_pendientes_evaluacion %}
-        <a href="{% url 'carrera_academica:iniciar_evaluacion' pk=ca.pk %}" class="btn btn-info btn-sm">
+        <button type="button" class="btn btn-info btn-sm"
+                data-bs-toggle="modal" data-bs-target="#modalIniciarEvaluacion">
             + Iniciar Nueva Evaluación
-        </a>
+        </button>
     {% endif %}
 </div>
+
+{# Modal Iniciar Evaluación — se renderiza server-side con anios_pendientes_evaluacion del contexto #}
+{% if ca.estado != 'FIN' and anios_pendientes_evaluacion %}
+<div class="modal fade" id="modalIniciarEvaluacion" tabindex="-1" aria-labelledby="modalIniciarEvalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalIniciarEvalLabel">Iniciar Nueva Evaluación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formIniciarEvaluacion"
+                  action="{% url 'carrera_academica:iniciar_evaluacion' pk=ca.pk %}"
+                  method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="text-muted small">Seleccioná los años que cubre esta evaluación:</p>
+                    <div class="list-group list-group-flush">
+                        {% for anio in anios_pendientes_evaluacion %}
+                        <label class="list-group-item">
+                            <input class="form-check-input me-2" type="checkbox"
+                                   name="anios_a_evaluar" value="{{ anio }}">
+                            {{ anio }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <div id="errorIniciarEval" class="alert alert-danger mt-3 d-none"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-info" id="btnConfirmarEvaluacion">
+                        Crear Evaluación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div id="lista-evaluaciones">
 
 {% if anios_pendientes_evaluacion %}
 <div class="alert alert-warning small mt-2">
@@ -36,3 +77,4 @@ Uso:
 {% if not ca.evaluaciones.all %}
     <p class="text-muted">Aún no se han iniciado evaluaciones.</p>
 {% endif %}
+</div>{# /lista-evaluaciones #}
