@@ -249,3 +249,6 @@ config/local.py
 # ❌ Archivos temporales
 issues.md
 .claude/sessions
+graphify-out/graph.html
+graphify-out/cost.json
+graphify-out/cache/

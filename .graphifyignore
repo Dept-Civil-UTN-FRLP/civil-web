@@ -1,0 +1,13 @@
+# .graphifyignore
+.venv/
+venv/
+templates/
+static/
+docs/
+*.md
+*.txt
+*.yml
+*.yaml
+*.html
+*.png
+*.jpg

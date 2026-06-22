@@ -1,0 +1,727 @@
+{
+  ".claude/settings.local.json": {
+    "mtime": 1781281053.619324,
+    "ast_hash": "182d03f5c3f03de96f1bd0413ed34fd9",
+    "semantic_hash": "182d03f5c3f03de96f1bd0413ed34fd9"
+  },
+  ".vscode/launch.json": {
+    "mtime": 1760729145.8207161,
+    "ast_hash": "866af52428582d2a29bb70fb4d50e8ca",
+    "semantic_hash": "866af52428582d2a29bb70fb4d50e8ca"
+  },
+  "build.sh": {
+    "mtime": 1770678685.2524831,
+    "ast_hash": "d19b5b6cfe9352d6108c82e6ef27faa7",
+    "semantic_hash": "d19b5b6cfe9352d6108c82e6ef27faa7"
+  },
+  "carrera_academica/__init__.py": {
+    "mtime": 1758739871.268845,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "carrera_academica/admin.py": {
+    "mtime": 1781112572.3780136,
+    "ast_hash": "6546de231c9208d3142badcb993f0c7d",
+    "semantic_hash": "6546de231c9208d3142badcb993f0c7d"
+  },
+  "carrera_academica/apps.py": {
+    "mtime": 1763075428.9738657,
+    "ast_hash": "94bd694afdc9afbf6bafd3d1346240be",
+    "semantic_hash": "94bd694afdc9afbf6bafd3d1346240be"
+  },
+  "carrera_academica/fixtures/load_area_data.json": {
+    "mtime": 1759170788.560636,
+    "ast_hash": "d73a3c5b1282d6ddb453735d0471351a",
+    "semantic_hash": "d73a3c5b1282d6ddb453735d0471351a"
+  },
+  "carrera_academica/fixtures/load_asignatura_data.json": {
+    "mtime": 1759170794.6134655,
+    "ast_hash": "8e75f5ca8f0cdd20a80caf06486f0e29",
+    "semantic_hash": "8e75f5ca8f0cdd20a80caf06486f0e29"
+  },
+  "carrera_academica/fixtures/load_bloque_data.json": {
+    "mtime": 1759170799.117417,
+    "ast_hash": "80fc7e1831c13975be86ac3f62ebddd5",
+    "semantic_hash": "80fc7e1831c13975be86ac3f62ebddd5"
+  },
+  "carrera_academica/fixtures/load_data.json": {
+    "mtime": 1759170805.3008866,
+    "ast_hash": "8d0c7fc4872dd72063eeafebadd1fea0",
+    "semantic_hash": "8d0c7fc4872dd72063eeafebadd1fea0"
+  },
+  "carrera_academica/fixtures/load_docente_data.json": {
+    "mtime": 1759170812.7927926,
+    "ast_hash": "a265fed97217de2d72813188108959a9",
+    "semantic_hash": "a265fed97217de2d72813188108959a9"
+  },
+  "carrera_academica/forms.py": {
+    "mtime": 1780426826.307212,
+    "ast_hash": "32c1517560995137770fbbe2e62f33f9",
+    "semantic_hash": "32c1517560995137770fbbe2e62f33f9"
+  },
+  "carrera_academica/management/__init__.py": {
+    "mtime": 1780426826.3092244,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "carrera_academica/management/commands/__init__.py": {
+    "mtime": 1780426826.3109162,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "carrera_academica/management/commands/analyze_indexes.py": {
+    "mtime": 1762897793.1982586,
+    "ast_hash": "75ef8d982ef79886c0980478beacbd64",
+    "semantic_hash": "75ef8d982ef79886c0980478beacbd64"
+  },
+  "carrera_academica/management/commands/analyze_queries.py": {
+    "mtime": 1761678431.9107833,
+    "ast_hash": "8d0983a78ee66d1cea0a4fed52fbb639",
+    "semantic_hash": "8d0983a78ee66d1cea0a4fed52fbb639"
+  },
+  "carrera_academica/management/commands/benchmark_indexes.py": {
+    "mtime": 1762897793.1992378,
+    "ast_hash": "697d72efc86ff6f8c2b92f584232154d",
+    "semantic_hash": "697d72efc86ff6f8c2b92f584232154d"
+  },
+  "carrera_academica/management/commands/cargar_universidades.py": {
+    "mtime": 1780426826.3140368,
+    "ast_hash": "d901629efafb107ad5757a3858352862",
+    "semantic_hash": "d901629efafb107ad5757a3858352862"
+  },
+  "carrera_academica/management/commands/limpiar_archivos_huerfanos.py": {
+    "mtime": 1781118778.689452,
+    "ast_hash": "1d4c7d0da7db8d17c7d9902e66577b4c",
+    "semantic_hash": "1d4c7d0da7db8d17c7d9902e66577b4c"
+  },
+  "carrera_academica/management/commands/verify_indexes.py": {
+    "mtime": 1761678431.9724014,
+    "ast_hash": "fc2571040b475122e5669f273b36de05",
+    "semantic_hash": "fc2571040b475122e5669f273b36de05"
+  },
+  "carrera_academica/managers.py": {
+    "mtime": 1761678432.0052326,
+    "ast_hash": "788be26d5a2af676a8c32e8728115128",
+    "semantic_hash": "788be26d5a2af676a8c32e8728115128"
+  },
+  "carrera_academica/migrations/0001_initial.py": {
+    "mtime": 1762897793.2007456,
+    "ast_hash": "cb0a979c548807735cb902507e716984",
+    "semantic_hash": "cb0a979c548807735cb902507e716984"
+  },
+  "carrera_academica/migrations/0002_alter_carreraacademica_options_and_more.py": {
+    "mtime": 1761678432.0082438,
+    "ast_hash": "22222b0ba5846e528dd9b62b53ca0228",
+    "semantic_hash": "22222b0ba5846e528dd9b62b53ca0228"
+  },
+  "carrera_academica/migrations/0003_alter_carreraacademica_options_and_more.py": {
+    "mtime": 1761415413.6912584,
+    "ast_hash": "cfeb87f962ac96aea4054caf8714fac4",
+    "semantic_hash": "cfeb87f962ac96aea4054caf8714fac4"
+  },
+  "carrera_academica/migrations/0004_carreraacademica_anios_pausados.py": {
+    "mtime": 1764362722.3211353,
+    "ast_hash": "2038ce692a653df80864b9a985982364",
+    "semantic_hash": "2038ce692a653df80864b9a985982364"
+  },
+  "carrera_academica/migrations/0005_agregar_resultado_cierre.py": {
+    "mtime": 1773080384.6549327,
+    "ast_hash": "aad5c88192149c36ac25cc76c2151be2",
+    "semantic_hash": "aad5c88192149c36ac25cc76c2151be2"
+  },
+  "carrera_academica/migrations/0006_agregar_vinculacion_ca_anterior.py": {
+    "mtime": 1773080384.6932871,
+    "ast_hash": "f82902360a77f99ffaa44d9013bcb907",
+    "semantic_hash": "f82902360a77f99ffaa44d9013bcb907"
+  },
+  "carrera_academica/migrations/0007_aumentar_max_length_estado.py": {
+    "mtime": 1773153729.0934758,
+    "ast_hash": "03f244f4290c74f10b31b9819d5d1b6d",
+    "semantic_hash": "03f244f4290c74f10b31b9819d5d1b6d"
+  },
+  "carrera_academica/migrations/0008_alter_carreraacademica_motivo_archivo.py": {
+    "mtime": 1775843714.8277037,
+    "ast_hash": "e3491fc7f9cd4fa5e0a52f5814a5d489",
+    "semantic_hash": "e3491fc7f9cd4fa5e0a52f5814a5d489"
+  },
+  "carrera_academica/migrations/0009_alter_membreteanual_logo_and_more.py": {
+    "mtime": 1777408127.3226352,
+    "ast_hash": "bd0876fb630374fc68675fd3f2b45020",
+    "semantic_hash": "bd0876fb630374fc68675fd3f2b45020"
+  },
+  "carrera_academica/migrations/0010_alter_formulario_archivo.py": {
+    "mtime": 1777408366.789136,
+    "ast_hash": "20abd6a4b5de8013fe944f2adc08937c",
+    "semantic_hash": "20abd6a4b5de8013fe944f2adc08937c"
+  },
+  "carrera_academica/migrations/0011_veedorestudiante_veedorgraduado_jurado_and_more.py": {
+    "mtime": 1780426826.3160577,
+    "ast_hash": "7fa73617b953526140485a7b887a62b9",
+    "semantic_hash": "7fa73617b953526140485a7b887a62b9"
+  },
+  "carrera_academica/migrations/0012_agregar_jurados_externos.py": {
+    "mtime": 1780426826.318075,
+    "ast_hash": "d6206a3bf713be6da9e0c6a052452746",
+    "semantic_hash": "d6206a3bf713be6da9e0c6a052452746"
+  },
+  "carrera_academica/migrations/0013_modificar_jurado_con_externos.py": {
+    "mtime": 1780426826.3200889,
+    "ast_hash": "01676a4a9cbc7e29724bcbb5e460e8a3",
+    "semantic_hash": "01676a4a9cbc7e29724bcbb5e460e8a3"
+  },
+  "carrera_academica/migrations/0014_tipoformulario.py": {
+    "mtime": 1781112344.4890423,
+    "ast_hash": "c9c082833e31845793b3cb59a9e69339",
+    "semantic_hash": "c9c082833e31845793b3cb59a9e69339"
+  },
+  "carrera_academica/migrations/0015_tipoformulario_datos_iniciales.py": {
+    "mtime": 1781115668.183089,
+    "ast_hash": "a94b60c709c6d5b68d2814057935011e",
+    "semantic_hash": "a94b60c709c6d5b68d2814057935011e"
+  },
+  "carrera_academica/migrations/0016_add_notificacion_tracking_to_carreraacademica.py": {
+    "mtime": 1781279120.5244355,
+    "ast_hash": "1a0fa5f4915314df2b4ebd8233530497",
+    "semantic_hash": "1a0fa5f4915314df2b4ebd8233530497"
+  },
+  "carrera_academica/migrations/__init__.py": {
+    "mtime": 1758807372.70892,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "carrera_academica/models.py": {
+    "mtime": 1781279086.934729,
+    "ast_hash": "44d04d51e247be8762a2e8d0e013ed8f",
+    "semantic_hash": "44d04d51e247be8762a2e8d0e013ed8f"
+  },
+  "carrera_academica/services/__init__.py": {
+    "mtime": 1760976409.7262487,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "carrera_academica/services/ca_service.py": {
+    "mtime": 1775755908.8417914,
+    "ast_hash": "6f7a17bf55e0d9cfbf1a79c740260f5c",
+    "semantic_hash": "6f7a17bf55e0d9cfbf1a79c740260f5c"
+  },
+  "carrera_academica/services/document_service.py": {
+    "mtime": 1778002543.1956773,
+    "ast_hash": "42836b368cdfd957d08b7eeb615275f1",
+    "semantic_hash": "42836b368cdfd957d08b7eeb615275f1"
+  },
+  "carrera_academica/services/email_service.py": {
+    "mtime": 1781279102.6405284,
+    "ast_hash": "c727d3827763c612309b13ef0b9a02d3",
+    "semantic_hash": "c727d3827763c612309b13ef0b9a02d3"
+  },
+  "carrera_academica/services/pdf_service.py": {
+    "mtime": 1780426826.3241334,
+    "ast_hash": "514991713a6a8c4a7ecab616b6649baf",
+    "semantic_hash": "514991713a6a8c4a7ecab616b6649baf"
+  },
+  "carrera_academica/signals.py": {
+    "mtime": 1773153711.4131815,
+    "ast_hash": "a065372e95474aec2678588672c411a8",
+    "semantic_hash": "a065372e95474aec2678588672c411a8"
+  },
+  "carrera_academica/templatetags/__init__.py": {
+    "mtime": 1758904955.434676,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "carrera_academica/templatetags/ca_extras.py": {
+    "mtime": 1781112508.085916,
+    "ast_hash": "27877ff2bfd4a2e179653d98714f4623",
+    "semantic_hash": "27877ff2bfd4a2e179653d98714f4623"
+  },
+  "carrera_academica/templatetags/pagination_tags.py": {
+    "mtime": 1777400765.5666182,
+    "ast_hash": "020a3d14b65439756ab4c00f5c08ad74",
+    "semantic_hash": "020a3d14b65439756ab4c00f5c08ad74"
+  },
+  "carrera_academica/test/__init__.py": {
+    "mtime": 1761309734.8355122,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "carrera_academica/test/performance/__init__.py": {
+    "mtime": 1761310097.8366873,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "carrera_academica/test/performance/test_query_optimization.py": {
+    "mtime": 1762897793.208266,
+    "ast_hash": "e9d88ba064ff115f726281d7eb1751f4",
+    "semantic_hash": "e9d88ba064ff115f726281d7eb1751f4"
+  },
+  "carrera_academica/test/test_indexes.py": {
+    "mtime": 1762897793.2092655,
+    "ast_hash": "9c7a4d130224deeb0d4455ecd8a3f2f9",
+    "semantic_hash": "9c7a4d130224deeb0d4455ecd8a3f2f9"
+  },
+  "carrera_academica/test/test_services.py": {
+    "mtime": 1775755908.8417914,
+    "ast_hash": "d87efa0e0609a2ac97a683d4223215d3",
+    "semantic_hash": "d87efa0e0609a2ac97a683d4223215d3"
+  },
+  "carrera_academica/test/test_validations.py": {
+    "mtime": 1762897793.2107747,
+    "ast_hash": "675468bb2c4cd64fc6c99431796d1125",
+    "semantic_hash": "675468bb2c4cd64fc6c99431796d1125"
+  },
+  "carrera_academica/test/test_views.py": {
+    "mtime": 1775755908.8417914,
+    "ast_hash": "e56556a9f089678302df82441256394c",
+    "semantic_hash": "e56556a9f089678302df82441256394c"
+  },
+  "carrera_academica/tests.py": {
+    "mtime": 1758739871.2557826,
+    "ast_hash": "e08f0582500f6562bf0a931ef9503b39",
+    "semantic_hash": "e08f0582500f6562bf0a931ef9503b39"
+  },
+  "carrera_academica/urls.py": {
+    "mtime": 1781299020.356691,
+    "ast_hash": "f28d203af2bdc269514e3515fd56ee4c",
+    "semantic_hash": "f28d203af2bdc269514e3515fd56ee4c"
+  },
+  "carrera_academica/validators.py": {
+    "mtime": 1761678432.2558203,
+    "ast_hash": "95e536db258a2242da35c21bd74e99fc",
+    "semantic_hash": "95e536db258a2242da35c21bd74e99fc"
+  },
+  "carrera_academica/views.py": {
+    "mtime": 1781299426.1835418,
+    "ast_hash": "0d0b8d738d6077361dba270ce9b70f56",
+    "semantic_hash": "0d0b8d738d6077361dba270ce9b70f56"
+  },
+  "config/__init__.py": {
+    "mtime": 1758656687.1188645,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "config/asgi.py": {
+    "mtime": 1759864539.2216096,
+    "ast_hash": "988ed6b2f7a48b0febc36b974691dea3",
+    "semantic_hash": "988ed6b2f7a48b0febc36b974691dea3"
+  },
+  "config/context_processors.py": {
+    "mtime": 1777401971.9524505,
+    "ast_hash": "4f7a04bc5307da90e0c29d37a73856c9",
+    "semantic_hash": "4f7a04bc5307da90e0c29d37a73856c9"
+  },
+  "config/pagination.py": {
+    "mtime": 1762897793.2147837,
+    "ast_hash": "33c7aa021d48b479fdfa781f4b6231a2",
+    "semantic_hash": "33c7aa021d48b479fdfa781f4b6231a2"
+  },
+  "config/settings.py": {
+    "mtime": 1777314081.7788925,
+    "ast_hash": "40ecac68e05259910ecb849b1866f6ad",
+    "semantic_hash": "40ecac68e05259910ecb849b1866f6ad"
+  },
+  "config/test/__init__.py": {
+    "mtime": 1761588364.7872455,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "config/test/test_pagination.py": {
+    "mtime": 1762897793.2187932,
+    "ast_hash": "b18c7f2a91bb0e74985674aa1582535e",
+    "semantic_hash": "b18c7f2a91bb0e74985674aa1582535e"
+  },
+  "config/urls.py": {
+    "mtime": 1777415440.8878841,
+    "ast_hash": "79e8cc98ffa8279971b327bb5f6e7552",
+    "semantic_hash": "79e8cc98ffa8279971b327bb5f6e7552"
+  },
+  "config/views.py": {
+    "mtime": 1776366370.3116355,
+    "ast_hash": "1ee2be39d564483dae21f2e37d61f0a1",
+    "semantic_hash": "1ee2be39d564483dae21f2e37d61f0a1"
+  },
+  "config/views_media.py": {
+    "mtime": 1777408127.3297217,
+    "ast_hash": "4240c2c34c45fe20610169e6d92be92b",
+    "semantic_hash": "4240c2c34c45fe20610169e6d92be92b"
+  },
+  "config/wsgi.py": {
+    "mtime": 1759864539.3787441,
+    "ast_hash": "6968fdede4e374f013b360b5971879d6",
+    "semantic_hash": "6968fdede4e374f013b360b5971879d6"
+  },
+  "deploy.sh": {
+    "mtime": 1781300084.256681,
+    "ast_hash": "9cff7923d4fe2f0a06f2284a650de87e",
+    "semantic_hash": "9cff7923d4fe2f0a06f2284a650de87e"
+  },
+  "equivalencias/__init__.py": {
+    "mtime": 1758656697.950593,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "equivalencias/admin.py": {
+    "mtime": 1776366370.3136313,
+    "ast_hash": "6918c8f769ce66273995291418ab61ec",
+    "semantic_hash": "6918c8f769ce66273995291418ab61ec"
+  },
+  "equivalencias/apps.py": {
+    "mtime": 1759864539.3872817,
+    "ast_hash": "a2cc66a365251288a66e4cbae84b0a20",
+    "semantic_hash": "a2cc66a365251288a66e4cbae84b0a20"
+  },
+  "equivalencias/management/__init__.py": {
+    "mtime": 1758732879.3978071,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "equivalencias/management/commands/__init__.py": {
+    "mtime": 1758732868.339034,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "equivalencias/management/commands/exportar_docentes.py": {
+    "mtime": 1770138229.278976,
+    "ast_hash": "b8a96ae6c8eb4a3de237439139d4a8eb",
+    "semantic_hash": "b8a96ae6c8eb4a3de237439139d4a8eb"
+  },
+  "equivalencias/management/commands/populate_db.py": {
+    "mtime": 1762897793.223318,
+    "ast_hash": "8475ed0bb30c14344556fd2b305aff27",
+    "semantic_hash": "8475ed0bb30c14344556fd2b305aff27"
+  },
+  "equivalencias/managers.py": {
+    "mtime": 1761678432.4256046,
+    "ast_hash": "fd1f0bc567135d08f08fe5941fd5bae1",
+    "semantic_hash": "fd1f0bc567135d08f08fe5941fd5bae1"
+  },
+  "equivalencias/migrations/0001_initial.py": {
+    "mtime": 1762897793.2253523,
+    "ast_hash": "225b51b807c7983c615292e078128e25",
+    "semantic_hash": "225b51b807c7983c615292e078128e25"
+  },
+  "equivalencias/migrations/0002_alter_detallesolicitud_options_and_more.py": {
+    "mtime": 1761415413.7000287,
+    "ast_hash": "5a286b839b6ac7feb049db6097d8fd12",
+    "semantic_hash": "5a286b839b6ac7feb049db6097d8fd12"
+  },
+  "equivalencias/migrations/0003_agregar_validadores_archivo.py": {
+    "mtime": 1774035499.0595808,
+    "ast_hash": "1a6d56c2737b306e6fbda9685d8f11f9",
+    "semantic_hash": "1a6d56c2737b306e6fbda9685d8f11f9"
+  },
+  "equivalencias/migrations/0004_configuraciondepartamento.py": {
+    "mtime": 1776366370.3156452,
+    "ast_hash": "5a2fcda799c51f4a74d7b958c5999642",
+    "semantic_hash": "5a2fcda799c51f4a74d7b958c5999642"
+  },
+  "equivalencias/migrations/0005_alter_configuraciondepartamento_firma_imagen.py": {
+    "mtime": 1777408127.3316984,
+    "ast_hash": "11084113720e9d470a5f282467d1bae6",
+    "semantic_hash": "11084113720e9d470a5f282467d1bae6"
+  },
+  "equivalencias/migrations/__init__.py": {
+    "mtime": 1758807372.70892,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "equivalencias/models.py": {
+    "mtime": 1777408127.3336947,
+    "ast_hash": "04e40201f08dd5b0e5e48f9eb69e1b42",
+    "semantic_hash": "04e40201f08dd5b0e5e48f9eb69e1b42"
+  },
+  "equivalencias/services/__init__.py": {
+    "mtime": 1760976419.9423296,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "equivalencias/tests.py": {
+    "mtime": 1758656697.9360776,
+    "ast_hash": "e08f0582500f6562bf0a931ef9503b39",
+    "semantic_hash": "e08f0582500f6562bf0a931ef9503b39"
+  },
+  "equivalencias/urls.py": {
+    "mtime": 1765311458.9076865,
+    "ast_hash": "945270f540e6ee00580665ecf0a76e39",
+    "semantic_hash": "945270f540e6ee00580665ecf0a76e39"
+  },
+  "equivalencias/views.py": {
+    "mtime": 1777411138.1509657,
+    "ast_hash": "b81cc39e0a33d0d68c8a651a1dcd292d",
+    "semantic_hash": "b81cc39e0a33d0d68c8a651a1dcd292d"
+  },
+  "manage.py": {
+    "mtime": 1761752240.105172,
+    "ast_hash": "ae24bdfb072b2d8387cf7eab1789dbe4",
+    "semantic_hash": "ae24bdfb072b2d8387cf7eab1789dbe4"
+  },
+  "planta_docente/__init__.py": {
+    "mtime": 1761678432.4921887,
+    "ast_hash": "fe353889d815866a32ba5a0eb4f74fed",
+    "semantic_hash": "fe353889d815866a32ba5a0eb4f74fed"
+  },
+  "planta_docente/admin.py": {
+    "mtime": 1766444585.4385684,
+    "ast_hash": "86ff93eb0475ca4405fafafaaf8c157e",
+    "semantic_hash": "86ff93eb0475ca4405fafafaaf8c157e"
+  },
+  "planta_docente/apps.py": {
+    "mtime": 1760734658.374861,
+    "ast_hash": "89ec14fd3b81285d6c98f1314815f980",
+    "semantic_hash": "89ec14fd3b81285d6c98f1314815f980"
+  },
+  "planta_docente/forms.py": {
+    "mtime": 1775855807.0713866,
+    "ast_hash": "846f65e32100f9e4d7774d670c5a9e60",
+    "semantic_hash": "846f65e32100f9e4d7774d670c5a9e60"
+  },
+  "planta_docente/management/__init__.py": {
+    "mtime": 1766444585.448214,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "planta_docente/management/commands/__init__.py": {
+    "mtime": 1766444585.448214,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "planta_docente/management/commands/agregar_emails_docentes.py": {
+    "mtime": 1766444585.448214,
+    "ast_hash": "fd00db45d27cdc8e9ca2fab209ae0d66",
+    "semantic_hash": "fd00db45d27cdc8e9ca2fab209ae0d66"
+  },
+  "planta_docente/managers.py": {
+    "mtime": 1765416151.7936382,
+    "ast_hash": "c91b7bed2cbb11aa7244a33586900f7f",
+    "semantic_hash": "c91b7bed2cbb11aa7244a33586900f7f"
+  },
+  "planta_docente/migrations/0001_initial.py": {
+    "mtime": 1759864540.4802406,
+    "ast_hash": "b87640b7bbf1f54a697ff7a4b0938f66",
+    "semantic_hash": "b87640b7bbf1f54a697ff7a4b0938f66"
+  },
+  "planta_docente/migrations/0002_resolucion_fecha_fin_licencia_and_more.py": {
+    "mtime": 1760977035.3209286,
+    "ast_hash": "8a77ec682e72499dfff0efdadd4544ad",
+    "semantic_hash": "8a77ec682e72499dfff0efdadd4544ad"
+  },
+  "planta_docente/migrations/0003_alter_cargo_options_alter_docente_options_and_more.py": {
+    "mtime": 1761678432.5494337,
+    "ast_hash": "03099edeffd6d4f7185acc5c9c376d3f",
+    "semantic_hash": "03099edeffd6d4f7185acc5c9c376d3f"
+  },
+  "planta_docente/migrations/0004_alter_correo_options_asignatura_asig_nivel_idx_and_more.py": {
+    "mtime": 1761415413.7000287,
+    "ast_hash": "611490d9b2cd665a989cdf5632b8f160",
+    "semantic_hash": "611490d9b2cd665a989cdf5632b8f160"
+  },
+  "planta_docente/migrations/0005_docente_fecha_jubilacion_docente_jubilado_and_more.py": {
+    "mtime": 1762459355.9073598,
+    "ast_hash": "739e9eb23bfeed5268a88caf76902f6f",
+    "semantic_hash": "739e9eb23bfeed5268a88caf76902f6f"
+  },
+  "planta_docente/migrations/0006_cargo_fecha_renovacion_and_more.py": {
+    "mtime": 1762897793.2583833,
+    "ast_hash": "8c5b3ef8bc05abc7bd6d81c849d90bf2",
+    "semantic_hash": "8c5b3ef8bc05abc7bd6d81c849d90bf2"
+  },
+  "planta_docente/migrations/0007_cargo_dias_acumulados_licencia_mj_and_more.py": {
+    "mtime": 1763057162.405653,
+    "ast_hash": "16ab3ab081296718c4c351ac0bdb3619",
+    "semantic_hash": "16ab3ab081296718c4c351ac0bdb3619"
+  },
+  "planta_docente/migrations/0008_agregar_campos_continuidad.py": {
+    "mtime": 1763059770.1890764,
+    "ast_hash": "0e5f676833a87e133e25244c5f0a02a1",
+    "semantic_hash": "0e5f676833a87e133e25244c5f0a02a1"
+  },
+  "planta_docente/migrations/0009_cargo_cargo_base_cargo_es_cargo_mayor_jerarquia_and_more.py": {
+    "mtime": 1763135271.9676838,
+    "ast_hash": "b9b3735dc823923a5adb62e51522c0ce",
+    "semantic_hash": "b9b3735dc823923a5adb62e51522c0ce"
+  },
+  "planta_docente/migrations/0010_alter_cargo_dedicacion.py": {
+    "mtime": 1763151747.51388,
+    "ast_hash": "25a5ba835c0b9aca29aa6c48c0ab8e32",
+    "semantic_hash": "25a5ba835c0b9aca29aa6c48c0ab8e32"
+  },
+  "planta_docente/migrations/0011_cargo_descripcion_cargo_mj_and_more.py": {
+    "mtime": 1763399017.4440172,
+    "ast_hash": "899fac41658ed630acc2889659674428",
+    "semantic_hash": "899fac41658ed630acc2889659674428"
+  },
+  "planta_docente/migrations/0012_asignatura_numero_comisiones_and_more.py": {
+    "mtime": 1763487058.775534,
+    "ast_hash": "fcbd09ff7f9c4bfc73b19a7c14ce010f",
+    "semantic_hash": "fcbd09ff7f9c4bfc73b19a7c14ce010f"
+  },
+  "planta_docente/migrations/0013_actividadsustantiva.py": {
+    "mtime": 1764093949.9847422,
+    "ast_hash": "a5c44e5a9886dda5d82ac604a427eaa4",
+    "semantic_hash": "a5c44e5a9886dda5d82ac604a427eaa4"
+  },
+  "planta_docente/migrations/0014_make_resolucion_cd_optional.py": {
+    "mtime": 1764093950.005065,
+    "ast_hash": "6d4f1f84bf8e4107e02895810fd11da6",
+    "semantic_hash": "6d4f1f84bf8e4107e02895810fd11da6"
+  },
+  "planta_docente/migrations/0015_asignatura_competencias_and_more.py": {
+    "mtime": 1765581737.8641243,
+    "ast_hash": "7e903c5497ca0fa6eb156dc40c81fc91",
+    "semantic_hash": "7e903c5497ca0fa6eb156dc40c81fc91"
+  },
+  "planta_docente/migrations/0016_planificacionanual_and_more.py": {
+    "mtime": 1766444585.448214,
+    "ast_hash": "f90365ed42542f9c237def5a0d1b7d69",
+    "semantic_hash": "f90365ed42542f9c237def5a0d1b7d69"
+  },
+  "planta_docente/migrations/0017_alter_planificacionanual_archivo.py": {
+    "mtime": 1766444585.448214,
+    "ast_hash": "974ccfdad801270a5606bc81e36b2801",
+    "semantic_hash": "974ccfdad801270a5606bc81e36b2801"
+  },
+  "planta_docente/migrations/0018_asignaturaanual.py": {
+    "mtime": 1770138229.2830603,
+    "ast_hash": "89a608accc83de1bc459f5dba8496c7c",
+    "semantic_hash": "89a608accc83de1bc459f5dba8496c7c"
+  },
+  "planta_docente/migrations/0019_cargo_es_responsable_planificacion_and_more.py": {
+    "mtime": 1770413113.841312,
+    "ast_hash": "d649d7458d966a7ffb0e626197be8c1f",
+    "semantic_hash": "d649d7458d966a7ffb0e626197be8c1f"
+  },
+  "planta_docente/migrations/0020_asignatura_bibliografia_basica_and_more.py": {
+    "mtime": 1770843910.9516778,
+    "ast_hash": "54857e97a83cabc0586c78c4e43967cf",
+    "semantic_hash": "54857e97a83cabc0586c78c4e43967cf"
+  },
+  "planta_docente/migrations/0021_agregar_bibliografia_asignatura.py": {
+    "mtime": 1770843910.9536798,
+    "ast_hash": "57376edba2e3d54e7139a1dffe8f8a76",
+    "semantic_hash": "57376edba2e3d54e7139a1dffe8f8a76"
+  },
+  "planta_docente/migrations/0022_asignatura_programa.py": {
+    "mtime": 1775843714.8394775,
+    "ast_hash": "956de33d07ab01861ebac207888e0a4b",
+    "semantic_hash": "956de33d07ab01861ebac207888e0a4b"
+  },
+  "planta_docente/migrations/0023_cargo_cantidad_dedicaciones.py": {
+    "mtime": 1775855807.0713866,
+    "ast_hash": "a064391af498fc00c943bdb5fd92b8c1",
+    "semantic_hash": "a064391af498fc00c943bdb5fd92b8c1"
+  },
+  "planta_docente/migrations/0024_asignatura_tipo.py": {
+    "mtime": 1775855807.0734,
+    "ast_hash": "17a6708f971ac493870add8b2ecadca6",
+    "semantic_hash": "17a6708f971ac493870add8b2ecadca6"
+  },
+  "planta_docente/migrations/0025_alter_asignatura_tipo.py": {
+    "mtime": 1775855807.0734,
+    "ast_hash": "8f8a5e53560ac6ef65c9e440c159fb3d",
+    "semantic_hash": "8f8a5e53560ac6ef65c9e440c159fb3d"
+  },
+  "planta_docente/migrations/0026_alter_planificacionanual_archivo_and_more.py": {
+    "mtime": 1777408127.3356924,
+    "ast_hash": "70dcbda96ba744c3702bbff9ddde0531",
+    "semantic_hash": "70dcbda96ba744c3702bbff9ddde0531"
+  },
+  "planta_docente/migrations/__init__.py": {
+    "mtime": 1759169490.5926857,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "planta_docente/models.py": {
+    "mtime": 1778524536.603132,
+    "ast_hash": "6073d36ee041e292fd41610d09ec1327",
+    "semantic_hash": "6073d36ee041e292fd41610d09ec1327"
+  },
+  "planta_docente/services/email_service.py": {
+    "mtime": 1770843910.9566767,
+    "ast_hash": "ad9f11ca85a622d2192038c136a8eb50",
+    "semantic_hash": "ad9f11ca85a622d2192038c136a8eb50"
+  },
+  "planta_docente/signals.py": {
+    "mtime": 1763075281.230695,
+    "ast_hash": "0def79a0698f6b751fa3808fa1689922",
+    "semantic_hash": "0def79a0698f6b751fa3808fa1689922"
+  },
+  "planta_docente/templatetags/__init__.py": {
+    "mtime": 1764093950.1003964,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "planta_docente/templatetags/custom_filters.py": {
+    "mtime": 1764093950.102118,
+    "ast_hash": "d48444876c2393cb86a8e626c42bdef4",
+    "semantic_hash": "d48444876c2393cb86a8e626c42bdef4"
+  },
+  "planta_docente/test/__init__.py": {
+    "mtime": 1761678432.588428,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "planta_docente/test/test_managers.py": {
+    "mtime": 1780426826.3809044,
+    "ast_hash": "b663d7df9811c000cc93f2f86a93f137",
+    "semantic_hash": "b663d7df9811c000cc93f2f86a93f137"
+  },
+  "planta_docente/test/test_utils.py": {
+    "mtime": 1780426826.3839042,
+    "ast_hash": "0179e6b8f77320f91b1d7e7e5d3138f1",
+    "semantic_hash": "0179e6b8f77320f91b1d7e7e5d3138f1"
+  },
+  "planta_docente/test/test_views.py": {
+    "mtime": 1775755908.8489156,
+    "ast_hash": "845b8287d213df437643a2b7d2493f06",
+    "semantic_hash": "845b8287d213df437643a2b7d2493f06"
+  },
+  "planta_docente/tests.py": {
+    "mtime": 1759169490.580224,
+    "ast_hash": "e08f0582500f6562bf0a931ef9503b39",
+    "semantic_hash": "e08f0582500f6562bf0a931ef9503b39"
+  },
+  "planta_docente/urls.py": {
+    "mtime": 1772561550.7030897,
+    "ast_hash": "c433d63fab1ce4c2307723de516c2239",
+    "semantic_hash": "c433d63fab1ce4c2307723de516c2239"
+  },
+  "planta_docente/utils.py": {
+    "mtime": 1780426826.3859153,
+    "ast_hash": "ad8b3fa5720289c1e107447356190d7e",
+    "semantic_hash": "ad8b3fa5720289c1e107447356190d7e"
+  },
+  "planta_docente/validators.py": {
+    "mtime": 1766444585.474402,
+    "ast_hash": "5afcf0c6976b75366a81552bf41abfef",
+    "semantic_hash": "5afcf0c6976b75366a81552bf41abfef"
+  },
+  "planta_docente/views/__init__.py": {
+    "mtime": 1772561550.7060795,
+    "ast_hash": "8a599567aa11a4c7f8309391a30f588a",
+    "semantic_hash": "8a599567aa11a4c7f8309391a30f588a"
+  },
+  "planta_docente/views/estructura_catedra.py": {
+    "mtime": 1778524489.623979,
+    "ast_hash": "ebe1aa214a70386585785f8ab89f42d7",
+    "semantic_hash": "ebe1aa214a70386585785f8ab89f42d7"
+  },
+  "planta_docente/views/funciones_sustantivas.py": {
+    "mtime": 1764093950.1136427,
+    "ast_hash": "3b87bb1e0e3537e2b9468de04deaa840",
+    "semantic_hash": "3b87bb1e0e3537e2b9468de04deaa840"
+  },
+  "planta_docente/views/main.py": {
+    "mtime": 1780426826.389907,
+    "ast_hash": "f6c9ff8f6f30a7874772358f2f9681c2",
+    "semantic_hash": "f6c9ff8f6f30a7874772358f2f9681c2"
+  },
+  "planta_docente/views/planificaciones.py": {
+    "mtime": 1771959165.7085934,
+    "ast_hash": "795db0d40fee794fa0ae845e66d47429",
+    "semantic_hash": "795db0d40fee794fa0ae845e66d47429"
+  },
+  "scripts/migrate_media_paths.py": {
+    "mtime": 1777408127.341977,
+    "ast_hash": "0d1cdfd21aaa0b7ad502a3f504d2ef09",
+    "semantic_hash": "0d1cdfd21aaa0b7ad502a3f504d2ef09"
+  }
+}
