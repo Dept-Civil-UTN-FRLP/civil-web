@@ -683,6 +683,11 @@ document.addEventListener('submit', function(e) {
     });
 });
 
+// Escapa caracteres HTML para evitar XSS al insertar datos de usuario en innerHTML
+function escapeHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 // Registrar resolución sin recarga
 const formResolucion = document.getElementById('formResolucion');
 if (formResolucion) {
@@ -715,7 +720,7 @@ if (formResolucion) {
                     let label = data.campo === 'designacion' ? 'Designación' : 'Puesta en Función';
                     fila.querySelector('td:nth-child(2)').innerHTML =
                         `<span class="badge bg-success">Asignada</span>
-                         <small class="text-muted ms-1">${data.numero}</small>
+                         <small class="text-muted ms-1">${escapeHtml(data.numero)}</small>
                          ${fileBtn}
                          <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 ms-1 btn-desvincular"
                              data-url="${data.desvincular_url}"
