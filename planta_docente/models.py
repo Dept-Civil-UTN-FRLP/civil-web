@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -1544,29 +1545,22 @@ class Cargo(models.Model):
             )
 
         # Validación: unidades de dedicación no pueden superar 5
+        # Se evalúa contra la fecha de inicio del cargo (no "hoy"), para que un cargo
+        # futuro no choque con uno que ya venció para esa fecha (ej: redesignación).
         if self.caracter not in self.CARACTERES_SIN_UNIDADES and self.estado == 'activo':
-            unidades_cargo_actual = self.UNIDADES_DEDICACION.get(self.dedicacion, 0)*self.cantidad_dedicaciones
+            check_date = self.fecha_inicio if self.fecha_inicio else timezone.now().date()
+            unidades_cargo_actual = self.UNIDADES_DEDICACION.get(self.dedicacion, 0) * self.cantidad_dedicaciones
 
             cargos_activos = Cargo.objects.filter(
                 docente=self.docente,
                 estado='activo',
+                fecha_inicio__lte=check_date,
+            ).filter(
+                Q(fecha_vencimiento__isnull=True) | Q(fecha_vencimiento__gte=check_date)
             ).exclude(pk=self.pk).exclude(caracter__in=self.CARACTERES_SIN_UNIDADES)
 
             unidades_ocupadas = sum(
-                self.UNIDADES_DEDICACION.get(c.dedicacion, 0)*c.cantidad_dedicaciones  for c in cargos_activos
-            )
-
-        # Validación: unidades de dedicación no pueden superar 5
-        if self.caracter not in self.CARACTERES_SIN_UNIDADES and self.estado == 'activo':
-            unidades_cargo_actual = self.UNIDADES_DEDICACION.get(self.dedicacion, 0)*self.cantidad_dedicaciones
-
-            cargos_activos = Cargo.objects.filter(
-                docente=self.docente,
-                estado='activo',
-            ).exclude(pk=self.pk).exclude(caracter__in=self.CARACTERES_SIN_UNIDADES)
-
-            unidades_ocupadas = sum(
-                self.UNIDADES_DEDICACION.get(c.dedicacion, 0)*c.cantidad_dedicaciones  for c in cargos_activos
+                self.UNIDADES_DEDICACION.get(c.dedicacion, 0) * c.cantidad_dedicaciones for c in cargos_activos
             )
 
             if unidades_ocupadas + unidades_cargo_actual > self.MAX_UNIDADES:

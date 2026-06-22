@@ -3,7 +3,7 @@
 Servicio para workflows de Carrera Académica: finalizar y archivar.
 """
 import logging
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -80,7 +80,7 @@ class CAService:
             caracter=cargo.caracter,
             cantidad_horas=cargo.cantidad_horas,
             cantidad_comisiones=cargo.cantidad_comisiones,
-            fecha_inicio=timezone.now().date(),
+            fecha_inicio=ca.fecha_vencimiento_actual + timedelta(days=1),
             fecha_vencimiento=nueva_fecha_vencimiento,
             estado="activo",
             estado_continuidad="activo",
