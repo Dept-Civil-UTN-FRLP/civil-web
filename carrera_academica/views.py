@@ -226,12 +226,18 @@ def subir_formulario_view(request, ca_pk, formulario_pk):
     formulario.fecha_entrega = timezone.now().date()
     formulario.save()
 
+    from django.urls import reverse
+    ver_url = reverse("serve_private_media", kwargs={"path": formulario.archivo.name[8:]})
+    borrar_url = reverse("carrera_academica:borrar_archivo_formulario", kwargs={"pk": formulario.pk})
+
     return JsonResponse({
         "ok": True,
         "estado": formulario.estado,
         "fecha_entrega": formulario.fecha_entrega.strftime("%d/%m/%Y"),
         "tipo": formulario.tipo_formulario,
         "tipo_display": formulario.get_tipo_formulario_display(),
+        "ver_url": ver_url,
+        "borrar_url": borrar_url,
     })
 
 
@@ -524,12 +530,14 @@ def desvincular_resolucion_ca_view(request, pk, campo):
 def asignar_expediente_view(request, pk):
     ca = get_object_or_404(CarreraAcademica, pk=pk)
     if request.method == "POST":
-        # Pasamos la instancia existente para que el formulario la actualice
         form = ExpedienteForm(request.POST, instance=ca)
         if form.is_valid():
             form.save()
+            if request.headers.get("X-Requested-With") == "fetch":
+                return JsonResponse({"ok": True, "numero_expediente": ca.numero_expediente})
             messages.success(request, "Número de expediente actualizado correctamente.")
-    # Siempre redirigimos de vuelta al detalle
+        elif request.headers.get("X-Requested-With") == "fetch":
+            return JsonResponse({"ok": False, "error": "Número de expediente inválido."}, status=400)
     return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
 
