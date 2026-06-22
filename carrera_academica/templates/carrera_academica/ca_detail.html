@@ -453,16 +453,17 @@ if (formIniciarEval) {
 }
 
 // Desvincular resolución via modal Bootstrap + fetch
+// Event delegation para cubrir botones insertados dinámicamente
 let desvinculaUrl = null;
 let desvinculaFila = null;
 
-document.querySelectorAll('.btn-desvincular').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-        desvinculaUrl = this.dataset.url;
-        desvinculaFila = this.dataset.fila;
-        document.getElementById('textoDesvincular').textContent =
-            '¿Desvincular la Resolución de ' + this.dataset.label + '?';
-    });
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn-desvincular');
+    if (!btn) return;
+    desvinculaUrl = btn.dataset.url;
+    desvinculaFila = btn.dataset.fila;
+    document.getElementById('textoDesvincular').textContent =
+        '¿Desvincular la Resolución de ' + btn.dataset.label + '?';
 });
 
 document.getElementById('btnConfirmarDesvincular')?.addEventListener('click', function() {
