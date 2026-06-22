@@ -748,32 +748,34 @@ def notificar_junta_view(request, pk):
 
 @login_required
 def agendar_evaluacion_view(request, pk):
-    # El 'pk' que recibimos es el de la Evaluación
     evaluacion = get_object_or_404(Evaluacion, pk=pk)
+    es_fetch = request.headers.get("X-Requested-With") == "fetch"
 
-    # Esta acción solo debe ocurrir si se envía el formulario
     if request.method == "POST":
-        # Obtenemos el valor del campo 'fecha_evaluacion' del formulario
         fecha_str = request.POST.get("fecha_evaluacion")
 
         if fecha_str:
-            # Si se proporcionó una fecha, la guardamos en el objeto Evaluacion
             evaluacion.fecha_evaluacion = fecha_str
             evaluacion.save()
+            if es_fetch:
+                return JsonResponse({
+                    "ok": True,
+                    "fecha_display": evaluacion.fecha_evaluacion.strftime("%d/%m/%Y %H:%M"),
+                })
             messages.success(
                 request,
                 f"Se agendó la fecha para la Evaluación N°{evaluacion.numero_evaluacion}.",
             )
         else:
-            # Si se envía el campo vacío, borramos la fecha
             evaluacion.fecha_evaluacion = None
             evaluacion.save()
+            if es_fetch:
+                return JsonResponse({"ok": True, "fecha_display": None})
             messages.info(
                 request,
                 f"Se ha quitado la fecha para la Evaluación N°{evaluacion.numero_evaluacion}.",
             )
 
-    # Sin importar qué pase, siempre redirigimos de vuelta a la página del expediente
     return redirect("carrera_academica:detalle_ca", pk=evaluacion.carrera_academica.pk)
 
 

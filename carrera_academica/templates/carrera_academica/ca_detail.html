@@ -380,6 +380,43 @@ document.addEventListener('DOMContentLoaded', function() {
     tooltipTriggerList.map(function(el) { return new bootstrap.Tooltip(el); });
 });
 
+// Agendar evaluación sin recarga
+document.addEventListener('submit', function(e) {
+    const form = e.target.closest('form.form-agendar-evaluacion');
+    if (!form) return;
+    e.preventDefault();
+
+    const btn = form.querySelector('button[type="submit"]');
+    const textoOriginal = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+
+    fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: { 'X-Requested-With': 'fetch' },
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = textoOriginal;
+        if (data.ok) {
+            const span = form.querySelector('[data-fecha-confirmada]');
+            if (data.fecha_display) {
+                span.textContent = '✓ Agendada: ' + data.fecha_display;
+                span.classList.remove('d-none');
+            } else {
+                span.classList.add('d-none');
+            }
+        }
+    })
+    .catch(() => {
+        btn.disabled = false;
+        btn.innerHTML = textoOriginal;
+        alert('Error al agendar. Intente nuevamente.');
+    });
+});
+
 // Asignación de número de expediente sin recarga
 const formExpediente = document.querySelector('form.form-asignar-expediente');
 if (formExpediente) {
