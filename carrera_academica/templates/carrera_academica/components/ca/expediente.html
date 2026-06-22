@@ -15,15 +15,19 @@ Uso:
         
         <p class="card-text mb-1 d-flex align-items-center">
             <strong class="me-2">Expediente:</strong>
+            <span data-expediente-valor>
             {% if ca.numero_expediente %}
                 {{ ca.numero_expediente }}
             {% else %}
-                <form action="{% url 'carrera_academica:asignar_expediente' pk=ca.pk %}" method="POST" class="d-inline-flex">
+                <form action="{% url 'carrera_academica:asignar_expediente' pk=ca.pk %}"
+                      method="POST"
+                      class="d-inline-flex form-asignar-expediente">
                     {% csrf_token %}
                     {{ expediente_form.numero_expediente }}
                     <button type="submit" class="btn btn-sm btn-outline-success ms-2">Asignar</button>
                 </form>
             {% endif %}
+            </span>
         </p>
                 
         <p class="card-text mb-1">

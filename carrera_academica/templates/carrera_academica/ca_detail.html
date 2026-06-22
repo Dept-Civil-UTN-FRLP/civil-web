@@ -380,6 +380,36 @@ document.addEventListener('DOMContentLoaded', function() {
     tooltipTriggerList.map(function(el) { return new bootstrap.Tooltip(el); });
 });
 
+// Asignación de número de expediente sin recarga
+const formExpediente = document.querySelector('form.form-asignar-expediente');
+if (formExpediente) {
+    formExpediente.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(formExpediente);
+        const btn = formExpediente.querySelector('button[type="submit"]');
+        btn.disabled = true;
+
+        fetch(formExpediente.action, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'fetch' },
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                document.querySelector('[data-expediente-valor]').textContent = data.numero_expediente;
+            } else {
+                alert('Error: ' + data.error);
+                btn.disabled = false;
+            }
+        })
+        .catch(() => {
+            alert('Error al asignar el expediente. Intente nuevamente.');
+            btn.disabled = false;
+        });
+    });
+}
+
 // Subida de archivos de formularios sin recarga
 document.addEventListener('submit', function(e) {
     const form = e.target.closest('form.form-upload-archivo');
