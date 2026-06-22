@@ -196,26 +196,6 @@ def dashboard_ca_view(request):
 @login_required
 def detalle_ca_view(request, pk):
     ca = get_object_or_404(CarreraAcademica.objects.with_full_detail(), pk=pk)
-
-    if request.method == "POST":
-        formulario_id = request.POST.get("formulario_id")
-        archivo = request.FILES.get("archivo")
-
-        if formulario_id and archivo:
-            formulario = ca.formularios.get(pk=formulario_id)
-            if formulario.archivo:
-                formulario.archivo.delete(save=False)
-            formulario.archivo = archivo
-            formulario.estado = "ENT"
-            formulario.fecha_entrega = timezone.now()
-            formulario.save()
-            messages.success(
-                request,
-                f"Se subió el archivo para el formulario {formulario.tipo_formulario}.",
-            )
-
-        return redirect("carrera_academica:detalle_ca", pk=ca.pk)
-
     contexto = {
         "ca": ca,
         "form_resolucion": ResolucionForm(),
@@ -223,6 +203,36 @@ def detalle_ca_view(request, pk):
         **_preparar_contexto_detalle(ca),
     }
     return render(request, "carrera_academica/ca_detail.html", contexto)
+
+
+@login_required
+def subir_formulario_view(request, ca_pk, formulario_pk):
+    """Endpoint POST exclusivo para subir archivo a un Formulario. Responde JSON."""
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
+
+    ca = get_object_or_404(CarreraAcademica, pk=ca_pk)
+    formulario = get_object_or_404(ca.formularios, pk=formulario_pk)
+    archivo = request.FILES.get("archivo")
+
+    if not archivo:
+        return JsonResponse({"ok": False, "error": "No se recibió ningún archivo."}, status=400)
+
+    if formulario.archivo:
+        formulario.archivo.delete(save=False)
+
+    formulario.archivo = archivo
+    formulario.estado = "ENT"
+    formulario.fecha_entrega = timezone.now().date()
+    formulario.save()
+
+    return JsonResponse({
+        "ok": True,
+        "estado": formulario.estado,
+        "fecha_entrega": formulario.fecha_entrega.strftime("%d/%m/%Y"),
+        "tipo": formulario.tipo_formulario,
+        "tipo_display": formulario.get_tipo_formulario_display(),
+    })
 
 
 @login_required
