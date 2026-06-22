@@ -682,5 +682,67 @@ document.addEventListener('submit', function(e) {
         btn.innerHTML = textoOriginal;
     });
 });
+
+// Registrar resolución sin recarga
+const formResolucion = document.getElementById('formResolucion');
+if (formResolucion) {
+    formResolucion.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = formResolucion.querySelector('button[type="submit"]');
+        const textoOriginal = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Registrando...';
+
+        fetch(formResolucion.action, {
+            method: 'POST',
+            body: new FormData(formResolucion),
+            headers: { 'X-Requested-With': 'fetch' },
+        })
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = textoOriginal;
+            if (!data.ok) {
+                alert('Error: ' + data.error);
+                return;
+            }
+            if (data.campo === 'designacion' || data.campo === 'puesta_en_funcion') {
+                const fila = document.getElementById(data.fila_id);
+                if (fila) {
+                    let fileBtn = data.file_url
+                        ? `<a href="${data.file_url}" target="_blank" class="btn btn-sm btn-outline-primary ms-1"><i class="bi bi-file-pdf"></i> Ver</a>`
+                        : '';
+                    let label = data.campo === 'designacion' ? 'Designación' : 'Puesta en Función';
+                    fila.querySelector('td:nth-child(2)').innerHTML =
+                        `<span class="badge bg-success">Asignada</span>
+                         <small class="text-muted ms-1">${data.numero}</small>
+                         ${fileBtn}
+                         <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 ms-1 btn-desvincular"
+                             data-url="${data.desvincular_url}"
+                             data-label="${label}"
+                             data-fila="${data.fila_id}"
+                             data-bs-toggle="modal" data-bs-target="#modalDesvincular"
+                             title="Quitar"><i class="bi bi-x"></i></button>`;
+                }
+            } else if (data.campo === 'prorroga') {
+                const el = document.querySelector('[data-vencimiento-display]');
+                if (el) el.textContent = data.nueva_fecha;
+            } else if (data.campo === 'estado') {
+                const el = document.querySelector('[data-estado-display]');
+                if (el) el.textContent = data.estado_display;
+            }
+            // Colapsar el panel y resetear el formulario
+            const collapse = document.getElementById('collapseResolucionForm');
+            if (collapse) bootstrap.Collapse.getInstance(collapse)?.hide();
+            formResolucion.reset();
+            document.getElementById('campoProrroga').style.display = 'none';
+        })
+        .catch(() => {
+            btn.disabled = false;
+            btn.innerHTML = textoOriginal;
+            alert('Error al registrar la resolución. Intente nuevamente.');
+        });
+    });
+}
 </script>
 {% endblock %}

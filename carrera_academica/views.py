@@ -349,6 +349,7 @@ def iniciar_evaluacion_view(request, pk):
 @login_required
 def registrar_resolucion_view(request, pk):
     ca = get_object_or_404(CarreraAcademica, pk=pk)
+    es_fetch = request.headers.get("X-Requested-With") == "fetch"
 
     if request.method == "POST":
         form = ResolucionForm(request.POST, request.FILES)
@@ -361,21 +362,52 @@ def registrar_resolucion_view(request, pk):
 
             if objeto in ["alta", "redesignacion", "designacion"]:
                 ca.resolucion_designacion = nueva_resolucion
-                messages.info(
-                    request, "La resolución se ha vinculado como 'Designación'.")
+                ca.save()
+                if es_fetch:
+                    from django.urls import reverse
+                    return JsonResponse({
+                        "ok": True,
+                        "campo": "designacion",
+                        "fila_id": "fila-resolucion-designacion",
+                        "numero": str(nueva_resolucion),
+                        "desvincular_url": reverse("carrera_academica:desvincular_resolucion_ca", kwargs={"pk": ca.pk, "campo": "designacion"}),
+                        "file_url": reverse("serve_private_media", kwargs={"path": nueva_resolucion.file.name[8:]}) if nueva_resolucion.file else None,
+                        "mensaje": "La resolución se ha vinculado como 'Designación'.",
+                    })
+                messages.info(request, "La resolución se ha vinculado como 'Designación'.")
 
             elif objeto == "puesta_funcion":
                 ca.resolucion_puesta_en_funcion = nueva_resolucion
-                messages.info(
-                    request, "La resolución se ha vinculado como 'Puesta en Función'.")
+                ca.save()
+                if es_fetch:
+                    from django.urls import reverse
+                    return JsonResponse({
+                        "ok": True,
+                        "campo": "puesta_en_funcion",
+                        "fila_id": "fila-resolucion-puesta-en-funcion",
+                        "numero": str(nueva_resolucion),
+                        "desvincular_url": reverse("carrera_academica:desvincular_resolucion_ca", kwargs={"pk": ca.pk, "campo": "puesta_en_funcion"}),
+                        "file_url": reverse("serve_private_media", kwargs={"path": nueva_resolucion.file.name[8:]}) if nueva_resolucion.file else None,
+                        "mensaje": "La resolución se ha vinculado como 'Puesta en Función'.",
+                    })
+                messages.info(request, "La resolución se ha vinculado como 'Puesta en Función'.")
 
             elif objeto == "prorroga_ca":
                 exito, mensaje = CAService.aplicar_prorroga(
                     ca,
-                    nueva_fecha=form.cleaned_data.get(
-                        "nueva_fecha_vencimiento"),
+                    nueva_fecha=form.cleaned_data.get("nueva_fecha_vencimiento"),
                     dias=form.cleaned_data.get("prorroga_dias"),
                 )
+                if es_fetch:
+                    if exito:
+                        ca.refresh_from_db()
+                        return JsonResponse({
+                            "ok": True,
+                            "campo": "prorroga",
+                            "nueva_fecha": ca.fecha_vencimiento_actual.strftime("%d/%m/%Y"),
+                            "mensaje": mensaje,
+                        })
+                    return JsonResponse({"ok": False, "error": mensaje}, status=400)
                 if exito:
                     messages.success(request, mensaje)
                 else:
@@ -384,15 +416,35 @@ def registrar_resolucion_view(request, pk):
 
             elif objeto == "licencia_alta":
                 ca.estado = "STB"
+                ca.save()
+                if es_fetch:
+                    return JsonResponse({
+                        "ok": True,
+                        "campo": "estado",
+                        "estado_display": ca.get_estado_display(),
+                        "mensaje": f"Resolución de '{nueva_resolucion.get_objeto_display()}' registrada.",
+                    })
 
             elif objeto == "licencia_baja":
                 ca.estado = "ACT"
+                ca.save()
+                if es_fetch:
+                    return JsonResponse({
+                        "ok": True,
+                        "campo": "estado",
+                        "estado_display": ca.get_estado_display(),
+                        "mensaje": f"Resolución de '{nueva_resolucion.get_objeto_display()}' registrada.",
+                    })
+            else:
+                ca.save()
 
-            ca.save()
             messages.success(
                 request,
                 f"Resolución de '{nueva_resolucion.get_objeto_display()}' registrada exitosamente.",
             )
+        elif es_fetch:
+            errores = {f: e.as_text() for f, e in form.errors.items()}
+            return JsonResponse({"ok": False, "error": "Datos inválidos.", "errores": errores}, status=400)
 
     return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
