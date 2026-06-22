@@ -21,7 +21,7 @@
         <table class="table table-sm table-bordered align-middle mb-0">
             <tbody>
                 {# Res. Designación #}
-                <tr>
+                <tr id="fila-resolucion-designacion">
                     <td class="fw-bold" style="width: 20%;">Res. Designación</td>
                     <td>
                         {% if ca.resolucion_designacion %}
@@ -32,13 +32,14 @@
                                     <i class="bi bi-file-pdf"></i> Ver
                                 </a>
                             {% endif %}
-                            <form action="{% url 'carrera_academica:desvincular_resolucion_ca' pk=ca.pk campo='designacion' %}" method="POST" class="d-inline ms-1">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1"
-                                    onclick="return confirm('¿Desvincular la Resolución de Designación?')" title="Quitar">
-                                    <i class="bi bi-x"></i>
-                                </button>
-                            </form>
+                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 ms-1 btn-desvincular"
+                                data-url="{% url 'carrera_academica:desvincular_resolucion_ca' pk=ca.pk campo='designacion' %}"
+                                data-label="Designación"
+                                data-fila="fila-resolucion-designacion"
+                                data-bs-toggle="modal" data-bs-target="#modalDesvincular"
+                                title="Quitar">
+                                <i class="bi bi-x"></i>
+                            </button>
                         {% else %}
                             <span class="badge bg-warning text-dark">Pendiente</span>
                         {% endif %}
@@ -48,7 +49,7 @@
                     </td>
                 </tr>
                 {# Res. Puesta en Función #}
-                <tr>
+                <tr id="fila-resolucion-puesta-en-funcion">
                     <td class="fw-bold">Res. Puesta en Función</td>
                     <td>
                         {% if ca.resolucion_puesta_en_funcion %}
@@ -59,13 +60,14 @@
                                     <i class="bi bi-file-pdf"></i> Ver
                                 </a>
                             {% endif %}
-                            <form action="{% url 'carrera_academica:desvincular_resolucion_ca' pk=ca.pk campo='puesta_en_funcion' %}" method="POST" class="d-inline ms-1">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1"
-                                    onclick="return confirm('¿Desvincular la Resolución de Puesta en Función?')" title="Quitar">
-                                    <i class="bi bi-x"></i>
-                                </button>
-                            </form>
+                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 ms-1 btn-desvincular"
+                                data-url="{% url 'carrera_academica:desvincular_resolucion_ca' pk=ca.pk campo='puesta_en_funcion' %}"
+                                data-label="Puesta en Función"
+                                data-fila="fila-resolucion-puesta-en-funcion"
+                                data-bs-toggle="modal" data-bs-target="#modalDesvincular"
+                                title="Quitar">
+                                <i class="bi bi-x"></i>
+                            </button>
                         {% else %}
                             <span class="badge bg-warning text-dark">Pendiente</span>
                         {% endif %}
@@ -371,6 +373,25 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>
 
+{# Modal compartido para desvincular resoluciones #}
+<div class="modal fade" id="modalDesvincular" tabindex="-1" aria-labelledby="modalDesvincularLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalDesvincularLabel">Confirmar</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="textoDesvincular" class="mb-0"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger btn-sm" id="btnConfirmarDesvincular">Quitar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -379,5 +400,386 @@ document.addEventListener('DOMContentLoaded', function() {
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(function(el) { return new bootstrap.Tooltip(el); });
 });
+
+// Iniciar evaluación via modal + fetch (inserta card HTML devuelto por la vista)
+const formIniciarEval = document.getElementById('formIniciarEvaluacion');
+if (formIniciarEval) {
+    formIniciarEval.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btnConfirmarEvaluacion');
+        const errorDiv = document.getElementById('errorIniciarEval');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Creando...';
+        errorDiv.classList.add('d-none');
+
+        fetch(formIniciarEval.action, {
+            method: 'POST',
+            body: new FormData(formIniciarEval),
+            headers: { 'X-Requested-With': 'fetch' },
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('modalIniciarEvaluacion')).hide();
+                const lista = document.getElementById('lista-evaluaciones');
+                lista.insertAdjacentHTML('beforeend', data.html);
+                formIniciarEval.reset();
+                // Quitar del modal los años que acaban de usarse
+                if (data.anios_usados) {
+                    data.anios_usados.forEach(function(anio) {
+                        const cb = formIniciarEval.querySelector('input[value="' + anio + '"]');
+                        if (cb) cb.closest('label').remove();
+                    });
+                }
+                // Si ya no quedan checkboxes, ocultar botón e instrucción
+                if (!formIniciarEval.querySelector('input[name="anios_a_evaluar"]')) {
+                    const btnIniciar = document.querySelector('[data-bs-target="#modalIniciarEvaluacion"]');
+                    if (btnIniciar) btnIniciar.remove();
+                }
+            } else {
+                errorDiv.textContent = data.error;
+                errorDiv.classList.remove('d-none');
+            }
+            btn.disabled = false;
+            btn.innerHTML = 'Crear Evaluación';
+        })
+        .catch(() => {
+            errorDiv.textContent = 'Error al crear la evaluación. Intente nuevamente.';
+            errorDiv.classList.remove('d-none');
+            btn.disabled = false;
+            btn.innerHTML = 'Crear Evaluación';
+        });
+    });
+}
+
+// Desvincular resolución via modal Bootstrap + fetch
+// Event delegation para cubrir botones insertados dinámicamente
+let desvinculaUrl = null;
+let desvinculaFila = null;
+
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn-desvincular');
+    if (!btn) return;
+    desvinculaUrl = btn.dataset.url;
+    desvinculaFila = btn.dataset.fila;
+    document.getElementById('textoDesvincular').textContent =
+        '¿Desvincular la Resolución de ' + btn.dataset.label + '?';
+});
+
+document.getElementById('btnConfirmarDesvincular')?.addEventListener('click', function() {
+    if (!desvinculaUrl) return;
+    const btn = this;
+    btn.disabled = true;
+
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+    fetch(desvinculaUrl, {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'fetch' },
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('modalDesvincular')).hide();
+            const fila = document.getElementById(desvinculaFila);
+            if (fila) {
+                fila.querySelector('td:nth-child(2)').innerHTML =
+                    '<span class="badge bg-warning text-dark">Pendiente</span>';
+            }
+        } else {
+            alert('Error: ' + data.error);
+        }
+        btn.disabled = false;
+    })
+    .catch(() => {
+        alert('Error al desvincular. Intente nuevamente.');
+        btn.disabled = false;
+    });
+});
+
+// Finalizar CA via modal + fetch
+const selectResultado = document.getElementById('selectResultadoCierre');
+if (selectResultado) {
+    selectResultado.addEventListener('change', function() {
+        const campoFecha = document.getElementById('campoNuevaFecha');
+        campoFecha.classList.toggle('d-none', this.value !== 'aprobada_redesigna');
+    });
+}
+
+const formFinalizar = document.getElementById('formFinalizar');
+if (formFinalizar) {
+    formFinalizar.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btnConfirmarFinalizar');
+        const errorDiv = document.getElementById('errorFinalizar');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Finalizando...';
+        errorDiv.classList.add('d-none');
+
+        fetch(formFinalizar.action, {
+            method: 'POST',
+            body: new FormData(formFinalizar),
+            headers: { 'X-Requested-With': 'fetch' },
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                if (data.redesignacion) {
+                    window.location.href = data.redirect_url;
+                } else {
+                    bootstrap.Modal.getInstance(document.getElementById('modalFinalizar')).hide();
+                    document.querySelector('[data-estado-display]').textContent = data.estado_display;
+                    const acciones = document.getElementById('acciones-expediente');
+                    if (acciones) acciones.remove();
+                }
+            } else {
+                errorDiv.textContent = data.error;
+                errorDiv.classList.remove('d-none');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-circle"></i> Confirmar Finalización';
+            }
+        })
+        .catch(() => {
+            errorDiv.textContent = 'Error al finalizar. Intente nuevamente.';
+            errorDiv.classList.remove('d-none');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle"></i> Confirmar Finalización';
+        });
+    });
+}
+
+// Archivar CA via modal + fetch
+const formArchivar = document.getElementById('formArchivar');
+if (formArchivar) {
+    formArchivar.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btnConfirmarArchivar');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Archivando...';
+
+        fetch(formArchivar.action, {
+            method: 'POST',
+            body: new FormData(formArchivar),
+            headers: { 'X-Requested-With': 'fetch' },
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('modalArchivar')).hide();
+                document.querySelector('[data-estado-display]').textContent = data.estado_display;
+                const acciones = document.getElementById('acciones-expediente');
+                if (acciones) {
+                    const obsHtml = data.observaciones
+                        ? `<small class="text-muted">${escapeHtml(data.observaciones)}</small><br>`
+                        : '';
+                    acciones.outerHTML =
+                        `<div class="alert alert-secondary mt-3" id="info-archivado">
+                            <strong><i class="bi bi-archive"></i> Expediente Archivado</strong><br>
+                            <small>Motivo: ${escapeHtml(data.motivo_display)}</small><br>
+                            ${obsHtml}
+                            <small class="text-muted">Archivado el ${escapeHtml(data.fecha_archivo)}</small>
+                         </div>
+                         <hr>
+                         <a href="${data.gestionar_url}" class="btn btn-warning w-100">
+                             <i class="bi bi-gear"></i> Gestionar CA Archivada
+                         </a>`;
+                }
+            } else {
+                alert('Error: ' + data.error);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-archive"></i> Confirmar Archivo';
+            }
+        })
+        .catch(() => {
+            alert('Error al archivar. Intente nuevamente.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-archive"></i> Confirmar Archivo';
+        });
+    });
+}
+
+// Agendar evaluación sin recarga
+document.addEventListener('submit', function(e) {
+    const form = e.target.closest('form.form-agendar-evaluacion');
+    if (!form) return;
+    e.preventDefault();
+
+    const btn = form.querySelector('button[type="submit"]');
+    const textoOriginal = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+
+    fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: { 'X-Requested-With': 'fetch' },
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = textoOriginal;
+        if (data.ok) {
+            const span = form.querySelector('[data-fecha-confirmada]');
+            if (data.fecha_display) {
+                span.textContent = '✓ Agendada: ' + data.fecha_display;
+                span.classList.remove('d-none');
+            } else {
+                span.classList.add('d-none');
+            }
+        }
+    })
+    .catch(() => {
+        btn.disabled = false;
+        btn.innerHTML = textoOriginal;
+        alert('Error al agendar. Intente nuevamente.');
+    });
+});
+
+// Asignación de número de expediente sin recarga
+const formExpediente = document.querySelector('form.form-asignar-expediente');
+if (formExpediente) {
+    formExpediente.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(formExpediente);
+        const btn = formExpediente.querySelector('button[type="submit"]');
+        btn.disabled = true;
+
+        fetch(formExpediente.action, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'fetch' },
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                document.querySelector('[data-expediente-valor]').textContent = data.numero_expediente;
+            } else {
+                alert('Error: ' + data.error);
+                btn.disabled = false;
+            }
+        })
+        .catch(() => {
+            alert('Error al asignar el expediente. Intente nuevamente.');
+            btn.disabled = false;
+        });
+    });
+}
+
+// Subida de archivos de formularios sin recarga
+document.addEventListener('submit', function(e) {
+    const form = e.target.closest('form.form-upload-archivo');
+    if (!form) return;
+    e.preventDefault();
+
+    const fileInput = form.querySelector('input[name="archivo"]');
+    if (!fileInput || !fileInput.files.length) return;
+
+    const btn = form.querySelector('button[type="submit"]');
+    const textoOriginal = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+
+    const formData = new FormData(form);
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'fetch' },
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            const row = form.closest('tr');
+            row.querySelector('[data-estado-cell]').innerHTML =
+                `<span class="badge bg-success">Entregado</span>
+                 <small class="text-muted">el ${data.fecha_entrega}</small>
+                 <a href="${data.ver_url}" target="_blank" class="btn btn-sm btn-outline-primary me-1">
+                     <i class="bi bi-file-pdf"></i> Ver
+                 </a>
+                 <a href="${data.borrar_url}" class="btn btn-sm btn-outline-danger">
+                     <i class="bi bi-trash"></i>
+                 </a>`;
+            row.querySelector('[data-accion-cell]').innerHTML = '';
+        } else {
+            alert('Error: ' + data.error);
+            btn.disabled = false;
+            btn.innerHTML = textoOriginal;
+        }
+    })
+    .catch(() => {
+        alert('Error al subir el archivo. Intente nuevamente.');
+        btn.disabled = false;
+        btn.innerHTML = textoOriginal;
+    });
+});
+
+// Escapa caracteres HTML para evitar XSS al insertar datos de usuario en innerHTML
+function escapeHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// Registrar resolución sin recarga
+const formResolucion = document.getElementById('formResolucion');
+if (formResolucion) {
+    formResolucion.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = formResolucion.querySelector('button[type="submit"]');
+        const textoOriginal = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Registrando...';
+
+        fetch(formResolucion.action, {
+            method: 'POST',
+            body: new FormData(formResolucion),
+            headers: { 'X-Requested-With': 'fetch' },
+        })
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = textoOriginal;
+            if (!data.ok) {
+                alert('Error: ' + data.error);
+                return;
+            }
+            if (data.campo === 'designacion' || data.campo === 'puesta_en_funcion') {
+                const fila = document.getElementById(data.fila_id);
+                if (fila) {
+                    let fileBtn = data.file_url
+                        ? `<a href="${data.file_url}" target="_blank" class="btn btn-sm btn-outline-primary ms-1"><i class="bi bi-file-pdf"></i> Ver</a>`
+                        : '';
+                    let label = data.campo === 'designacion' ? 'Designación' : 'Puesta en Función';
+                    fila.querySelector('td:nth-child(2)').innerHTML =
+                        `<span class="badge bg-success">Asignada</span>
+                         <small class="text-muted ms-1">${escapeHtml(data.numero)}</small>
+                         ${fileBtn}
+                         <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 ms-1 btn-desvincular"
+                             data-url="${data.desvincular_url}"
+                             data-label="${label}"
+                             data-fila="${data.fila_id}"
+                             data-bs-toggle="modal" data-bs-target="#modalDesvincular"
+                             title="Quitar"><i class="bi bi-x"></i></button>`;
+                }
+            } else if (data.campo === 'prorroga') {
+                const el = document.querySelector('[data-vencimiento-display]');
+                if (el) el.textContent = data.nueva_fecha;
+            } else if (data.campo === 'estado') {
+                const el = document.querySelector('[data-estado-display]');
+                if (el) el.textContent = data.estado_display;
+            }
+            // Colapsar el panel y resetear el formulario
+            const collapse = document.getElementById('collapseResolucionForm');
+            if (collapse) bootstrap.Collapse.getInstance(collapse)?.hide();
+            formResolucion.reset();
+            document.getElementById('campoProrroga').style.display = 'none';
+        })
+        .catch(() => {
+            btn.disabled = false;
+            btn.innerHTML = textoOriginal;
+            alert('Error al registrar la resolución. Intente nuevamente.');
+        });
+    });
+}
 </script>
 {% endblock %}

@@ -15,15 +15,19 @@ Uso:
         
         <p class="card-text mb-1 d-flex align-items-center">
             <strong class="me-2">Expediente:</strong>
+            <span data-expediente-valor>
             {% if ca.numero_expediente %}
                 {{ ca.numero_expediente }}
             {% else %}
-                <form action="{% url 'carrera_academica:asignar_expediente' pk=ca.pk %}" method="POST" class="d-inline-flex">
+                <form action="{% url 'carrera_academica:asignar_expediente' pk=ca.pk %}"
+                      method="POST"
+                      class="d-inline-flex form-asignar-expediente">
                     {% csrf_token %}
                     {{ expediente_form.numero_expediente }}
                     <button type="submit" class="btn btn-sm btn-outline-success ms-2">Asignar</button>
                 </form>
             {% endif %}
+            </span>
         </p>
                 
         <p class="card-text mb-1">
@@ -39,26 +43,28 @@ Uso:
         </p>
         
         <p class="card-text mb-1">
-            <strong>Vencimiento Actual (con prórrogas):</strong> <strong class="text-danger">{{ ca.fecha_vencimiento_actual|date:"d/m/Y" }}</strong>
+            <strong>Vencimiento Actual (con prórrogas):</strong> <strong class="text-danger" data-vencimiento-display>{{ ca.fecha_vencimiento_actual|date:"d/m/Y" }}</strong>
         </p>
         
         <p class="card-text">
-            <strong>Estado:</strong> {{ ca.get_estado_display }}
+            <strong>Estado:</strong> <span data-estado-display>{{ ca.get_estado_display }}</span>
         </p>
-        
+
         {% if ca.estado == 'ACT' or ca.estado == 'VEN' %}
 <hr>
-<div class="d-grid gap-2">
-    <a href="{% url 'carrera_academica:finalizar_ca' pk=ca.pk %}" class="btn btn-warning">
+<div class="d-grid gap-2" id="acciones-expediente">
+    <button type="button" class="btn btn-warning"
+            data-bs-toggle="modal" data-bs-target="#modalFinalizar">
         <i class="bi bi-check-circle"></i> Finalizar Expediente
-    </a>
-    <a href="{% url 'carrera_academica:archivar_ca' pk=ca.pk %}" class="btn btn-secondary">
+    </button>
+    <button type="button" class="btn btn-secondary"
+            data-bs-toggle="modal" data-bs-target="#modalArchivar">
         <i class="bi bi-archive"></i> Archivar Expediente
-    </a>
+    </button>
 </div>
 {% endif %}
 {% if ca.estado == 'ARCH' %}
-<div class="alert alert-secondary mt-3">
+<div class="alert alert-secondary mt-3" id="info-archivado">
     <strong><i class="bi bi-archive"></i> Expediente Archivado</strong><br>
     <small>Motivo: {{ ca.get_motivo_archivo_display }}</small><br>
     {% if ca.observaciones_archivo %}
@@ -72,6 +78,100 @@ Uso:
     <i class="bi bi-gear"></i> Gestionar CA Archivada
 </a>
 {% endif %}
-        
+
     </div>
 </div>
+
+{# Modal Finalizar #}
+{% if ca.estado == 'ACT' or ca.estado == 'VEN' %}
+<div class="modal fade" id="modalFinalizar" tabindex="-1" aria-labelledby="modalFinalizarLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalFinalizarLabel"><i class="bi bi-check-circle"></i> Finalizar Expediente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formFinalizar"
+                  action="{% url 'carrera_academica:finalizar_ca' pk=ca.pk %}"
+                  method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Resultado de cierre <span class="text-danger">*</span></label>
+                        <select name="resultado_cierre" class="form-select" id="selectResultadoCierre" required>
+                            <option value="">— Seleccionar —</option>
+                            {% for valor, etiqueta in resultado_choices %}
+                                <option value="{{ valor }}">{{ etiqueta }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3 d-none" id="campoNuevaFecha">
+                        <label class="form-label fw-bold">Nueva fecha de vencimiento <span class="text-danger">*</span></label>
+                        <input type="date" name="nueva_fecha_vencimiento" class="form-control">
+                        <small class="text-muted">Requerida para redesignación.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Observaciones</label>
+                        <textarea name="observaciones_cierre" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="alert alert-warning small">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Esta acción cierra el expediente. Si el resultado es redesignación, se creará una nueva CA automáticamente.
+                    </div>
+                    <div id="errorFinalizar" class="alert alert-danger d-none"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning" id="btnConfirmarFinalizar">
+                        <i class="bi bi-check-circle"></i> Confirmar Finalización
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{# Modal Archivar #}
+{% if ca.estado == 'ACT' or ca.estado == 'VEN' %}
+<div class="modal fade" id="modalArchivar" tabindex="-1" aria-labelledby="modalArchivarLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalArchivarLabel"><i class="bi bi-archive"></i> Archivar Expediente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formArchivar"
+                  action="{% url 'carrera_academica:archivar_ca' pk=ca.pk %}"
+                  method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Motivo de archivo <span class="text-danger">*</span></label>
+                        <select name="motivo_archivo" class="form-select" required>
+                            <option value="">— Seleccionar —</option>
+                            {% for valor, etiqueta in motivo_choices %}
+                                <option value="{{ valor }}">{{ etiqueta }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Observaciones</label>
+                        <textarea name="observaciones_archivo" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="alert alert-warning small">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        El expediente quedará archivado. Podrá gestionarlo luego desde "Gestionar CA Archivada".
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-secondary" id="btnConfirmarArchivar">
+                        <i class="bi bi-archive"></i> Confirmar Archivo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}

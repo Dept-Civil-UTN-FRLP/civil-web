@@ -196,42 +196,63 @@ def dashboard_ca_view(request):
 @login_required
 def detalle_ca_view(request, pk):
     ca = get_object_or_404(CarreraAcademica.objects.with_full_detail(), pk=pk)
-
-    if request.method == "POST":
-        formulario_id = request.POST.get("formulario_id")
-        archivo = request.FILES.get("archivo")
-
-        if formulario_id and archivo:
-            formulario = ca.formularios.get(pk=formulario_id)
-            if formulario.archivo:
-                formulario.archivo.delete(save=False)
-            formulario.archivo = archivo
-            formulario.estado = "ENT"
-            formulario.fecha_entrega = timezone.now()
-            formulario.save()
-            messages.success(
-                request,
-                f"Se subió el archivo para el formulario {formulario.tipo_formulario}.",
-            )
-
-        return redirect("carrera_academica:detalle_ca", pk=ca.pk)
-
     contexto = {
         "ca": ca,
         "form_resolucion": ResolucionForm(),
         "expediente_form": ExpedienteForm(instance=ca),
+        "motivo_choices": CarreraAcademica.MOTIVO_ARCHIVO_CHOICES,
+        "resultado_choices": CarreraAcademica.RESULTADO_CIERRE_CHOICES,
         **_preparar_contexto_detalle(ca),
     }
     return render(request, "carrera_academica/ca_detail.html", contexto)
 
 
 @login_required
+def subir_formulario_view(request, ca_pk, formulario_pk):
+    """Endpoint POST exclusivo para subir archivo a un Formulario. Responde JSON."""
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
+
+    ca = get_object_or_404(CarreraAcademica, pk=ca_pk)
+    formulario = get_object_or_404(ca.formularios, pk=formulario_pk)
+    archivo = request.FILES.get("archivo")
+
+    if not archivo:
+        return JsonResponse({"ok": False, "error": "No se recibió ningún archivo."}, status=400)
+
+    if formulario.archivo:
+        formulario.archivo.delete(save=False)
+
+    formulario.archivo = archivo
+    formulario.estado = "ENT"
+    formulario.fecha_entrega = timezone.now().date()
+    formulario.save()
+
+    from django.urls import reverse
+    ver_url = reverse("serve_private_media", kwargs={"path": formulario.archivo.name[8:]})
+    borrar_url = reverse("carrera_academica:borrar_archivo_formulario", kwargs={"pk": formulario.pk})
+
+    return JsonResponse({
+        "ok": True,
+        "estado": formulario.estado,
+        "fecha_entrega": formulario.fecha_entrega.strftime("%d/%m/%Y"),
+        "tipo": formulario.tipo_formulario,
+        "tipo_display": formulario.get_tipo_formulario_display(),
+        "ver_url": ver_url,
+        "borrar_url": borrar_url,
+    })
+
+
+@login_required
 def iniciar_evaluacion_view(request, pk):
     ca = get_object_or_404(CarreraAcademica, pk=pk)
+    es_fetch = request.headers.get("X-Requested-With") == "fetch"
 
     # Verificar si se puede iniciar evaluación
     puede, razon = ca.puede_iniciar_evaluacion()
     if not puede:
+        if es_fetch:
+            return JsonResponse({"ok": False, "error": f"No se puede iniciar evaluación: {razon}"}, status=400)
         messages.error(request, f"No se puede iniciar evaluación: {razon}")
         return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
@@ -258,32 +279,41 @@ def iniciar_evaluacion_view(request, pk):
             try:
                 anios_seleccionados = form.cleaned_data["anios_a_evaluar"]
 
-                # Obtener el siguiente número de evaluación
-                from django.db.models import Max
-
-                max_eval = ca.evaluaciones.aggregate(max_num=Max("numero_evaluacion"))[
-                    "max_num"
-                ]
+                max_eval = ca.evaluaciones.aggregate(max_num=Max("numero_evaluacion"))["max_num"]
                 nuevo_num = (max_eval or 0) + 1
 
-                # Crear la nueva evaluación
                 nueva_evaluacion = Evaluacion(
                     carrera_academica=ca,
                     numero_evaluacion=nuevo_num,
                     anios_evaluados=[int(a) for a in anios_seleccionados],
                 )
 
-                # Validar antes de guardar
                 nueva_evaluacion.full_clean()
                 nueva_evaluacion.save()
 
-                # Crear los formularios asociados
                 for tipo in ["F08", "F09", "F10", "F11", "F12"]:
                     Formulario.objects.create(
                         carrera_academica=ca,
                         tipo_formulario=tipo,
                         evaluacion=nueva_evaluacion,
                     )
+
+                if es_fetch:
+                    from django.template.loader import render_to_string
+                    descripciones_formularios = {
+                        tf.codigo: tf.descripcion for tf in TipoFormulario.objects.all()
+                    }
+                    html = render_to_string(
+                        "carrera_academica/components/ca/_evaluacion_card.html",
+                        {"evaluacion": nueva_evaluacion, "ca": ca,
+                         "descripciones_formularios": descripciones_formularios},
+                        request=request,
+                    )
+                    return JsonResponse({
+                        "ok": True,
+                        "html": html,
+                        "anios_usados": [int(a) for a in anios_seleccionados],
+                    })
 
                 messages.success(
                     request,
@@ -293,14 +323,21 @@ def iniciar_evaluacion_view(request, pk):
 
             except ValidationError as e:
                 logger.warning(f"Error de validación al crear evaluación: {e}")
+                if es_fetch:
+                    return JsonResponse({"ok": False, "error": " ".join(e.messages)}, status=400)
                 for error in e.messages:
                     messages.error(request, error)
 
             except Exception as e:
                 logger.error(f"Error inesperado al crear evaluación: {e}")
+                if es_fetch:
+                    return JsonResponse({"ok": False, "error": "Error al crear la evaluación."}, status=500)
                 messages.error(
                     request, "Error al crear la evaluación. Contacte al administrador."
                 )
+        elif es_fetch:
+            errores = form.errors.get("anios_a_evaluar", ["Seleccioná al menos un año."])
+            return JsonResponse({"ok": False, "error": errores[0] if errores else "Formulario inválido."}, status=400)
     else:
         form = EvaluacionForm()
         form.fields["anios_a_evaluar"].choices = [(y, y) for y in anios_pendientes]
@@ -313,6 +350,7 @@ def iniciar_evaluacion_view(request, pk):
 @login_required
 def registrar_resolucion_view(request, pk):
     ca = get_object_or_404(CarreraAcademica, pk=pk)
+    es_fetch = request.headers.get("X-Requested-With") == "fetch"
 
     if request.method == "POST":
         form = ResolucionForm(request.POST, request.FILES)
@@ -325,21 +363,52 @@ def registrar_resolucion_view(request, pk):
 
             if objeto in ["alta", "redesignacion", "designacion"]:
                 ca.resolucion_designacion = nueva_resolucion
-                messages.info(
-                    request, "La resolución se ha vinculado como 'Designación'.")
+                ca.save()
+                if es_fetch:
+                    from django.urls import reverse
+                    return JsonResponse({
+                        "ok": True,
+                        "campo": "designacion",
+                        "fila_id": "fila-resolucion-designacion",
+                        "numero": str(nueva_resolucion),
+                        "desvincular_url": reverse("carrera_academica:desvincular_resolucion_ca", kwargs={"pk": ca.pk, "campo": "designacion"}),
+                        "file_url": reverse("serve_private_media", kwargs={"path": nueva_resolucion.file.name[8:]}) if nueva_resolucion.file else None,
+                        "mensaje": "La resolución se ha vinculado como 'Designación'.",
+                    })
+                messages.info(request, "La resolución se ha vinculado como 'Designación'.")
 
             elif objeto == "puesta_funcion":
                 ca.resolucion_puesta_en_funcion = nueva_resolucion
-                messages.info(
-                    request, "La resolución se ha vinculado como 'Puesta en Función'.")
+                ca.save()
+                if es_fetch:
+                    from django.urls import reverse
+                    return JsonResponse({
+                        "ok": True,
+                        "campo": "puesta_en_funcion",
+                        "fila_id": "fila-resolucion-puesta-en-funcion",
+                        "numero": str(nueva_resolucion),
+                        "desvincular_url": reverse("carrera_academica:desvincular_resolucion_ca", kwargs={"pk": ca.pk, "campo": "puesta_en_funcion"}),
+                        "file_url": reverse("serve_private_media", kwargs={"path": nueva_resolucion.file.name[8:]}) if nueva_resolucion.file else None,
+                        "mensaje": "La resolución se ha vinculado como 'Puesta en Función'.",
+                    })
+                messages.info(request, "La resolución se ha vinculado como 'Puesta en Función'.")
 
             elif objeto == "prorroga_ca":
                 exito, mensaje = CAService.aplicar_prorroga(
                     ca,
-                    nueva_fecha=form.cleaned_data.get(
-                        "nueva_fecha_vencimiento"),
+                    nueva_fecha=form.cleaned_data.get("nueva_fecha_vencimiento"),
                     dias=form.cleaned_data.get("prorroga_dias"),
                 )
+                if es_fetch:
+                    if exito:
+                        ca.refresh_from_db()
+                        return JsonResponse({
+                            "ok": True,
+                            "campo": "prorroga",
+                            "nueva_fecha": ca.fecha_vencimiento_actual.strftime("%d/%m/%Y"),
+                            "mensaje": mensaje,
+                        })
+                    return JsonResponse({"ok": False, "error": mensaje}, status=400)
                 if exito:
                     messages.success(request, mensaje)
                 else:
@@ -348,15 +417,35 @@ def registrar_resolucion_view(request, pk):
 
             elif objeto == "licencia_alta":
                 ca.estado = "STB"
+                ca.save()
+                if es_fetch:
+                    return JsonResponse({
+                        "ok": True,
+                        "campo": "estado",
+                        "estado_display": ca.get_estado_display(),
+                        "mensaje": f"Resolución de '{nueva_resolucion.get_objeto_display()}' registrada.",
+                    })
 
             elif objeto == "licencia_baja":
                 ca.estado = "ACT"
+                ca.save()
+                if es_fetch:
+                    return JsonResponse({
+                        "ok": True,
+                        "campo": "estado",
+                        "estado_display": ca.get_estado_display(),
+                        "mensaje": f"Resolución de '{nueva_resolucion.get_objeto_display()}' registrada.",
+                    })
+            else:
+                ca.save()
 
-            ca.save()
             messages.success(
                 request,
                 f"Resolución de '{nueva_resolucion.get_objeto_display()}' registrada exitosamente.",
             )
+        elif es_fetch:
+            errores = {f: e.as_text() for f, e in form.errors.items()}
+            return JsonResponse({"ok": False, "error": "Datos inválidos.", "errores": errores}, status=400)
 
     return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
@@ -493,6 +582,7 @@ def desvincular_resolucion_ca_view(request, pk, campo):
         return redirect("carrera_academica:detalle_ca", pk=pk)
 
     ca = get_object_or_404(CarreraAcademica, pk=pk)
+    es_fetch = request.headers.get("X-Requested-With") == "fetch"
 
     campos_validos = {
         "designacion": ("resolucion_designacion", "Designación"),
@@ -500,12 +590,16 @@ def desvincular_resolucion_ca_view(request, pk, campo):
     }
 
     if campo not in campos_validos:
+        if es_fetch:
+            return JsonResponse({"ok": False, "error": "Campo no válido."}, status=400)
         messages.error(request, "Campo no válido.")
         return redirect("carrera_academica:detalle_ca", pk=pk)
 
     field_name, label = campos_validos[campo]
     setattr(ca, field_name, None)
     ca.save(update_fields=[field_name])
+    if es_fetch:
+        return JsonResponse({"ok": True, "label": label})
     messages.success(request, f"Resolución de {label} desvinculada correctamente.")
     return redirect("carrera_academica:detalle_ca", pk=pk)
 
@@ -514,12 +608,14 @@ def desvincular_resolucion_ca_view(request, pk, campo):
 def asignar_expediente_view(request, pk):
     ca = get_object_or_404(CarreraAcademica, pk=pk)
     if request.method == "POST":
-        # Pasamos la instancia existente para que el formulario la actualice
         form = ExpedienteForm(request.POST, instance=ca)
         if form.is_valid():
             form.save()
+            if request.headers.get("X-Requested-With") == "fetch":
+                return JsonResponse({"ok": True, "numero_expediente": ca.numero_expediente})
             messages.success(request, "Número de expediente actualizado correctamente.")
-    # Siempre redirigimos de vuelta al detalle
+        elif request.headers.get("X-Requested-With") == "fetch":
+            return JsonResponse({"ok": False, "error": "Número de expediente inválido."}, status=400)
     return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
 
@@ -575,12 +671,15 @@ def docentes_filtrados_api_view(request):
 @login_required
 def finalizar_ca_view(request, pk):
     ca = get_object_or_404(CarreraAcademica, pk=pk)
+    es_fetch = request.headers.get("X-Requested-With") == "fetch"
 
     if request.method == "POST":
         resultado = request.POST.get("resultado_cierre")
         observaciones = request.POST.get("observaciones_cierre", "")
 
         if not resultado:
+            if es_fetch:
+                return JsonResponse({"ok": False, "error": "Debe seleccionar un resultado de cierre."}, status=400)
             messages.error(request, "Debe seleccionar un resultado de cierre")
             return redirect("carrera_academica:finalizar_ca", pk=pk)
 
@@ -590,6 +689,8 @@ def finalizar_ca_view(request, pk):
             try:
                 nueva_fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
             except (ValueError, TypeError):
+                if es_fetch:
+                    return JsonResponse({"ok": False, "error": "Formato de fecha inválido."}, status=400)
                 messages.error(request, "Formato de fecha inválido")
                 return redirect("carrera_academica:finalizar_ca", pk=pk)
 
@@ -597,16 +698,31 @@ def finalizar_ca_view(request, pk):
             ca, resultado, observaciones, nueva_fecha, request.user)
 
         if not exito:
+            if es_fetch:
+                return JsonResponse({"ok": False, "error": mensaje}, status=400)
             messages.error(request, mensaje)
             return redirect("carrera_academica:finalizar_ca", pk=pk)
 
-        # Redesignación: redirigir a la nueva CA
+        # Redesignación: crear nueva CA y redirigir
         if mensaje.startswith("redesignacion:"):
+            from django.urls import reverse
             nueva_ca_pk = mensaje.split(":")[1]
-            messages.success(
-                request, f"CA finalizada y redesignada. Nuevo expediente #{nueva_ca_pk} creado.")
+            if es_fetch:
+                return JsonResponse({
+                    "ok": True,
+                    "redesignacion": True,
+                    "redirect_url": reverse("carrera_academica:detalle_ca", kwargs={"pk": nueva_ca_pk}),
+                    "mensaje": f"CA finalizada y redesignada. Nuevo expediente #{nueva_ca_pk} creado.",
+                })
+            messages.success(request, f"CA finalizada y redesignada. Nuevo expediente #{nueva_ca_pk} creado.")
             return redirect("carrera_academica:detalle_ca", pk=nueva_ca_pk)
 
+        if es_fetch:
+            return JsonResponse({
+                "ok": True,
+                "estado_display": ca.get_estado_display(),
+                "mensaje": f"Expediente finalizado: {mensaje}",
+            })
         messages.success(request, f"Expediente finalizado: {mensaje}")
         return redirect("carrera_academica:detalle_ca", pk=pk)
 
@@ -730,32 +846,35 @@ def notificar_junta_view(request, pk):
 
 @login_required
 def agendar_evaluacion_view(request, pk):
-    # El 'pk' que recibimos es el de la Evaluación
     evaluacion = get_object_or_404(Evaluacion, pk=pk)
+    es_fetch = request.headers.get("X-Requested-With") == "fetch"
 
-    # Esta acción solo debe ocurrir si se envía el formulario
     if request.method == "POST":
-        # Obtenemos el valor del campo 'fecha_evaluacion' del formulario
         fecha_str = request.POST.get("fecha_evaluacion")
 
         if fecha_str:
-            # Si se proporcionó una fecha, la guardamos en el objeto Evaluacion
             evaluacion.fecha_evaluacion = fecha_str
             evaluacion.save()
+            evaluacion.refresh_from_db()
+            if es_fetch:
+                return JsonResponse({
+                    "ok": True,
+                    "fecha_display": evaluacion.fecha_evaluacion.strftime("%d/%m/%Y %H:%M"),
+                })
             messages.success(
                 request,
                 f"Se agendó la fecha para la Evaluación N°{evaluacion.numero_evaluacion}.",
             )
         else:
-            # Si se envía el campo vacío, borramos la fecha
             evaluacion.fecha_evaluacion = None
             evaluacion.save()
+            if es_fetch:
+                return JsonResponse({"ok": True, "fecha_display": None})
             messages.info(
                 request,
                 f"Se ha quitado la fecha para la Evaluación N°{evaluacion.numero_evaluacion}.",
             )
 
-    # Sin importar qué pase, siempre redirigimos de vuelta a la página del expediente
     return redirect("carrera_academica:detalle_ca", pk=evaluacion.carrera_academica.pk)
 
 
@@ -959,21 +1078,36 @@ def gestionar_formularios_anio_view(request, pk, anio):
 @login_required
 def archivar_ca_view(request, pk):
     ca = get_object_or_404(CarreraAcademica, pk=pk)
+    es_fetch = request.headers.get("X-Requested-With") == "fetch"
 
     if request.method == "POST":
         motivo = request.POST.get("motivo_archivo")
         observaciones = request.POST.get("observaciones_archivo", "")
 
         if not motivo:
+            if es_fetch:
+                return JsonResponse({"ok": False, "error": "Debe seleccionar un motivo de archivo."}, status=400)
             messages.error(request, "Debe seleccionar un motivo de archivo")
             return redirect("carrera_academica:archivar_ca", pk=pk)
 
         exito, mensaje = CAService.archivar(ca, motivo, observaciones)
 
         if exito:
+            if es_fetch:
+                from django.urls import reverse
+                return JsonResponse({
+                    "ok": True,
+                    "estado_display": ca.get_estado_display(),
+                    "motivo_display": ca.get_motivo_archivo_display(),
+                    "observaciones": ca.observaciones_archivo or "",
+                    "fecha_archivo": ca.fecha_archivo.strftime("%d/%m/%Y %H:%M"),
+                    "gestionar_url": reverse("carrera_academica:gestionar_ca_archivada", kwargs={"pk": ca.pk}),
+                })
             messages.success(request, mensaje)
             return redirect("carrera_academica:detalle_ca", pk=pk)
         else:
+            if es_fetch:
+                return JsonResponse({"ok": False, "error": mensaje}, status=400)
             messages.error(request, mensaje)
             return redirect("carrera_academica:archivar_ca", pk=pk)
 

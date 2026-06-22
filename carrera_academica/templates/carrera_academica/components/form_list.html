@@ -24,20 +24,20 @@ Uso:
                 {% if form.anio_correspondiente %}({{ form.anio_correspondiente }}){% endif %}
                 {% if form.evaluacion %}(Eval. {{ form.evaluacion.numero_evaluacion }}){% endif %}
             </td>
-            <td>
+            <td data-estado-cell>
                 {% if form.estado == 'ENT' %}
-                    <span class="badge bg-success">Entregado</span> 
+                    <span class="badge bg-success">Entregado</span>
                     <small class="text-muted">el {{ form.fecha_entrega|date:"d/m/Y" }}</small>
                     {% if form.archivo %}
                         <a href="{% url 'serve_private_media' path=form.archivo.name|slice:'8:' %}" target="_blank" class="btn btn-sm btn-outline-primary me-1">
                             <i class="bi bi-file-pdf"></i> Ver
                         </a>
-                        <a href="{% url 'carrera_academica:borrar_archivo_formulario' pk=form.pk %}" 
+                        <a href="{% url 'carrera_academica:borrar_archivo_formulario' pk=form.pk %}"
                            class="btn btn-sm btn-outline-danger">
                             <i class="bi bi-trash"></i>
                         </a>
                     {% else %}
-                        <a href="{% url 'carrera_academica:descargar_plantilla' pk=form.pk %}" 
+                        <a href="{% url 'carrera_academica:descargar_plantilla' pk=form.pk %}"
                            class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-download"></i> Plantilla
                         </a>
@@ -48,13 +48,15 @@ Uso:
                     <span class="badge bg-warning text-dark">Pendiente</span>
                 {% endif %}
             </td>
-            <td style="width: 45%;">
+            <td style="width: 45%;" data-accion-cell>
                 {% if ca.estado != 'FIN' %}
                     {% if form.estado == 'PEN' or form.tipo_formulario == 'CV' %}
                     <div class="d-flex">
-                        <form method="POST" enctype="multipart/form-data" class="d-flex flex-grow-1">
+                        <form method="POST"
+                              action="{% url 'carrera_academica:subir_formulario' ca_pk=ca.pk formulario_pk=form.pk %}"
+                              enctype="multipart/form-data"
+                              class="d-flex flex-grow-1 form-upload-archivo">
                             {% csrf_token %}
-                            <input type="hidden" name="formulario_id" value="{{ form.pk }}">
                             <input type="file" name="archivo" class="form-control form-control-sm" required>
                             <button type="submit" class="btn btn-primary btn-sm ms-2">
                                 {% if form.estado == 'ENT' %}Actualizar{% else %}Subir{% endif %}
