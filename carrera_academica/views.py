@@ -854,6 +854,7 @@ def agendar_evaluacion_view(request, pk):
         if fecha_str:
             evaluacion.fecha_evaluacion = fecha_str
             evaluacion.save()
+            evaluacion.refresh_from_db()
             if es_fetch:
                 return JsonResponse({
                     "ok": True,
