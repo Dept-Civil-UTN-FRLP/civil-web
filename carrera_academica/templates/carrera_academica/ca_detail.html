@@ -380,6 +380,41 @@ document.addEventListener('DOMContentLoaded', function() {
     tooltipTriggerList.map(function(el) { return new bootstrap.Tooltip(el); });
 });
 
+// Archivar CA via modal + fetch
+const formArchivar = document.getElementById('formArchivar');
+if (formArchivar) {
+    formArchivar.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btnConfirmarArchivar');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Archivando...';
+
+        fetch(formArchivar.action, {
+            method: 'POST',
+            body: new FormData(formArchivar),
+            headers: { 'X-Requested-With': 'fetch' },
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('modalArchivar')).hide();
+                document.querySelector('[data-estado-display]').textContent = data.estado_display;
+                const acciones = document.getElementById('acciones-expediente');
+                if (acciones) acciones.remove();
+            } else {
+                alert('Error: ' + data.error);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-archive"></i> Confirmar Archivo';
+            }
+        })
+        .catch(() => {
+            alert('Error al archivar. Intente nuevamente.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-archive"></i> Confirmar Archivo';
+        });
+    });
+}
+
 // Agendar evaluación sin recarga
 document.addEventListener('submit', function(e) {
     const form = e.target.closest('form.form-agendar-evaluacion');

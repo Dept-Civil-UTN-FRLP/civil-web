@@ -200,6 +200,8 @@ def detalle_ca_view(request, pk):
         "ca": ca,
         "form_resolucion": ResolucionForm(),
         "expediente_form": ExpedienteForm(instance=ca),
+        "motivo_choices": CarreraAcademica.MOTIVO_ARCHIVO_CHOICES,
+        "resultado_choices": CarreraAcademica.RESULTADO_CIERRE_CHOICES,
         **_preparar_contexto_detalle(ca),
     }
     return render(request, "carrera_academica/ca_detail.html", contexto)
@@ -979,21 +981,32 @@ def gestionar_formularios_anio_view(request, pk, anio):
 @login_required
 def archivar_ca_view(request, pk):
     ca = get_object_or_404(CarreraAcademica, pk=pk)
+    es_fetch = request.headers.get("X-Requested-With") == "fetch"
 
     if request.method == "POST":
         motivo = request.POST.get("motivo_archivo")
         observaciones = request.POST.get("observaciones_archivo", "")
 
         if not motivo:
+            if es_fetch:
+                return JsonResponse({"ok": False, "error": "Debe seleccionar un motivo de archivo."}, status=400)
             messages.error(request, "Debe seleccionar un motivo de archivo")
             return redirect("carrera_academica:archivar_ca", pk=pk)
 
         exito, mensaje = CAService.archivar(ca, motivo, observaciones)
 
         if exito:
+            if es_fetch:
+                return JsonResponse({
+                    "ok": True,
+                    "estado_display": ca.get_estado_display(),
+                    "motivo_display": ca.get_motivo_archivo_display(),
+                })
             messages.success(request, mensaje)
             return redirect("carrera_academica:detalle_ca", pk=pk)
         else:
+            if es_fetch:
+                return JsonResponse({"ok": False, "error": mensaje}, status=400)
             messages.error(request, mensaje)
             return redirect("carrera_academica:archivar_ca", pk=pk)
 

@@ -47,22 +47,24 @@ Uso:
         </p>
         
         <p class="card-text">
-            <strong>Estado:</strong> {{ ca.get_estado_display }}
+            <strong>Estado:</strong> <span data-estado-display>{{ ca.get_estado_display }}</span>
         </p>
-        
+
         {% if ca.estado == 'ACT' or ca.estado == 'VEN' %}
 <hr>
-<div class="d-grid gap-2">
-    <a href="{% url 'carrera_academica:finalizar_ca' pk=ca.pk %}" class="btn btn-warning">
+<div class="d-grid gap-2" id="acciones-expediente">
+    <button type="button" class="btn btn-warning"
+            data-bs-toggle="modal" data-bs-target="#modalFinalizar">
         <i class="bi bi-check-circle"></i> Finalizar Expediente
-    </a>
-    <a href="{% url 'carrera_academica:archivar_ca' pk=ca.pk %}" class="btn btn-secondary">
+    </button>
+    <button type="button" class="btn btn-secondary"
+            data-bs-toggle="modal" data-bs-target="#modalArchivar">
         <i class="bi bi-archive"></i> Archivar Expediente
-    </a>
+    </button>
 </div>
 {% endif %}
 {% if ca.estado == 'ARCH' %}
-<div class="alert alert-secondary mt-3">
+<div class="alert alert-secondary mt-3" id="info-archivado">
     <strong><i class="bi bi-archive"></i> Expediente Archivado</strong><br>
     <small>Motivo: {{ ca.get_motivo_archivo_display }}</small><br>
     {% if ca.observaciones_archivo %}
@@ -76,6 +78,50 @@ Uso:
     <i class="bi bi-gear"></i> Gestionar CA Archivada
 </a>
 {% endif %}
-        
+
     </div>
 </div>
+
+{# Modal Archivar #}
+{% if ca.estado == 'ACT' or ca.estado == 'VEN' %}
+<div class="modal fade" id="modalArchivar" tabindex="-1" aria-labelledby="modalArchivarLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalArchivarLabel"><i class="bi bi-archive"></i> Archivar Expediente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formArchivar"
+                  action="{% url 'carrera_academica:archivar_ca' pk=ca.pk %}"
+                  method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Motivo de archivo <span class="text-danger">*</span></label>
+                        <select name="motivo_archivo" class="form-select" required>
+                            <option value="">— Seleccionar —</option>
+                            {% for valor, etiqueta in motivo_choices %}
+                                <option value="{{ valor }}">{{ etiqueta }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Observaciones</label>
+                        <textarea name="observaciones_archivo" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="alert alert-warning small">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        El expediente quedará archivado. Podrá gestionarlo luego desde "Gestionar CA Archivada".
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-secondary" id="btnConfirmarArchivar">
+                        <i class="bi bi-archive"></i> Confirmar Archivo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
