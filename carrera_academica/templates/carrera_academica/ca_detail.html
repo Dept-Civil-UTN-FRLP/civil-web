@@ -569,7 +569,22 @@ if (formArchivar) {
                 bootstrap.Modal.getInstance(document.getElementById('modalArchivar')).hide();
                 document.querySelector('[data-estado-display]').textContent = data.estado_display;
                 const acciones = document.getElementById('acciones-expediente');
-                if (acciones) acciones.remove();
+                if (acciones) {
+                    const obsHtml = data.observaciones
+                        ? `<small class="text-muted">${escapeHtml(data.observaciones)}</small><br>`
+                        : '';
+                    acciones.outerHTML =
+                        `<div class="alert alert-secondary mt-3" id="info-archivado">
+                            <strong><i class="bi bi-archive"></i> Expediente Archivado</strong><br>
+                            <small>Motivo: ${escapeHtml(data.motivo_display)}</small><br>
+                            ${obsHtml}
+                            <small class="text-muted">Archivado el ${escapeHtml(data.fecha_archivo)}</small>
+                         </div>
+                         <hr>
+                         <a href="${data.gestionar_url}" class="btn btn-warning w-100">
+                             <i class="bi bi-gear"></i> Gestionar CA Archivada
+                         </a>`;
+                }
             } else {
                 alert('Error: ' + data.error);
                 btn.disabled = false;

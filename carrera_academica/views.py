@@ -1094,10 +1094,14 @@ def archivar_ca_view(request, pk):
 
         if exito:
             if es_fetch:
+                from django.urls import reverse
                 return JsonResponse({
                     "ok": True,
                     "estado_display": ca.get_estado_display(),
                     "motivo_display": ca.get_motivo_archivo_display(),
+                    "observaciones": ca.observaciones_archivo or "",
+                    "fecha_archivo": ca.fecha_archivo.strftime("%d/%m/%Y %H:%M"),
+                    "gestionar_url": reverse("carrera_academica:gestionar_ca_archivada", kwargs={"pk": ca.pk}),
                 })
             messages.success(request, mensaje)
             return redirect("carrera_academica:detalle_ca", pk=pk)
