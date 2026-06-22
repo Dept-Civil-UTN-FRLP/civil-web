@@ -511,6 +511,7 @@ def desvincular_resolucion_ca_view(request, pk, campo):
         return redirect("carrera_academica:detalle_ca", pk=pk)
 
     ca = get_object_or_404(CarreraAcademica, pk=pk)
+    es_fetch = request.headers.get("X-Requested-With") == "fetch"
 
     campos_validos = {
         "designacion": ("resolucion_designacion", "Designación"),
@@ -518,12 +519,16 @@ def desvincular_resolucion_ca_view(request, pk, campo):
     }
 
     if campo not in campos_validos:
+        if es_fetch:
+            return JsonResponse({"ok": False, "error": "Campo no válido."}, status=400)
         messages.error(request, "Campo no válido.")
         return redirect("carrera_academica:detalle_ca", pk=pk)
 
     field_name, label = campos_validos[campo]
     setattr(ca, field_name, None)
     ca.save(update_fields=[field_name])
+    if es_fetch:
+        return JsonResponse({"ok": True, "label": label})
     messages.success(request, f"Resolución de {label} desvinculada correctamente.")
     return redirect("carrera_academica:detalle_ca", pk=pk)
 

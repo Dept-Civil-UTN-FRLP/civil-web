@@ -21,7 +21,7 @@
         <table class="table table-sm table-bordered align-middle mb-0">
             <tbody>
                 {# Res. Designación #}
-                <tr>
+                <tr id="fila-resolucion-designacion">
                     <td class="fw-bold" style="width: 20%;">Res. Designación</td>
                     <td>
                         {% if ca.resolucion_designacion %}
@@ -32,13 +32,14 @@
                                     <i class="bi bi-file-pdf"></i> Ver
                                 </a>
                             {% endif %}
-                            <form action="{% url 'carrera_academica:desvincular_resolucion_ca' pk=ca.pk campo='designacion' %}" method="POST" class="d-inline ms-1">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1"
-                                    onclick="return confirm('¿Desvincular la Resolución de Designación?')" title="Quitar">
-                                    <i class="bi bi-x"></i>
-                                </button>
-                            </form>
+                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 ms-1 btn-desvincular"
+                                data-url="{% url 'carrera_academica:desvincular_resolucion_ca' pk=ca.pk campo='designacion' %}"
+                                data-label="Designación"
+                                data-fila="fila-resolucion-designacion"
+                                data-bs-toggle="modal" data-bs-target="#modalDesvincular"
+                                title="Quitar">
+                                <i class="bi bi-x"></i>
+                            </button>
                         {% else %}
                             <span class="badge bg-warning text-dark">Pendiente</span>
                         {% endif %}
@@ -48,7 +49,7 @@
                     </td>
                 </tr>
                 {# Res. Puesta en Función #}
-                <tr>
+                <tr id="fila-resolucion-puesta-en-funcion">
                     <td class="fw-bold">Res. Puesta en Función</td>
                     <td>
                         {% if ca.resolucion_puesta_en_funcion %}
@@ -59,13 +60,14 @@
                                     <i class="bi bi-file-pdf"></i> Ver
                                 </a>
                             {% endif %}
-                            <form action="{% url 'carrera_academica:desvincular_resolucion_ca' pk=ca.pk campo='puesta_en_funcion' %}" method="POST" class="d-inline ms-1">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1"
-                                    onclick="return confirm('¿Desvincular la Resolución de Puesta en Función?')" title="Quitar">
-                                    <i class="bi bi-x"></i>
-                                </button>
-                            </form>
+                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 ms-1 btn-desvincular"
+                                data-url="{% url 'carrera_academica:desvincular_resolucion_ca' pk=ca.pk campo='puesta_en_funcion' %}"
+                                data-label="Puesta en Función"
+                                data-fila="fila-resolucion-puesta-en-funcion"
+                                data-bs-toggle="modal" data-bs-target="#modalDesvincular"
+                                title="Quitar">
+                                <i class="bi bi-x"></i>
+                            </button>
                         {% else %}
                             <span class="badge bg-warning text-dark">Pendiente</span>
                         {% endif %}
@@ -373,11 +375,76 @@ document.addEventListener('DOMContentLoaded', function() {
 
 {% endblock %}
 
+{# Modal compartido para desvincular resoluciones #}
+<div class="modal fade" id="modalDesvincular" tabindex="-1" aria-labelledby="modalDesvincularLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalDesvincularLabel">Confirmar</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="textoDesvincular" class="mb-0"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger btn-sm" id="btnConfirmarDesvincular">Quitar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(function(el) { return new bootstrap.Tooltip(el); });
+});
+
+// Desvincular resolución via modal Bootstrap + fetch
+let desvinculaUrl = null;
+let desvinculaFila = null;
+
+document.querySelectorAll('.btn-desvincular').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        desvinculaUrl = this.dataset.url;
+        desvinculaFila = this.dataset.fila;
+        document.getElementById('textoDesvincular').textContent =
+            '¿Desvincular la Resolución de ' + this.dataset.label + '?';
+    });
+});
+
+document.getElementById('btnConfirmarDesvincular')?.addEventListener('click', function() {
+    if (!desvinculaUrl) return;
+    const btn = this;
+    btn.disabled = true;
+
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+    fetch(desvinculaUrl, {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'fetch' },
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('modalDesvincular')).hide();
+            const fila = document.getElementById(desvinculaFila);
+            if (fila) {
+                fila.querySelector('td:nth-child(2)').innerHTML =
+                    '<span class="badge bg-warning text-dark">Pendiente</span>';
+            }
+        } else {
+            alert('Error: ' + data.error);
+        }
+        btn.disabled = false;
+    })
+    .catch(() => {
+        alert('Error al desvincular. Intente nuevamente.');
+        btn.disabled = false;
+    });
 });
 
 // Finalizar CA via modal + fetch
