@@ -424,6 +424,18 @@ if (formIniciarEval) {
                 const lista = document.getElementById('lista-evaluaciones');
                 lista.insertAdjacentHTML('beforeend', data.html);
                 formIniciarEval.reset();
+                // Quitar del modal los años que acaban de usarse
+                if (data.anios_usados) {
+                    data.anios_usados.forEach(function(anio) {
+                        const cb = formIniciarEval.querySelector('input[value="' + anio + '"]');
+                        if (cb) cb.closest('label').remove();
+                    });
+                }
+                // Si ya no quedan checkboxes, ocultar botón e instrucción
+                if (!formIniciarEval.querySelector('input[name="anios_a_evaluar"]')) {
+                    const btnIniciar = document.querySelector('[data-bs-target="#modalIniciarEvaluacion"]');
+                    if (btnIniciar) btnIniciar.remove();
+                }
             } else {
                 errorDiv.textContent = data.error;
                 errorDiv.classList.remove('d-none');

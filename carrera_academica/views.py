@@ -246,10 +246,13 @@ def subir_formulario_view(request, ca_pk, formulario_pk):
 @login_required
 def iniciar_evaluacion_view(request, pk):
     ca = get_object_or_404(CarreraAcademica, pk=pk)
+    es_fetch = request.headers.get("X-Requested-With") == "fetch"
 
     # Verificar si se puede iniciar evaluación
     puede, razon = ca.puede_iniciar_evaluacion()
     if not puede:
+        if es_fetch:
+            return JsonResponse({"ok": False, "error": f"No se puede iniciar evaluación: {razon}"}, status=400)
         messages.error(request, f"No se puede iniciar evaluación: {razon}")
         return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
@@ -276,26 +279,18 @@ def iniciar_evaluacion_view(request, pk):
             try:
                 anios_seleccionados = form.cleaned_data["anios_a_evaluar"]
 
-                # Obtener el siguiente número de evaluación
-                from django.db.models import Max
-
-                max_eval = ca.evaluaciones.aggregate(max_num=Max("numero_evaluacion"))[
-                    "max_num"
-                ]
+                max_eval = ca.evaluaciones.aggregate(max_num=Max("numero_evaluacion"))["max_num"]
                 nuevo_num = (max_eval or 0) + 1
 
-                # Crear la nueva evaluación
                 nueva_evaluacion = Evaluacion(
                     carrera_academica=ca,
                     numero_evaluacion=nuevo_num,
                     anios_evaluados=[int(a) for a in anios_seleccionados],
                 )
 
-                # Validar antes de guardar
                 nueva_evaluacion.full_clean()
                 nueva_evaluacion.save()
 
-                # Crear los formularios asociados
                 for tipo in ["F08", "F09", "F10", "F11", "F12"]:
                     Formulario.objects.create(
                         carrera_academica=ca,
@@ -303,7 +298,6 @@ def iniciar_evaluacion_view(request, pk):
                         evaluacion=nueva_evaluacion,
                     )
 
-                es_fetch = request.headers.get("X-Requested-With") == "fetch"
                 if es_fetch:
                     from django.template.loader import render_to_string
                     descripciones_formularios = {
@@ -315,7 +309,11 @@ def iniciar_evaluacion_view(request, pk):
                          "descripciones_formularios": descripciones_formularios},
                         request=request,
                     )
-                    return JsonResponse({"ok": True, "html": html})
+                    return JsonResponse({
+                        "ok": True,
+                        "html": html,
+                        "anios_usados": [int(a) for a in anios_seleccionados],
+                    })
 
                 messages.success(
                     request,
@@ -325,18 +323,21 @@ def iniciar_evaluacion_view(request, pk):
 
             except ValidationError as e:
                 logger.warning(f"Error de validación al crear evaluación: {e}")
-                if request.headers.get("X-Requested-With") == "fetch":
+                if es_fetch:
                     return JsonResponse({"ok": False, "error": " ".join(e.messages)}, status=400)
                 for error in e.messages:
                     messages.error(request, error)
 
             except Exception as e:
                 logger.error(f"Error inesperado al crear evaluación: {e}")
-                if request.headers.get("X-Requested-With") == "fetch":
+                if es_fetch:
                     return JsonResponse({"ok": False, "error": "Error al crear la evaluación."}, status=500)
                 messages.error(
                     request, "Error al crear la evaluación. Contacte al administrador."
                 )
+        elif es_fetch:
+            errores = form.errors.get("anios_a_evaluar", ["Seleccioná al menos un año."])
+            return JsonResponse({"ok": False, "error": errores[0] if errores else "Formulario inválido."}, status=400)
     else:
         form = EvaluacionForm()
         form.fields["anios_a_evaluar"].choices = [(y, y) for y in anios_pendientes]
