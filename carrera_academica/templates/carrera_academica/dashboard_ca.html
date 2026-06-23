@@ -102,9 +102,10 @@
 
   {# Sección archivadas al fondo — solo si hay y no se filtra por otro estado #}
   {% if carreras_archivadas and not estado_filter or estado_filter == 'ARCH' %}
+  <div id="seccion-archivadas">
   <hr class="my-4">
   <h5 class="text-muted mb-3"><i class="bi bi-archive"></i> Archivadas</h5>
-  <table class="table table-sm table-hover text-muted">
+  <table class="table table-sm table-hover text-muted" id="tabla-archivadas">
     <thead>
       <tr>
         <th>Docente</th>
@@ -112,24 +113,99 @@
         <th>Asignatura</th>
         <th>Vencimiento</th>
         <th>Motivo archivo</th>
-        <th>Acciones</th>
+        <th></th>
       </tr>
     </thead>
     <tbody>
       {% for ca in carreras_archivadas %}
-      <tr>
+      <tr id="arch-row-{{ ca.pk }}">
         <td>{{ ca.cargo.docente }}</td>
-        <td>{{ ca.cargo.get_categoria_display }} {{ ca.cargo.get_caracter_display }}</td>
+        <td>{{ ca.cargo.get_categoria_display }}</td>
         <td>{{ ca.cargo.asignatura.nombre.title }}</td>
         <td>{{ ca.fecha_vencimiento_actual|date:"d/m/Y" }}</td>
         <td><small>{{ ca.get_motivo_archivo_display|default:"—" }}</small></td>
-        <td>
+        <td class="text-end">
           <a href="{% url 'carrera_academica:detalle_ca' pk=ca.pk %}" class="btn btn-outline-secondary btn-sm">Ver</a>
+          <button type="button" class="btn btn-outline-success btn-sm btn-desarchivar"
+                  data-pk="{{ ca.pk }}"
+                  data-url="{% url 'carrera_academica:desarchivar_ca' pk=ca.pk %}"
+                  data-docente="{{ ca.cargo.docente }}">
+            Reactivar
+          </button>
         </td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
+  </div>
   {% endif %}
+
+  {# Modal confirmación reactivar #}
+  <div class="modal fade" id="modalReactivar" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">¿Reactivar CA?</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">¿Reactivar la CA de <strong id="reactivar-docente"></strong>?</p>
+          <p class="small text-muted mt-1">Volverá a estado Activa.</p>
+          <div id="reactivar-error" class="alert alert-danger d-none mt-2 mb-0"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-success btn-sm" id="btn-confirmar-reactivar">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    let reactivarUrl = null;
+    let reactivarPk = null;
+    const modal = new bootstrap.Modal(document.getElementById('modalReactivar'));
+
+    document.addEventListener('click', function (e) {
+      const btn = e.target.closest('.btn-desarchivar');
+      if (!btn) return;
+      reactivarUrl = btn.dataset.url;
+      reactivarPk = btn.dataset.pk;
+      document.getElementById('reactivar-docente').textContent = btn.dataset.docente;
+      document.getElementById('reactivar-error').classList.add('d-none');
+      modal.show();
+    });
+
+    document.getElementById('btn-confirmar-reactivar').addEventListener('click', async function () {
+      this.disabled = true;
+      const errDiv = document.getElementById('reactivar-error');
+      try {
+        const resp = await fetch(reactivarUrl, {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'fetch', 'X-CSRFToken': '{{ csrf_token }}' },
+        });
+        const data = await resp.json();
+        if (data.ok) {
+          modal.hide();
+          const row = document.getElementById('arch-row-' + reactivarPk);
+          row.remove();
+          const tbody = document.querySelector('#tabla-archivadas tbody');
+          if (!tbody.querySelector('tr')) {
+            document.getElementById('seccion-archivadas').remove();
+          }
+        } else {
+          errDiv.textContent = data.error || 'Error al reactivar';
+          errDiv.classList.remove('d-none');
+        }
+      } catch (_) {
+        errDiv.textContent = 'Error de conexión';
+        errDiv.classList.remove('d-none');
+      } finally {
+        this.disabled = false;
+      }
+    });
+  })();
+  </script>
 
 {% endblock %}

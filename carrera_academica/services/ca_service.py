@@ -201,6 +201,22 @@ class CAService:
             return False, str(e)
 
     @staticmethod
+    def desarchivar(ca: CarreraAcademica) -> tuple[bool, str]:
+        """Reactiva una CA archivada, limpiando los campos de archivo."""
+        if ca.estado != "ARCH":
+            return False, "Solo se pueden reactivar CAs archivadas"
+        try:
+            ca.estado = "ACT"
+            ca.motivo_archivo = ""
+            ca.observaciones_archivo = ""
+            ca.fecha_archivo = None
+            ca.save()
+            return True, "CA reactivada correctamente"
+        except Exception as e:
+            logger.error(f"Error al reactivar CA {ca.pk}: {e}")
+            return False, str(e)
+
+    @staticmethod
     def aplicar_prorroga(ca: CarreraAcademica, nueva_fecha=None, dias=None) -> tuple[bool, str]:
         from datetime import timedelta
     
