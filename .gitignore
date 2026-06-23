@@ -248,7 +248,7 @@ config/local.py
 # ❌ Backups de base de datos
 # ❌ Archivos temporales
 issues.md
-.claude/sessions
+.claude/
 graphify-out/graph.html
 graphify-out/cost.json
 graphify-out/cache/
