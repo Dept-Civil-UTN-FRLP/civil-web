@@ -55,8 +55,18 @@ Uso:
                         <form method="POST"
                               action="{% url 'carrera_academica:subir_formulario' ca_pk=ca.pk formulario_pk=form.pk %}"
                               enctype="multipart/form-data"
-                              class="d-flex flex-grow-1 form-upload-archivo">
+                              class="d-flex flex-grow-1 align-items-center form-upload-archivo">
                             {% csrf_token %}
+                            {% if form.tipo_formulario == 'F12' %}
+                            <select name="calificacion" class="form-select form-select-sm me-2" style="max-width:160px;" required>
+                                <option value="">Calificación…</option>
+                                <option value="INS">Insuficiente</option>
+                                <option value="REG">Regular</option>
+                                <option value="BUE">Bueno</option>
+                                <option value="MBU">Muy Bueno</option>
+                                <option value="EXC">Excelente</option>
+                            </select>
+                            {% endif %}
                             <input type="file" name="archivo" class="form-control form-control-sm" required>
                             <button type="submit" class="btn btn-primary btn-sm ms-2">
                                 {% if form.estado == 'ENT' %}Actualizar{% else %}Subir{% endif %}

@@ -181,8 +181,8 @@ def dashboard_ca_view(request):
     else:
         qs = qs.filter(estado__in=ESTADOS_DASHBOARD)
 
-    activas_qs = qs.filter(estado__in=ESTADOS_ACTIVOS).order_by("cargo__docente__apellido")
-    archivadas_qs = qs.filter(estado="ARCH").order_by("cargo__docente__apellido")
+    activas_qs = qs.filter(estado__in=ESTADOS_ACTIVOS).order_by("cargo__docente__apellido").prefetch_related("evaluaciones")
+    archivadas_qs = qs.filter(estado="ARCH").order_by("cargo__docente__apellido").prefetch_related("evaluaciones")
 
     page_obj, pagination_context = paginate_queryset(activas_qs, request, page_size=25)
 
@@ -246,6 +246,14 @@ def subir_formulario_view(request, ca_pk, formulario_pk):
     if not archivo:
         return JsonResponse({"ok": False, "error": "No se recibió ningún archivo."}, status=400)
 
+    # F12 requiere calificacion
+    calificacion_val = None
+    if formulario.tipo_formulario == "F12":
+        calificacion_val = request.POST.get("calificacion", "").strip()
+        calificaciones_validas = {k for k, _ in Evaluacion.CALIFICACION_CHOICES}
+        if calificacion_val not in calificaciones_validas:
+            return JsonResponse({"ok": False, "error": "Debe seleccionar una calificación."}, status=400)
+
     if formulario.archivo:
         formulario.archivo.delete(save=False)
 
@@ -253,6 +261,13 @@ def subir_formulario_view(request, ca_pk, formulario_pk):
     formulario.estado = "ENT"
     formulario.fecha_entrega = timezone.now().date()
     formulario.save()
+
+    calificacion_display = None
+    if formulario.tipo_formulario == "F12" and formulario.evaluacion:
+        formulario.evaluacion.calificacion = calificacion_val
+        formulario.evaluacion.estado = "REA"
+        formulario.evaluacion.save()
+        calificacion_display = formulario.evaluacion.get_calificacion_display()
 
     from django.urls import reverse
     ver_url = reverse("serve_private_media", kwargs={"path": formulario.archivo.name[8:]})
@@ -266,6 +281,8 @@ def subir_formulario_view(request, ca_pk, formulario_pk):
         "tipo_display": formulario.get_tipo_formulario_display(),
         "ver_url": ver_url,
         "borrar_url": borrar_url,
+        "calificacion": calificacion_val,
+        "calificacion_display": calificacion_display,
     })
 
 

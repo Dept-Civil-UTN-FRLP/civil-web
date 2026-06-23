@@ -1,6 +1,6 @@
 <!-- carrera_academica/templates/carrera_academica/dashboard_ca.html -->
 {% extends 'equivalencias/base.html' %}
-{% load pagination_tags %}
+{% load pagination_tags ca_extras %}
 
 {% block content %}
   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -49,6 +49,7 @@
         <th>Asignatura</th>
         <th>Vencimiento</th>
         <th>Formularios</th>
+        <th>Eval.</th>
         <th>Estado</th>
         <th></th>
       </tr>
@@ -59,13 +60,18 @@
         <td>{{ ca.cargo.docente }}</td>
         <td>
           <a href="{% url 'planta_docente:detalle_cargo' pk=ca.cargo.pk %}" class="text-decoration-none">
-            {{ ca.cargo.get_categoria_display }} {{ ca.cargo.get_caracter_display }}
+            {{ ca.cargo.get_categoria_display }}
           </a>
         </td>
         <td>{{ ca.cargo.asignatura.nombre.title }}</td>
         <td><small>{{ ca.fecha_vencimiento_actual|date:"d/m/Y" }}</small></td>
         <td>
           <small class="text-muted">{{ ca.formularios_entregados }}/{{ ca.total_formularios_debidos }}</small>
+        </td>
+        <td>
+          {% with circles=ca.evaluaciones.all|eval_circles %}
+            {% for c in circles %}<span class="{{ c.color }}" style="font-size:1.1rem;" title="{{ c.title }}">●</span>{% endfor %}
+          {% endwith %}
         </td>
         <td>
           <span class="badge {% if ca.estado == 'ACT' %}bg-success{% elif ca.estado == 'STB' %}bg-warning text-dark{% elif ca.estado == 'VEN' %}bg-danger{% else %}bg-secondary{% endif %}">
@@ -78,7 +84,7 @@
       </tr>
       {% empty %}
       <tr>
-        <td colspan="7" class="text-center text-muted">
+        <td colspan="8" class="text-center text-muted">
           {% if search_query or estado_filter %}
             No se encontraron expedientes que coincidan con la búsqueda.
           {% else %}
