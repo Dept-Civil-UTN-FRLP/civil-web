@@ -1963,7 +1963,7 @@ class Resolucion(models.Model):
         ]
 
     def __str__(self):
-        return f"Res. {self.get_origen_display()} {self.numero}/{self.año} - {self.cargo.docente.apellido.upper()}"
+        return f"Res. {self.get_origen_display()} {self.numero}/{self.año}"
 
 
 class PlanificacionAnual(models.Model):
