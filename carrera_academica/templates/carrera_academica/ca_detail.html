@@ -701,7 +701,16 @@ document.addEventListener('submit', function(e) {
                  <a href="${data.borrar_url}" class="btn btn-sm btn-outline-danger">
                      <i class="bi bi-trash"></i>
                  </a>`;
-            row.querySelector('[data-accion-cell]').innerHTML = '';
+            if (data.tipo === 'CV') {
+                // CV siempre permite re-subir; cambiar botón a "Actualizar" y limpiar input
+                const accionCell = row.querySelector('[data-accion-cell]');
+                const submitBtn = accionCell?.querySelector('button[type="submit"]');
+                if (submitBtn) submitBtn.textContent = 'Actualizar';
+                const fileInput = accionCell?.querySelector('input[type="file"]');
+                if (fileInput) fileInput.value = '';
+            } else {
+                row.querySelector('[data-accion-cell]').innerHTML = '';
+            }
         } else {
             alert('Error: ' + data.error);
             btn.disabled = false;
