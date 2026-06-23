@@ -161,6 +161,18 @@ def dashboard_ca_view(request):
     """Dashboard principal: CAs activas arriba, archivadas al fondo. Sin cerradas (FIN)."""
     search_query = request.GET.get("q", "")
     estado_filter = request.GET.get("estado", "")
+    ordering = request.GET.get("ordering", "")
+
+    ORDERING_MAP = {
+        "cargo":       "cargo__categoria",
+        "-cargo":      "-cargo__categoria",
+        "asignatura":  "cargo__asignatura__nombre",
+        "-asignatura": "-cargo__asignatura__nombre",
+        "vencimiento": "fecha_vencimiento_actual",
+        "-vencimiento":"-fecha_vencimiento_actual",
+        "eval":        "evals_completadas",
+        "-eval":       "-evals_completadas",
+    }
 
     ESTADOS_ACTIVOS = ["ACT", "STB", "VEN"]
     ESTADOS_DASHBOARD = ESTADOS_ACTIVOS + ["ARCH"]
@@ -168,7 +180,9 @@ def dashboard_ca_view(request):
         (v, t) for v, t in CarreraAcademica.ESTADO_CHOICES if v in ESTADOS_DASHBOARD
     ]
 
-    qs = _base_ca_qs()
+    qs = _base_ca_qs().annotate(
+        evals_completadas=Count("evaluaciones", filter=Q(evaluaciones__calificacion__isnull=False))
+    )
 
     if search_query:
         qs = qs.filter(
@@ -181,7 +195,8 @@ def dashboard_ca_view(request):
     else:
         qs = qs.filter(estado__in=ESTADOS_DASHBOARD)
 
-    activas_qs = qs.filter(estado__in=ESTADOS_ACTIVOS).order_by("cargo__docente__apellido").prefetch_related("evaluaciones")
+    db_ordering = ORDERING_MAP.get(ordering, "cargo__docente__apellido")
+    activas_qs = qs.filter(estado__in=ESTADOS_ACTIVOS).order_by(db_ordering).prefetch_related("evaluaciones")
     archivadas_qs = qs.filter(estado="ARCH").order_by("cargo__docente__apellido").prefetch_related("evaluaciones")
 
     page_obj, pagination_context = paginate_queryset(activas_qs, request, page_size=25)
@@ -192,6 +207,7 @@ def dashboard_ca_view(request):
         "search_query": search_query,
         "estado_filter": estado_filter,
         "estado_choices": estado_choices_dashboard,
+        "ordering": ordering,
         **pagination_context,
     })
 

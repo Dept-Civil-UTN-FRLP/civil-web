@@ -45,12 +45,12 @@
     <thead>
       <tr>
         <th>Docente</th>
-        <th>Cargo</th>
-        <th>Asignatura</th>
-        <th>Vencimiento</th>
-        <th>Formularios</th>
-        <th>Eval.</th>
+        <th><a href="{% sort_url 'cargo' %}" class="text-decoration-none text-reset">Cargo {% sort_arrow ordering 'cargo' %}</a></th>
+        <th><a href="{% sort_url 'asignatura' %}" class="text-decoration-none text-reset">Asignatura {% sort_arrow ordering 'asignatura' %}</a></th>
+        <th><a href="{% sort_url 'vencimiento' %}" class="text-decoration-none text-reset">Vencimiento {% sort_arrow ordering 'vencimiento' %}</a></th>
         <th>Estado</th>
+        <th><a href="{% sort_url 'eval' %}" class="text-decoration-none text-reset">Eval. {% sort_arrow ordering 'eval' %}</a></th>
+        <th>CA</th>
         <th></th>
       </tr>
     </thead>

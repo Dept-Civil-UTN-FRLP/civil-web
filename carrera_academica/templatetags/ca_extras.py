@@ -13,6 +13,29 @@ def get_item(dictionary, key):
     return dictionary.get(key, "")
 
 
+@register.simple_tag(takes_context=True)
+def sort_url(context, field):
+    """Devuelve URL con ordering toggleado para el campo dado, preservando otros params."""
+    request = context["request"]
+    params = request.GET.copy()
+    current = params.get("ordering", "")
+    if current == field:
+        params["ordering"] = "-" + field
+    else:
+        params["ordering"] = field
+    return "?" + params.urlencode()
+
+
+@register.simple_tag
+def sort_arrow(ordering, field):
+    """Devuelve flecha de dirección si la columna está activa."""
+    if ordering == field:
+        return "↑"
+    if ordering == "-" + field:
+        return "↓"
+    return ""
+
+
 _CAL_COLOR = {
     "INS": "text-danger",
     "REG": "text-warning",
