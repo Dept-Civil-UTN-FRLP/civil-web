@@ -6,6 +6,7 @@ app_name = 'carrera_academica'
 
 urlpatterns = [
     path("", views.dashboard_ca_view, name="dashboard_ca"),
+    path("historial/", views.historial_ca_view, name="historial_ca"),
     path("expediente/<int:pk>/", views.detalle_ca_view, name="detalle_ca"),
     path(
         "expediente/<int:pk>/iniciar_evaluacion/",

@@ -141,56 +141,82 @@ def _preparar_contexto_detalle(ca):
 
 
 @login_required
-def dashboard_ca_view(request):
-    """Dashboard optimizado de Carrera Académica."""
-    # Lógica de Filtros y Búsqueda
-    search_query = request.GET.get("q", "")
-    estado_filter = request.GET.get("estado", "")
-
-    # Lógica de Formularios Debidos
+def _base_ca_qs():
+    """Queryset base con anotaciones de progreso de formularios."""
     current_year = timezone.now().year
     q_formularios_debidos = (
         Q(formularios__anio_correspondiente__lt=current_year)
-        | Q(
-            formularios__anio_correspondiente=current_year,
-            formularios__tipo_formulario="F04",
-        )
+        | Q(formularios__anio_correspondiente=current_year, formularios__tipo_formulario="F04")
         | Q(formularios__anio_correspondiente__isnull=True)
     )
-
-    # OPTIMIZACIÓN: Usar el manager personalizado
-    carreras_qs = CarreraAcademica.objects.with_related_data().annotate(
+    return CarreraAcademica.objects.with_related_data().annotate(
         total_formularios_debidos=Count("formularios", filter=q_formularios_debidos),
         formularios_entregados=Count(
             "formularios", filter=Q(formularios__estado="ENT") & q_formularios_debidos
         ),
     )
 
-    # Aplicar filtros
+
+def dashboard_ca_view(request):
+    """Dashboard principal: CAs activas arriba, archivadas al fondo. Sin cerradas (FIN)."""
+    search_query = request.GET.get("q", "")
+    estado_filter = request.GET.get("estado", "")
+
+    ESTADOS_ACTIVOS = ["ACT", "STB", "VEN"]
+    ESTADOS_DASHBOARD = ESTADOS_ACTIVOS + ["ARCH"]
+    estado_choices_dashboard = [
+        (v, t) for v, t in CarreraAcademica.ESTADO_CHOICES if v in ESTADOS_DASHBOARD
+    ]
+
+    qs = _base_ca_qs()
+
     if search_query:
-        carreras_qs = carreras_qs.filter(
+        qs = qs.filter(
             Q(cargo__docente__nombre__icontains=search_query)
             | Q(cargo__docente__apellido__icontains=search_query)
         )
-    if estado_filter:
-        carreras_qs = carreras_qs.filter(estado=estado_filter)
 
-    # Ordenar
-    carreras_qs = carreras_qs.order_by("fecha_vencimiento_actual")
+    if estado_filter and estado_filter in ESTADOS_DASHBOARD:
+        qs = qs.filter(estado=estado_filter)
+    else:
+        qs = qs.filter(estado__in=ESTADOS_DASHBOARD)
 
-    # ✅ PAGINACIÓN: Aplicar paginación
-    page_obj, pagination_context = paginate_queryset(carreras_qs, request, page_size=25)
+    activas_qs = qs.filter(estado__in=ESTADOS_ACTIVOS).order_by("cargo__docente__apellido")
+    archivadas_qs = qs.filter(estado="ARCH").order_by("cargo__docente__apellido")
 
-    # OPTIMIZACIÓN: Ordenar sin queries adicionales
-    contexto = {
+    page_obj, pagination_context = paginate_queryset(activas_qs, request, page_size=25)
+
+    return render(request, "carrera_academica/dashboard_ca.html", {
         "carreras": page_obj,
+        "carreras_archivadas": archivadas_qs,
         "search_query": search_query,
         "estado_filter": estado_filter,
-        "estado_choices": CarreraAcademica.ESTADO_CHOICES,
+        "estado_choices": estado_choices_dashboard,
         **pagination_context,
-    }
+    })
 
-    return render(request, "carrera_academica/dashboard_ca.html", contexto)
+
+@login_required
+def historial_ca_view(request):
+    """Historial: CAs finalizadas (FIN), ordenadas por apellido."""
+    search_query = request.GET.get("q", "")
+
+    qs = _base_ca_qs().filter(estado="FIN")
+
+    if search_query:
+        qs = qs.filter(
+            Q(cargo__docente__nombre__icontains=search_query)
+            | Q(cargo__docente__apellido__icontains=search_query)
+        )
+
+    qs = qs.order_by("cargo__docente__apellido")
+    page_obj, pagination_context = paginate_queryset(qs, request, page_size=25)
+
+    return render(request, "carrera_academica/historial_ca.html", {
+        "carreras": page_obj,
+        "search_query": search_query,
+        **pagination_context,
+    })
 
 
 @login_required
