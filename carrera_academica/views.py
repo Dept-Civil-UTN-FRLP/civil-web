@@ -1135,7 +1135,6 @@ def gestionar_formularios_anio_view(request, pk, anio):
 
 
 @login_required
-@login_required
 def desarchivar_ca_view(request, pk):
     """Reactiva una CA archivada. POST-only, fetch-aware."""
     if request.method != "POST":
@@ -1154,6 +1153,7 @@ def desarchivar_ca_view(request, pk):
     return redirect("carrera_academica:dashboard_ca")
 
 
+@login_required
 def archivar_ca_view(request, pk):
     ca = get_object_or_404(CarreraAcademica, pk=pk)
     es_fetch = request.headers.get("X-Requested-With") == "fetch"
