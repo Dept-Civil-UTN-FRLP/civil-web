@@ -140,7 +140,6 @@ def _preparar_contexto_detalle(ca):
     }
 
 
-@login_required
 def _base_ca_qs():
     """Queryset base con anotaciones de progreso de formularios."""
     current_year = timezone.now().year
@@ -157,6 +156,7 @@ def _base_ca_qs():
     )
 
 
+@login_required
 def dashboard_ca_view(request):
     """Dashboard principal: CAs activas arriba, archivadas al fondo. Sin cerradas (FIN)."""
     search_query = request.GET.get("q", "")
