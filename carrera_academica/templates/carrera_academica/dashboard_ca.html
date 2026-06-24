@@ -16,8 +16,9 @@
   </div>
 
   <form method="GET" class="mb-4">
-    <div class="row">
-      <div class="col-md-8">
+    <input type="hidden" name="ordering" value="{{ ordering }}">
+    <div class="row g-2">
+      <div class="col-md-7">
         <input type="text" name="q" class="form-control" placeholder="Buscar por nombre o apellido del docente..." value="{{ search_query }}">
       </div>
       <div class="col-md-3">
@@ -28,9 +29,14 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-1">
-        <button class="btn btn-primary w-100" type="submit">Filtrar</button>
+      <div class="col-auto">
+        <button class="btn btn-primary" type="submit">Filtrar</button>
       </div>
+      {% if search_query or estado_filter %}
+      <div class="col-auto">
+        <a href="{% url 'carrera_academica:dashboard_ca' %}{% if ordering %}?ordering={{ ordering }}{% endif %}" class="btn btn-outline-secondary">✕ Limpiar</a>
+      </div>
+      {% endif %}
     </div>
   </form>
 
@@ -56,7 +62,7 @@
     </thead>
     <tbody>
       {% for ca in carreras %}
-      <tr>
+      <tr{% if ca.estado == 'VEN' %} class="table-danger"{% endif %}>
         <td>{{ ca.cargo.docente }}</td>
         <td>
           <a href="{% url 'planta_docente:detalle_cargo' pk=ca.cargo.pk %}" class="text-decoration-none">
@@ -66,7 +72,7 @@
         <td>{{ ca.cargo.asignatura.nombre.title }}</td>
         <td><small>{{ ca.fecha_vencimiento_actual|date:"d/m/Y" }}</small></td>
         <td>
-          <small class="text-muted">{{ ca.formularios_entregados }}/{{ ca.total_formularios_debidos }}</small>
+          <small class="{% fraccion_color ca.formularios_entregados ca.total_formularios_debidos %}">{{ ca.formularios_entregados }}/{{ ca.total_formularios_debidos }}</small>
         </td>
         <td>
           {% with circles=ca.evaluaciones.all|eval_circles %}

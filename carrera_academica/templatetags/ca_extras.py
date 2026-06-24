@@ -52,6 +52,18 @@ _CAL_LABEL = dict([
     ("EXC", "Excelente"),
 ])
 
+@register.simple_tag
+def fraccion_color(entregados, debidos):
+    """Clase Bootstrap para colorear la fracción X/Y de formularios."""
+    if not debidos:
+        return "text-muted"
+    if entregados == 0:
+        return "text-danger"
+    if entregados >= debidos:
+        return "text-success"
+    return "text-warning"
+
+
 @register.filter
 def eval_circles(evaluaciones):
     """Devuelve lista de dicts {color, title} por evaluación, mínimo 2 entradas."""
