@@ -728,6 +728,7 @@ class Formulario(models.Model):
     )
     fecha_entrega = models.DateField(blank=True, null=True)
     archivo = models.FileField(upload_to=get_ca_upload_path, blank=True, null=True, max_length=500)
+    comprimido = models.BooleanField(default=False)
     anio_correspondiente = models.IntegerField(
         blank=True, null=True, help_text="Ej: 2024 (para F04-F07, F13)"
     )
