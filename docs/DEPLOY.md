@@ -2,6 +2,15 @@
 
 Stack: Django 4.2 · PostgreSQL · Gunicorn · Nginx · Ubuntu/Debian
 
+Variables usadas en esta guía — reemplazarlas con los valores reales:
+
+| Variable | Ejemplo |
+|---|---|
+| `<USER>` | usuario del sistema que corre la app |
+| `<PROJECT_DIR>` | ruta absoluta del repositorio, ej. `/home/<USER>/civil-web` |
+| `<SERVICE_NAME>` | nombre del servicio systemd, ej. `civil-web` |
+| `<DOMAIN>` | dominio o IP del servidor |
+
 ---
 
 ## 1. Paquetes del sistema
@@ -35,12 +44,12 @@ sudo apt update && sudo apt install -y \
 ```bash
 sudo -u postgres psql
 
-CREATE DATABASE civil_web;
-CREATE USER civil_user WITH PASSWORD 'contraseña-segura';
-ALTER ROLE civil_user SET client_encoding TO 'utf8';
-ALTER ROLE civil_user SET default_transaction_isolation TO 'read committed';
-ALTER ROLE civil_user SET timezone TO 'America/Argentina/Buenos_Aires';
-GRANT ALL PRIVILEGES ON DATABASE civil_web TO civil_user;
+CREATE DATABASE <DB_NAME>;
+CREATE USER <DB_USER> WITH PASSWORD '<DB_PASSWORD>';
+ALTER ROLE <DB_USER> SET client_encoding TO 'utf8';
+ALTER ROLE <DB_USER> SET default_transaction_isolation TO 'read committed';
+ALTER ROLE <DB_USER> SET timezone TO 'America/Argentina/Buenos_Aires';
+GRANT ALL PRIVILEGES ON DATABASE <DB_NAME> TO <DB_USER>;
 \q
 ```
 
@@ -49,15 +58,12 @@ GRANT ALL PRIVILEGES ON DATABASE civil_web TO civil_user;
 ## 3. Clonar y configurar el proyecto
 
 ```bash
-# Clonar
-git clone https://github.com/Dept-Civil-UTN-FRLP/civil-web.git /home/jronconi/civil-web
-cd /home/jronconi/civil-web
+git clone https://github.com/Dept-Civil-UTN-FRLP/civil-web.git <PROJECT_DIR>
+cd <PROJECT_DIR>
 
-# Entorno virtual
 python3.12 -m venv venv
 source venv/bin/activate
 
-# Dependencias Python
 pip install -r requirements.txt
 ```
 
@@ -80,21 +86,21 @@ Editar `.env` con los valores reales:
 ```env
 SECRET_KEY=<generada arriba>
 DEBUG=False
-ALLOWED_HOSTS=civil.frlp.utn.edu.ar,<IP del servidor>
+ALLOWED_HOSTS=<DOMAIN>
 
 DEPARTAMENTO=civil
 MODULOS_ACTIVOS=equivalencias,carrera_academica,planta_docente
 
 DB_ENGINE=django.db.backends.postgresql
-DB_NAME=civil_web
-DB_USER=civil_user
-DB_PASSWORD=<contraseña-segura>
+DB_NAME=<DB_NAME>
+DB_USER=<DB_USER>
+DB_PASSWORD=<DB_PASSWORD>
 DB_HOST=localhost
 DB_PORT=5432
 
-EMAIL_HOST_USER=<cuenta Office365>
+EMAIL_HOST_USER=<cuenta SMTP>
 SMTP_PASS=<contraseña SMTP>
-PLANTA_DOCENTE_EMAIL=dicivil@frlp.utn.edu.ar
+PLANTA_DOCENTE_EMAIL=<email de notificaciones>
 
 COMPRESS_PDFS=True
 ```
@@ -115,7 +121,7 @@ python manage.py createsuperuser
 
 ## 6. Servicio Gunicorn (systemd)
 
-Crear `/etc/systemd/system/civil.service`:
+Crear `/etc/systemd/system/<SERVICE_NAME>.service`:
 
 ```ini
 [Unit]
@@ -123,12 +129,12 @@ Description=civil-web Gunicorn
 After=network.target
 
 [Service]
-User=jronconi
+User=<USER>
 Group=www-data
-WorkingDirectory=/home/jronconi/civil-web
-ExecStart=/home/jronconi/civil-web/venv/bin/gunicorn \
+WorkingDirectory=<PROJECT_DIR>
+ExecStart=<PROJECT_DIR>/venv/bin/gunicorn \
     --workers 3 \
-    --bind unix:/run/civil.sock \
+    --bind unix:/run/<SERVICE_NAME>.sock \
     config.wsgi:application
 Restart=on-failure
 
@@ -138,34 +144,34 @@ WantedBy=multi-user.target
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable civil
-sudo systemctl start civil
+sudo systemctl enable <SERVICE_NAME>
+sudo systemctl start <SERVICE_NAME>
 ```
 
 ---
 
 ## 7. Nginx
 
-Crear `/etc/nginx/sites-available/civil`:
+Crear `/etc/nginx/sites-available/<SERVICE_NAME>`:
 
 ```nginx
 server {
     listen 80;
-    server_name civil.frlp.utn.edu.ar;
+    server_name <DOMAIN>;
 
     client_max_body_size 20M;
 
     location /static/ {
-        alias /home/jronconi/civil-web/staticfiles/;
+        alias <PROJECT_DIR>/staticfiles/;
     }
 
     location /media/private/ {
         internal;
-        alias /home/jronconi/civil-web/media/private/;
+        alias <PROJECT_DIR>/media/private/;
     }
 
     location / {
-        proxy_pass http://unix:/run/civil.sock;
+        proxy_pass http://unix:/run/<SERVICE_NAME>.sock;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -175,7 +181,7 @@ server {
 ```
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/civil /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/<SERVICE_NAME> /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```
@@ -191,14 +197,14 @@ crontab -e
 Agregar:
 
 ```
-0 3 * * * /home/jronconi/civil-web/venv/bin/python /home/jronconi/civil-web/manage.py comprimir_formularios >> /var/log/civil-comprimir-pdfs.log 2>&1
+0 3 * * * <PROJECT_DIR>/venv/bin/python <PROJECT_DIR>/manage.py comprimir_formularios >> /var/log/<SERVICE_NAME>-pdfs.log 2>&1
 ```
 
 Para correr manualmente o probar:
 
 ```bash
-python manage.py comprimir_formularios --dry-run     # muestra qué comprimiría sin cambios
-python manage.py comprimir_formularios               # comprime
+python manage.py comprimir_formularios --dry-run      # muestra qué comprimiría sin cambios
+python manage.py comprimir_formularios                # comprime
 python manage.py comprimir_formularios --calidad printer  # mayor calidad (300 dpi)
 ```
 
@@ -212,7 +218,7 @@ El script `deploy.sh` automatiza el proceso:
 bash deploy.sh
 ```
 
-Hace: `git pull` → `pip install` → `migrate` → `collectstatic` → `systemctl restart civil`.
+Hace: `git pull` → `pip install` → `migrate` → `collectstatic` → reinicio del servicio.
 
 ---
 
@@ -220,10 +226,10 @@ Hace: `git pull` → `pip install` → `migrate` → `collectstatic` → `system
 
 ```bash
 # Estado del servicio
-sudo systemctl status civil
+sudo systemctl status <SERVICE_NAME>
 
 # Logs en tiempo real
-sudo journalctl -u civil -f
+sudo journalctl -u <SERVICE_NAME> -f
 
 # Test de compresión de PDFs
 python manage.py comprimir_formularios --dry-run

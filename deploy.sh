@@ -1,9 +1,10 @@
 #!/bin/bash
 set -e
 
-PROJECT_DIR="/home/jronconi/civil-web"
+# Ajustar estas variables según el entorno
+PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VENV_DIR="$PROJECT_DIR/venv"
-SERVICE_NAME="civil"
+SERVICE_NAME="civil-web"
 
 cd "$PROJECT_DIR"
 
