@@ -164,6 +164,8 @@ def dashboard_ca_view(request):
     ordering = request.GET.get("ordering", "")
 
     ORDERING_MAP = {
+        "docente":     "cargo__docente__apellido",
+        "-docente":    "-cargo__docente__apellido",
         "cargo":       "cargo__categoria",
         "-cargo":      "-cargo__categoria",
         "asignatura":  "cargo__asignatura__nombre",
