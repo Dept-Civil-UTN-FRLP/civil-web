@@ -959,6 +959,12 @@ def borrar_archivo_formulario_view(request, pk):
             formulario.fecha_entrega = None
             formulario.save()
 
+            # Si era el F12 (acta), limpiar calificacion y estado de la evaluacion
+            if formulario.tipo_formulario == 'F12' and formulario.evaluacion:
+                formulario.evaluacion.calificacion = None
+                formulario.evaluacion.estado = 'PRO'
+                formulario.evaluacion.save()
+
             messages.success(
                 request,
                 f"Archivo eliminado: {formulario.tipo_formulario}"
