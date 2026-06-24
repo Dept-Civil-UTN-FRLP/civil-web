@@ -140,57 +140,101 @@ def _preparar_contexto_detalle(ca):
     }
 
 
-@login_required
-def dashboard_ca_view(request):
-    """Dashboard optimizado de Carrera Académica."""
-    # Lógica de Filtros y Búsqueda
-    search_query = request.GET.get("q", "")
-    estado_filter = request.GET.get("estado", "")
-
-    # Lógica de Formularios Debidos
+def _base_ca_qs():
+    """Queryset base con anotaciones de progreso de formularios."""
     current_year = timezone.now().year
     q_formularios_debidos = (
         Q(formularios__anio_correspondiente__lt=current_year)
-        | Q(
-            formularios__anio_correspondiente=current_year,
-            formularios__tipo_formulario="F04",
-        )
+        | Q(formularios__anio_correspondiente=current_year, formularios__tipo_formulario="F04")
         | Q(formularios__anio_correspondiente__isnull=True)
     )
-
-    # OPTIMIZACIÓN: Usar el manager personalizado
-    carreras_qs = CarreraAcademica.objects.with_related_data().annotate(
+    return CarreraAcademica.objects.with_related_data().annotate(
         total_formularios_debidos=Count("formularios", filter=q_formularios_debidos),
         formularios_entregados=Count(
             "formularios", filter=Q(formularios__estado="ENT") & q_formularios_debidos
         ),
     )
 
-    # Aplicar filtros
+
+@login_required
+def dashboard_ca_view(request):
+    """Dashboard principal: CAs activas arriba, archivadas al fondo. Sin cerradas (FIN)."""
+    search_query = request.GET.get("q", "")
+    estado_filter = request.GET.get("estado", "")
+    ordering = request.GET.get("ordering", "")
+
+    ORDERING_MAP = {
+        "docente":     "cargo__docente__apellido",
+        "-docente":    "-cargo__docente__apellido",
+        "cargo":       "cargo__categoria",
+        "-cargo":      "-cargo__categoria",
+        "asignatura":  "cargo__asignatura__nombre",
+        "-asignatura": "-cargo__asignatura__nombre",
+        "vencimiento": "fecha_vencimiento_actual",
+        "-vencimiento":"-fecha_vencimiento_actual",
+        "eval":        "evals_completadas",
+        "-eval":       "-evals_completadas",
+    }
+
+    ESTADOS_ACTIVOS = ["ACT", "STB", "VEN"]
+    ESTADOS_DASHBOARD = ESTADOS_ACTIVOS + ["ARCH"]
+    estado_choices_dashboard = [
+        (v, t) for v, t in CarreraAcademica.ESTADO_CHOICES if v in ESTADOS_DASHBOARD
+    ]
+
+    qs = _base_ca_qs().annotate(
+        evals_completadas=Count("evaluaciones", filter=Q(evaluaciones__calificacion__isnull=False))
+    )
+
     if search_query:
-        carreras_qs = carreras_qs.filter(
+        qs = qs.filter(
             Q(cargo__docente__nombre__icontains=search_query)
             | Q(cargo__docente__apellido__icontains=search_query)
         )
-    if estado_filter:
-        carreras_qs = carreras_qs.filter(estado=estado_filter)
 
-    # Ordenar
-    carreras_qs = carreras_qs.order_by("fecha_vencimiento_actual")
+    if estado_filter and estado_filter in ESTADOS_DASHBOARD:
+        qs = qs.filter(estado=estado_filter)
+    else:
+        qs = qs.filter(estado__in=ESTADOS_DASHBOARD)
 
-    # ✅ PAGINACIÓN: Aplicar paginación
-    page_obj, pagination_context = paginate_queryset(carreras_qs, request, page_size=25)
+    db_ordering = ORDERING_MAP.get(ordering, "cargo__docente__apellido")
+    activas_qs = qs.filter(estado__in=ESTADOS_ACTIVOS).order_by(db_ordering).prefetch_related("evaluaciones")
+    archivadas_qs = qs.filter(estado="ARCH").order_by("cargo__docente__apellido").prefetch_related("evaluaciones")
 
-    # OPTIMIZACIÓN: Ordenar sin queries adicionales
-    contexto = {
+    page_obj, pagination_context = paginate_queryset(activas_qs, request, page_size=25)
+
+    return render(request, "carrera_academica/dashboard_ca.html", {
         "carreras": page_obj,
+        "carreras_archivadas": archivadas_qs,
         "search_query": search_query,
         "estado_filter": estado_filter,
-        "estado_choices": CarreraAcademica.ESTADO_CHOICES,
+        "estado_choices": estado_choices_dashboard,
+        "ordering": ordering,
         **pagination_context,
-    }
+    })
 
-    return render(request, "carrera_academica/dashboard_ca.html", contexto)
+
+@login_required
+def historial_ca_view(request):
+    """Historial: CAs finalizadas (FIN), ordenadas por apellido."""
+    search_query = request.GET.get("q", "")
+
+    qs = _base_ca_qs().filter(estado="FIN")
+
+    if search_query:
+        qs = qs.filter(
+            Q(cargo__docente__nombre__icontains=search_query)
+            | Q(cargo__docente__apellido__icontains=search_query)
+        )
+
+    qs = qs.order_by("cargo__docente__apellido")
+    page_obj, pagination_context = paginate_queryset(qs, request, page_size=25)
+
+    return render(request, "carrera_academica/historial_ca.html", {
+        "carreras": page_obj,
+        "search_query": search_query,
+        **pagination_context,
+    })
 
 
 @login_required
@@ -220,6 +264,14 @@ def subir_formulario_view(request, ca_pk, formulario_pk):
     if not archivo:
         return JsonResponse({"ok": False, "error": "No se recibió ningún archivo."}, status=400)
 
+    # F12 requiere calificacion
+    calificacion_val = None
+    if formulario.tipo_formulario == "F12":
+        calificacion_val = request.POST.get("calificacion", "").strip()
+        calificaciones_validas = {k for k, _ in Evaluacion.CALIFICACION_CHOICES}
+        if calificacion_val not in calificaciones_validas:
+            return JsonResponse({"ok": False, "error": "Debe seleccionar una calificación."}, status=400)
+
     if formulario.archivo:
         formulario.archivo.delete(save=False)
 
@@ -227,6 +279,13 @@ def subir_formulario_view(request, ca_pk, formulario_pk):
     formulario.estado = "ENT"
     formulario.fecha_entrega = timezone.now().date()
     formulario.save()
+
+    calificacion_display = None
+    if formulario.tipo_formulario == "F12" and formulario.evaluacion:
+        formulario.evaluacion.calificacion = calificacion_val
+        formulario.evaluacion.estado = "REA"
+        formulario.evaluacion.save()
+        calificacion_display = formulario.evaluacion.get_calificacion_display()
 
     from django.urls import reverse
     ver_url = reverse("serve_private_media", kwargs={"path": formulario.archivo.name[8:]})
@@ -240,6 +299,8 @@ def subir_formulario_view(request, ca_pk, formulario_pk):
         "tipo_display": formulario.get_tipo_formulario_display(),
         "ver_url": ver_url,
         "borrar_url": borrar_url,
+        "calificacion": calificacion_val,
+        "calificacion_display": calificacion_display,
     })
 
 
@@ -900,6 +961,12 @@ def borrar_archivo_formulario_view(request, pk):
             formulario.fecha_entrega = None
             formulario.save()
 
+            # Si era el F12 (acta), limpiar calificacion y estado de la evaluacion
+            if formulario.tipo_formulario == 'F12' and formulario.evaluacion:
+                formulario.evaluacion.calificacion = None
+                formulario.evaluacion.estado = 'PRO'
+                formulario.evaluacion.save()
+
             messages.success(
                 request,
                 f"Archivo eliminado: {formulario.tipo_formulario}"
@@ -1073,6 +1140,25 @@ def gestionar_formularios_anio_view(request, pk, anio):
     }
 
     return render(request, 'carrera_academica/gestionar_formularios_anio.html', context)
+
+
+@login_required
+def desarchivar_ca_view(request, pk):
+    """Reactiva una CA archivada. POST-only, fetch-aware."""
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
+    ca = get_object_or_404(CarreraAcademica, pk=pk)
+    es_fetch = request.headers.get("X-Requested-With") == "fetch"
+    exito, mensaje = CAService.desarchivar(ca)
+    if es_fetch:
+        if exito:
+            return JsonResponse({"ok": True})
+        return JsonResponse({"ok": False, "error": mensaje}, status=400)
+    if exito:
+        messages.success(request, mensaje)
+    else:
+        messages.error(request, mensaje)
+    return redirect("carrera_academica:dashboard_ca")
 
 
 @login_required

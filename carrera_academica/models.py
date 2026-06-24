@@ -604,12 +604,18 @@ class Evaluacion(models.Model):
         ("REA", "Realizada"),
         ("CAN", "Cancelada"),
     ]
+    CALIFICACION_CHOICES = [
+        ("INS", "Insuficiente"),
+        ("REG", "Regular"),
+        ("BUE", "Bueno"),
+        ("MBU", "Muy Bueno"),
+        ("EXC", "Excelente"),
+    ]
     carrera_academica = models.ForeignKey(
         CarreraAcademica, on_delete=models.CASCADE, related_name="evaluaciones"
     )
     numero_evaluacion = models.PositiveIntegerField()
     fecha_iniciada = models.DateField(default=timezone.now)
-    # Usamos un JSONField para guardar la lista de años, es muy flexible.
     anios_evaluados = models.JSONField(
         default=list,
         help_text="Lista de años que cubre esta evaluación, ej: [2022, 2023]",
@@ -618,6 +624,9 @@ class Evaluacion(models.Model):
         verbose_name="Fecha y Hora de la Evaluación", null=True, blank=True
     )
     estado = models.CharField(max_length=3, choices=ESTADO_EVAL_CHOICES, default="PRO")
+    calificacion = models.CharField(
+        max_length=3, choices=CALIFICACION_CHOICES, null=True, blank=True
+    )
     objects = EvaluacionManager()
 
     def clean(self):
@@ -719,6 +728,7 @@ class Formulario(models.Model):
     )
     fecha_entrega = models.DateField(blank=True, null=True)
     archivo = models.FileField(upload_to=get_ca_upload_path, blank=True, null=True, max_length=500)
+    comprimido = models.BooleanField(default=False)
     anio_correspondiente = models.IntegerField(
         blank=True, null=True, help_text="Ej: 2024 (para F04-F07, F13)"
     )

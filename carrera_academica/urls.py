@@ -6,6 +6,7 @@ app_name = 'carrera_academica'
 
 urlpatterns = [
     path("", views.dashboard_ca_view, name="dashboard_ca"),
+    path("historial/", views.historial_ca_view, name="historial_ca"),
     path("expediente/<int:pk>/", views.detalle_ca_view, name="detalle_ca"),
     path(
         "expediente/<int:pk>/iniciar_evaluacion/",
@@ -58,6 +59,7 @@ urlpatterns = [
     path("expediente/<int:pk>/gestionar-anios/", views.gestionar_anios_ca_view, name="gestionar_anios_ca"),
     path("expediente/<int:pk>/anio/<int:anio>/formularios/", views.gestionar_formularios_anio_view, name="gestionar_formularios_anio"),
     path('ca/<int:pk>/archivar/', views.archivar_ca_view, name='archivar_ca'),
+    path('ca/<int:pk>/desarchivar/', views.desarchivar_ca_view, name='desarchivar_ca'),
     path('ca/<int:pk>/gestionar-archivada/', views.gestionar_ca_archivada_view, name='gestionar_ca_archivada'),
     path('formulario/<int:pk>/borrar-archivo/', views.borrar_archivo_formulario_view, name='borrar_archivo_formulario'),
     path(
