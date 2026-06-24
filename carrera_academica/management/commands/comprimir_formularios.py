@@ -28,9 +28,16 @@ CALIDADES = {
     "printer": "/printer",   # 300 dpi — alta calidad
 }
 
+# En Windows el binario se llama gswin64c (o gswin32c en 32 bits)
+_GS_BINARIOS = ["gs", "gswin64c", "gswin32c"]
 
-def _gs_disponible():
-    return shutil.which("gs") is not None
+
+def _gs_binario():
+    """Devuelve el nombre del binario de Ghostscript disponible, o None."""
+    for nombre in _GS_BINARIOS:
+        if shutil.which(nombre):
+            return nombre
+    return None
 
 
 def _comprimir_pdf(ruta_entrada: str, calidad: str) -> tuple[bool, int, int, str]:
@@ -41,13 +48,15 @@ def _comprimir_pdf(ruta_entrada: str, calidad: str) -> tuple[bool, int, int, str
     """
     tamaño_original = os.path.getsize(ruta_entrada)
 
+    gs = _gs_binario()
+
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
         ruta_tmp = tmp.name
 
     try:
         resultado = subprocess.run(
             [
-                "gs",
+                gs,
                 "-dBATCH", "-dNOPAUSE", "-dQUIET",
                 "-sDEVICE=pdfwrite",
                 "-dCompatibilityLevel=1.4",
@@ -105,9 +114,15 @@ class Command(BaseCommand):
         calidad = options["calidad"]
         force = options["force"]
 
-        if not _gs_disponible():
+        if not getattr(settings, "COMPRESS_PDFS", True):
+            self.stdout.write("COMPRESS_PDFS=False en settings — compresión desactivada.")
+            return
+
+        if not _gs_binario():
             self.stderr.write(self.style.ERROR(
-                "Ghostscript no está instalado. Ejecutá: apt install ghostscript"
+                "Ghostscript no está instalado.\n"
+                "  Linux:   apt install ghostscript\n"
+                "  Windows: winget install ArtifexSoftware.GhostScript"
             ))
             return
 
