@@ -84,6 +84,8 @@ python -c "from django.core.management.utils import get_random_secret_key; print
 Editar `.env` con los valores reales:
 
 ```env
+SERVICE_NAME=<nombre del servicio systemd>
+
 SECRET_KEY=<generada arriba>
 DEBUG=False
 ALLOWED_HOSTS=<DOMAIN>

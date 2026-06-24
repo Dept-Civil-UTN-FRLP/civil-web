@@ -1,10 +1,12 @@
 #!/bin/bash
 set -e
 
-# Ajustar estas variables según el entorno
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VENV_DIR="$PROJECT_DIR/venv"
-SERVICE_NAME="civil-web"
+
+# Leer SERVICE_NAME del .env; si no existe, usar "civil-web" como fallback
+SERVICE_NAME="$(grep -E '^SERVICE_NAME=' "$PROJECT_DIR/.env" 2>/dev/null | cut -d '=' -f2 | tr -d '[:space:]')"
+SERVICE_NAME="${SERVICE_NAME:-civil-web}"
 
 cd "$PROJECT_DIR"
 
