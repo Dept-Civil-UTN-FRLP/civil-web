@@ -113,6 +113,9 @@
 </div>
 
 <!-- Marked.js para renderizar Markdown -->
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.4.11/dist/purify.min.js"
+        integrity="sha384-o44XUELLEnv/iSlA1NWxBweqbD4TSR0qgq2VzVsxtkHS989JJjGKSE9vkfo5MN4K"
+        crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked@18.0.5/lib/marked.umd.min.js"
         integrity="sha384-MU0bL51BF1u980ujv+Pk0Z0qCjhzfBIEHIFPkUq81289nkiAr+q1jSxEkdlIeHLJ"
         crossorigin="anonymous"></script>
@@ -120,7 +123,7 @@
 (function () {
     const el = document.getElementById('acta-contenido');
     if (el) {
-        el.innerHTML = marked.parse(el.textContent);
+        el.innerHTML = DOMPurify.sanitize(marked.parse(el.textContent));
     }
 })();
 </script>
