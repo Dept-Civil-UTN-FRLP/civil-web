@@ -1,0 +1,74 @@
+{% extends 'digesto/base_digesto.html' %}
+
+{% block digesto_content %}
+<h2 class="mb-4"><i class="bi bi-search"></i> Buscar en el Digesto</h2>
+
+<form action="{% url 'digesto:buscar' %}" method="get" class="mb-4">
+    <div class="input-group input-group-lg">
+        <input class="form-control" type="search" name="q"
+               placeholder="Buscar en actas y disposiciones…"
+               value="{{ query|default:'' }}" autofocus>
+        <button class="btn btn-primary" type="submit">
+            <i class="bi bi-search"></i> Buscar
+        </button>
+    </div>
+</form>
+
+{% if query %}
+<p class="text-muted">
+    Resultados para <strong>"{{ query }}"</strong>:
+    {{ actas|length }} acta{{ actas|length|pluralize }} y
+    {{ disposiciones|length }} disposicion{{ disposiciones|length|pluralize:"es" }}.
+</p>
+
+{% if actas %}
+<h5 class="mt-4 mb-2"><i class="bi bi-archive"></i> Actas</h5>
+<div class="list-group mb-4">
+    {% for acta in actas %}
+    <a href="{% url 'digesto:detalle_acta' acta.pk %}"
+       class="list-group-item list-group-item-action">
+        <div class="d-flex justify-content-between align-items-center">
+            <strong>{{ acta }}</strong>
+            <span class="badge bg-secondary">{{ acta.ciclo.anio }}</span>
+        </div>
+        {% if acta.contenido_md %}
+        <small class="text-muted">{{ acta.contenido_md|truncatechars:200 }}</small>
+        {% endif %}
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if disposiciones %}
+<h5 class="mt-4 mb-2"><i class="bi bi-list-check"></i> Disposiciones</h5>
+<div class="list-group">
+    {% for disp in disposiciones %}
+    <a href="{% url 'digesto:detalle_disposicion' disp.pk %}"
+       class="list-group-item list-group-item-action">
+        <div class="d-flex justify-content-between align-items-center">
+            <strong>Disp. {{ disp.numero }} — {{ disp.acta }}</strong>
+            {% with estado=disp.estado %}
+            {% if estado == "vigente" %}
+            <span class="badge bg-success">vigente</span>
+            {% elif estado == "derogada" %}
+            <span class="badge bg-danger">derogada</span>
+            {% else %}
+            <span class="badge bg-warning text-dark">modificada</span>
+            {% endif %}
+            {% endwith %}
+        </div>
+        <small class="text-muted">{{ disp.texto|truncatechars:200 }}</small>
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if not actas and not disposiciones %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle"></i>
+    No se encontraron resultados para <strong>"{{ query }}"</strong>.
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

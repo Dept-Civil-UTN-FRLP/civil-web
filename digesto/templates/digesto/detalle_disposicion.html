@@ -1,0 +1,116 @@
+{% extends 'digesto/base_digesto.html' %}
+
+{% block digesto_content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a href="{% url 'digesto:lista_disposiciones' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h2 class="mb-0">
+        <i class="bi bi-list-check"></i>
+        Disposición N° {{ disposicion.numero }}
+    </h2>
+    <a href="{% url 'digesto:detalle_acta' disposicion.acta.pk %}" class="btn btn-sm btn-outline-primary ms-auto">
+        <i class="bi bi-file-text"></i> Ver Acta
+    </a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-bold">Texto de la disposición</span>
+                {% with estado=disposicion.estado %}
+                {% if estado == "vigente" %}
+                <span class="badge bg-success fs-6">vigente</span>
+                {% elif estado == "derogada" %}
+                <span class="badge bg-danger fs-6">derogada</span>
+                {% else %}
+                <span class="badge bg-warning text-dark fs-6">modificada</span>
+                {% endif %}
+                {% endwith %}
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ disposicion.texto }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-header fw-bold">
+                <i class="bi bi-info-circle"></i> Datos
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">
+                    <span class="text-muted small">Acta</span><br>
+                    <a href="{% url 'digesto:detalle_acta' disposicion.acta.pk %}">{{ disposicion.acta }}</a>
+                </li>
+                <li class="list-group-item">
+                    <span class="text-muted small">Ciclo Lectivo</span><br>
+                    {{ disposicion.acta.ciclo.anio }}
+                </li>
+            </ul>
+        </div>
+
+        {% if disposicion.deroga %}
+        <div class="card mb-3 border-danger">
+            <div class="card-header fw-bold text-danger">
+                <i class="bi bi-x-circle"></i> Deroga
+            </div>
+            <div class="card-body">
+                <a href="{% url 'digesto:detalle_disposicion' disposicion.deroga.pk %}">
+                    Disp. {{ disposicion.deroga.numero }} — {{ disposicion.deroga.acta }}
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if disposicion.modifica %}
+        <div class="card mb-3 border-warning">
+            <div class="card-header fw-bold text-warning">
+                <i class="bi bi-pencil"></i> Modifica
+            </div>
+            <div class="card-body">
+                <a href="{% url 'digesto:detalle_disposicion' disposicion.modifica.pk %}">
+                    Disp. {{ disposicion.modifica.numero }} — {{ disposicion.modifica.acta }}
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if disposicion.derogada_por.all %}
+        <div class="card mb-3 border-secondary">
+            <div class="card-header fw-bold">
+                <i class="bi bi-arrow-right-circle"></i> Derogada por
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for d in disposicion.derogada_por.all %}
+                <li class="list-group-item">
+                    <a href="{% url 'digesto:detalle_disposicion' d.pk %}">
+                        Disp. {{ d.numero }} — {{ d.acta }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if disposicion.modificada_por.all %}
+        <div class="card border-secondary">
+            <div class="card-header fw-bold">
+                <i class="bi bi-arrow-right-circle"></i> Modificada por
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for d in disposicion.modificada_por.all %}
+                <li class="list-group-item">
+                    <a href="{% url 'digesto:detalle_disposicion' d.pk %}">
+                        Disp. {{ d.numero }} — {{ d.acta }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

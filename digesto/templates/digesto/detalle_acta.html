@@ -1,0 +1,135 @@
+{% extends 'digesto/base_digesto.html' %}
+
+{% block digesto_content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a href="{% url 'digesto:lista_actas' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h2 class="mb-0">
+        <i class="bi bi-file-text"></i>
+        Acta N° {{ acta.numero }} —
+        {% if acta.tipo == "ORD" %}Ordinaria{% else %}Extraordinaria{% endif %}
+        de {{ acta.mes|capfirst }} {{ acta.ciclo.anio }}
+    </h2>
+    {% if acta.pdf %}
+    <a href="{{ acta.pdf.url }}" target="_blank" class="btn btn-sm btn-outline-danger ms-auto">
+        <i class="bi bi-file-pdf"></i> PDF con firmas
+    </a>
+    {% endif %}
+</div>
+
+{% if acta.referencias.all %}
+<div class="alert alert-secondary d-flex gap-2 align-items-center flex-wrap">
+    <strong><i class="bi bi-link-45deg"></i> Referencias cruzadas:</strong>
+    {% for ref in acta.referencias.all %}
+    <a href="{% url 'digesto:detalle_acta' ref.pk %}" class="badge bg-secondary text-decoration-none">
+        Acta {{ ref.numero }}/{{ ref.ciclo.anio }}
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if acta.referenciada_por.all %}
+<div class="alert alert-light d-flex gap-2 align-items-center flex-wrap">
+    <strong><i class="bi bi-link"></i> Referenciada por:</strong>
+    {% for ref in acta.referenciada_por.all %}
+    <a href="{% url 'digesto:detalle_acta' ref.pk %}" class="badge bg-light text-dark border text-decoration-none">
+        Acta {{ ref.numero }}/{{ ref.ciclo.anio }}
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="row g-4">
+    <!-- Contenido Markdown -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header fw-bold">
+                <i class="bi bi-file-earmark-text"></i> Contenido
+            </div>
+            <div class="card-body">
+                {% if acta.contenido_md %}
+                <div class="markdown-body" id="acta-contenido">{{ acta.contenido_md }}</div>
+                {% else %}
+                <span class="text-muted">Sin contenido cargado.</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar: disposiciones y certificaciones -->
+    <div class="col-lg-4">
+        <!-- Disposiciones -->
+        <div class="card mb-3">
+            <div class="card-header fw-bold">
+                <i class="bi bi-list-check"></i> Disposiciones
+                <span class="badge bg-secondary float-end">{{ acta.disposiciones.count }}</span>
+            </div>
+            {% if acta.disposiciones.all %}
+            <ul class="list-group list-group-flush">
+                {% for disp in acta.disposiciones.all %}
+                <li class="list-group-item d-flex justify-content-between align-items-start py-2">
+                    <div>
+                        <a href="{% url 'digesto:detalle_disposicion' disp.pk %}" class="fw-semibold text-decoration-none">
+                            Disp. {{ disp.numero }}
+                        </a>
+                        <div class="text-muted small text-truncate" style="max-width:200px">{{ disp.texto|truncatechars:60 }}</div>
+                    </div>
+                    {% with estado=disp.estado %}
+                    {% if estado == "vigente" %}
+                    <span class="badge bg-success">vigente</span>
+                    {% elif estado == "derogada" %}
+                    <span class="badge bg-danger">derogada</span>
+                    {% else %}
+                    <span class="badge bg-warning text-dark">modificada</span>
+                    {% endif %}
+                    {% endwith %}
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="card-body text-muted small">Sin disposiciones.</div>
+            {% endif %}
+        </div>
+
+        <!-- Certificaciones -->
+        {% if acta.certificaciones.all %}
+        <div class="card">
+            <div class="card-header fw-bold">
+                <i class="bi bi-patch-check"></i> Certificaciones
+                <span class="badge bg-secondary float-end">{{ acta.certificaciones.count }}</span>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for cert in acta.certificaciones.all %}
+                <li class="list-group-item py-2">
+                    <span class="fw-semibold">Cert. {{ cert.numero }}</span>
+                    <div class="text-muted small">{{ cert.texto|truncatechars:80 }}</div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Marked.js para renderizar Markdown -->
+<script src="https://cdn.jsdelivr.net/npm/marked@18.0.5/lib/marked.umd.min.js"
+        integrity="sha384-MU0bL51BF1u980ujv+Pk0Z0qCjhzfBIEHIFPkUq81289nkiAr+q1jSxEkdlIeHLJ"
+        crossorigin="anonymous"></script>
+<script>
+(function () {
+    const el = document.getElementById('acta-contenido');
+    if (el) {
+        el.innerHTML = marked.parse(el.textContent);
+    }
+})();
+</script>
+
+<style>
+.markdown-body h1,.markdown-body h2,.markdown-body h3{margin-top:1rem;margin-bottom:.5rem}
+.markdown-body ul,.markdown-body ol{padding-left:1.5rem}
+.markdown-body table{width:100%;border-collapse:collapse}
+.markdown-body td,.markdown-body th{border:1px solid #dee2e6;padding:.4rem .6rem}
+.markdown-body th{background:#f8f9fa}
+</style>
+{% endblock %}
