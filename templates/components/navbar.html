@@ -125,6 +125,14 @@ Variables esperadas en context:
         </li>
         {% endif %}
 
+        <!-- Digesto -->
+        <li class="nav-item">
+          <a class="nav-link {% if 'digesto' in request.resolver_match.app_name %}active{% endif %}"
+             href="{% url 'digesto:lista_actas' %}">
+            <i class="bi bi-journal-text"></i> Digesto
+          </a>
+        </li>
+
       </ul>
 
       <!-- Menú Usuario -->
