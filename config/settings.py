@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "planta_docente",
     "equivalencias",
     "carrera_academica",
+    "digesto",
 ]
 
 # Debug toolbar (solo en desarrollo)
