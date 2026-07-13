@@ -9,9 +9,14 @@
         <i class="bi bi-list-check"></i>
         Disposición N° {{ disposicion.numero }}
     </h2>
-    <a href="{% url 'digesto:detalle_acta' disposicion.acta.pk %}" class="btn btn-sm btn-outline-primary ms-auto">
-        <i class="bi bi-file-text"></i> Ver Acta
-    </a>
+    <div class="ms-auto d-flex gap-2">
+        <a href="{% url 'digesto:editar_disposicion' disposicion.pk %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-pencil"></i> Editar
+        </a>
+        <a href="{% url 'digesto:detalle_acta' disposicion.acta.pk %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-file-text"></i> Ver Acta
+        </a>
+    </div>
 </div>
 
 <div class="row g-4">
