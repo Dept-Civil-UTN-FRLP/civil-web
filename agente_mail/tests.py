@@ -1,7 +1,10 @@
+from unittest.mock import patch
+
 from django.test import TestCase
 from django.utils import timezone
 
 from .models import HistorialDecisiones, MicrosoftToken
+from .services import telegram_service
 from .services.o365_service import DjangoTokenBackend
 
 
@@ -94,3 +97,47 @@ class DjangoTokenBackendTests(TestCase):
         backend.save_token()
         self.assertTrue(backend.delete_token())
         self.assertFalse(backend.check_token())
+
+
+class TelegramServiceTests(TestCase):
+    def setUp(self):
+        self.hist = HistorialDecisiones.objects.create(
+            correo_message_id="AAMk...telegram",
+            correo_remitente="alguien@frlp.utn.edu.ar",
+            correo_asunto="Prueba",
+            correo_cuerpo="cuerpo",
+            fecha_recepcion=timezone.now(),
+            accion_propuesta_ia="Borrador de respuesta",
+        )
+
+    @patch("agente_mail.services.telegram_service.requests.post")
+    def test_enviar_notificacion_decision_guarda_chat_y_message_id(self, mock_post):
+        mock_post.return_value.raise_for_status.return_value = None
+        mock_post.return_value.json.return_value = {
+            "ok": True,
+            "result": {"chat": {"id": 555}, "message_id": 42},
+        }
+
+        ok = telegram_service.enviar_notificacion_decision(self.hist)
+
+        self.assertTrue(ok)
+        self.hist.refresh_from_db()
+        self.assertEqual(self.hist.telegram_chat_id, 555)
+        self.assertEqual(self.hist.telegram_message_id, 42)
+
+    @patch("agente_mail.services.telegram_service.requests.post")
+    def test_enviar_notificacion_decision_devuelve_false_si_telegram_falla(self, mock_post):
+        mock_post.return_value.raise_for_status.return_value = None
+        mock_post.return_value.json.return_value = {"ok": False, "description": "bot bloqueado"}
+
+        ok = telegram_service.enviar_notificacion_decision(self.hist)
+
+        self.assertFalse(ok)
+        self.hist.refresh_from_db()
+        self.assertIsNone(self.hist.telegram_message_id)
+
+    @patch("agente_mail.services.telegram_service.requests.post")
+    def test_editar_mensaje_sin_ids_previos_no_llama_a_telegram(self, mock_post):
+        ok = telegram_service.editar_mensaje_tras_decision(self.hist)
+        self.assertFalse(ok)
+        mock_post.assert_not_called()
