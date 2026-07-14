@@ -1,3 +1,4 @@
+import html
 import logging
 
 import requests
@@ -38,12 +39,20 @@ def _teclado_decision(historial_id):
 
 
 def _texto_notificacion(historial):
-    categoria = historial.categoria_ia or "sin categoría"
-    resumen = historial.resumen_ia or "(sin resumen)"
-    accion = historial.accion_propuesta_ia or "(el LLM no propuso nada)"
+    """Arma el texto en HTML (parse_mode="HTML") que Telegram va a renderizar. Todo lo que
+    viene del correo original (asunto, remitente) o del LLM (categoría, resumen, acción
+    propuesta) es contenido controlado por quien mandó el mail — un remitente podría poner
+    "<a href='...'>" en el asunto para insertar un link falso en la notificación, o romper el
+    parseo HTML de Telegram con un tag mal cerrado. Por eso todo pasa por html.escape() antes
+    de interpolarse; los <b> literales de este template son los únicos tags reales."""
+    asunto = html.escape(historial.correo_asunto)
+    remitente = html.escape(historial.correo_remitente)
+    categoria = html.escape(historial.categoria_ia or "sin categoría")
+    resumen = html.escape(historial.resumen_ia or "(sin resumen)")
+    accion = html.escape(historial.accion_propuesta_ia or "(el LLM no propuso nada)")
     return (
-        f"📨 <b>{historial.correo_asunto}</b>\n"
-        f"De: {historial.correo_remitente}\n"
+        f"📨 <b>{asunto}</b>\n"
+        f"De: {remitente}\n"
         f"Categoría: {categoria}\n\n"
         f"<b>Resumen:</b> {resumen}\n\n"
         f"<b>Acción propuesta:</b>\n{accion}"

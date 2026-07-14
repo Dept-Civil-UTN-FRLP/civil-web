@@ -146,6 +146,25 @@ class TelegramServiceTests(TestCase):
         self.assertFalse(ok)
         mock_post.assert_not_called()
 
+    @patch("agente_mail.services.telegram_service.requests.post")
+    def test_enviar_notificacion_escapa_html_del_correo(self, mock_post):
+        """Un remitente podría poner HTML en el asunto para inyectar un link falso o romper
+        el parseo de Telegram (parse_mode=HTML). El texto final tiene que llevar las entidades
+        escapadas, no el tag crudo."""
+        mock_post.return_value.raise_for_status.return_value = None
+        mock_post.return_value.json.return_value = {
+            "ok": True,
+            "result": {"chat": {"id": 1}, "message_id": 1},
+        }
+        self.hist.correo_asunto = "<a href='http://evil.example'>Urgente</a>"
+        self.hist.save(update_fields=["correo_asunto"])
+
+        telegram_service.enviar_notificacion_decision(self.hist)
+
+        payload_enviado = mock_post.call_args.kwargs["json"]
+        self.assertNotIn("<a href", payload_enviado["text"])
+        self.assertIn("&lt;a href", payload_enviado["text"])
+
 
 @override_settings(
     TELEGRAM_WEBHOOK_SECRET="secreto-de-test",
