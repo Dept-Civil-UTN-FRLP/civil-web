@@ -58,6 +58,9 @@ if "carrera_academica" in settings.MODULOS_ACTIVOS:
 if "planta_docente" in settings.MODULOS_ACTIVOS:
     urlpatterns += [path("planta/", include("planta_docente.urls"))]
 
+if "digesto" in settings.MODULOS_ACTIVOS:
+    urlpatterns += [path("digesto/", include("digesto.urls"))]
+
 if settings.DEBUG:
     import debug_toolbar
     urlpatterns = [

@@ -1,0 +1,37 @@
+{% extends 'digesto/base_digesto.html' %}
+
+{% block digesto_content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a href="{% url 'digesto:detalle_acta' acta.pk %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h2 class="mb-0"><i class="bi bi-patch-check"></i> {{ titulo }}</h2>
+</div>
+
+<div class="card" style="max-width: 700px;">
+    <div class="card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">{{ form.numero.label }}</label>
+                {{ form.numero }}
+                {% if form.numero.errors %}<div class="text-danger small mt-1">{{ form.numero.errors }}</div>{% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">{{ form.texto.label }}</label>
+                {{ form.texto }}
+                {% if form.texto.errors %}<div class="text-danger small mt-1">{{ form.texto.errors }}</div>{% endif %}
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> Guardar
+                </button>
+                <a href="{% url 'digesto:detalle_acta' acta.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

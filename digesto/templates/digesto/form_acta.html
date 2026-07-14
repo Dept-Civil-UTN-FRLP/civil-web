@@ -1,0 +1,137 @@
+{% extends 'digesto/base_digesto.html' %}
+
+{% block digesto_content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+    {% if acta %}
+    <a href="{% url 'digesto:detalle_acta' acta.pk %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    {% else %}
+    <a href="{% url 'digesto:lista_actas' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    {% endif %}
+    <h2 class="mb-0"><i class="bi bi-file-text"></i> {{ titulo }}</h2>
+</div>
+
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/easymde@2.21.0/dist/easymde.min.css"
+      integrity="sha384-ZoLYv3S+AsZX+zhbN1D1+WPpc8f+DmLfxfgw+qn0Nq8wJPOYQQXEW5ZrRhcGozlG"
+      crossorigin="anonymous">
+
+<form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    <div class="row g-4">
+
+        <!-- Columna izquierda: metadatos -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header fw-bold">Datos del Acta</div>
+                <div class="card-body d-flex flex-column gap-3">
+
+                    <div>
+                        <label class="form-label">{{ form.ciclo.label }}</label>
+                        {{ form.ciclo }}
+                        {% if form.ciclo.errors %}<div class="text-danger small">{{ form.ciclo.errors }}</div>{% endif %}
+                        <div class="mt-1">
+                            <a href="{% url 'digesto:crear_ciclo' %}" class="small text-muted">
+                                <i class="bi bi-plus-circle"></i> Nuevo ciclo lectivo
+                            </a>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label">{{ form.tipo.label }}</label>
+                        {{ form.tipo }}
+                        {% if form.tipo.errors %}<div class="text-danger small">{{ form.tipo.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="form-label">{{ form.numero.label }}</label>
+                        {{ form.numero }}
+                        {% if form.numero.errors %}<div class="text-danger small">{{ form.numero.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="form-label">{{ form.mes.label }}</label>
+                        {{ form.mes }}
+                        {% if form.mes.errors %}<div class="text-danger small">{{ form.mes.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="form-label">{{ form.pdf.label }}</label>
+                        {{ form.pdf }}
+                        {% if form.pdf.errors %}<div class="text-danger small">{{ form.pdf.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="form-label">{{ form.referencias.label }}</label>
+                        {{ form.referencias }}
+                        <div class="form-text">{{ form.referencias.help_text }}</div>
+                        {% if form.referencias.errors %}<div class="text-danger small">{{ form.referencias.errors }}</div>{% endif %}
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna derecha: editor Markdown -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header fw-bold">{{ form.contenido_md.label }}</div>
+                <div class="card-body">
+                    {{ form.contenido_md }}
+                    {% if form.contenido_md.errors %}<div class="text-danger small mt-1">{{ form.contenido_md.errors }}</div>{% endif %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg"></i> Guardar
+        </button>
+        {% if acta %}
+        <a href="{% url 'digesto:detalle_acta' acta.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+        {% else %}
+        <a href="{% url 'digesto:lista_actas' %}" class="btn btn-outline-secondary">Cancelar</a>
+        {% endif %}
+    </div>
+</form>
+
+<script src="https://cdn.jsdelivr.net/npm/easymde@2.21.0/dist/easymde.min.js"
+        integrity="sha384-mTM6vzy+/UiHrMBClNGViM9qEv0/26iCGqpJKhSzdnjrxbKjO3vkT62ujXQ8B5iv"
+        crossorigin="anonymous"></script>
+<script>
+(function () {
+    var actaPk = '{{ acta.pk|default:"" }}';
+    var autosaveId;
+    if (actaPk) {
+        autosaveId = 'acta-' + actaPk;
+    } else {
+        // Acta nueva: usar un id por pestaña/sesión (sessionStorage) para que el
+        // autosave sobreviva a un refresh accidental sin filtrar contenido de
+        // otras actas nuevas creadas antes en otra sesión.
+        var key = 'digesto_nueva_acta_draft_id';
+        autosaveId = sessionStorage.getItem(key);
+        if (!autosaveId) {
+            autosaveId = 'nueva-' + crypto.randomUUID();
+            sessionStorage.setItem(key, autosaveId);
+        }
+    }
+    new EasyMDE({
+        element: document.getElementById('id_contenido_md'),
+        spellChecker: false,
+        autosave: { enabled: true, uniqueId: autosaveId },
+        toolbar: [
+            'bold','italic','heading','|',
+            'unordered-list','ordered-list','|',
+            'link','table','|',
+            'preview','side-by-side','fullscreen','|',
+            'guide'
+        ],
+    });
+})();
+</script>
+{% endblock %}

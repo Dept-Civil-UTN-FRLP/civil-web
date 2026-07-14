@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "planta_docente",
     "equivalencias",
     "carrera_academica",
+    "digesto",
 ]
 
 # Debug toolbar (solo en desarrollo)
@@ -229,7 +230,7 @@ LOGGING = {
 # ============================================================================
 MODULOS_ACTIVOS = config(
     "MODULOS_ACTIVOS",
-    default="equivalencias,carrera_academica,planta_docente",
+    default="equivalencias,carrera_academica,planta_docente,digesto",
     cast=Csv(),
 )
 

@@ -1,0 +1,45 @@
+{% extends 'equivalencias/base.html' %}
+
+{% block content %}
+<div class="digesto-module">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="bi bi-journal-text"></i> Digesto Normativo
+            </span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#digestoNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="digestoNavbar">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'lista_actas' %}active{% endif %}"
+                           href="{% url 'digesto:lista_actas' %}">
+                            <i class="bi bi-archive"></i> Actas
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'lista_disposiciones' %}active{% endif %}"
+                           href="{% url 'digesto:lista_disposiciones' %}">
+                            <i class="bi bi-list-check"></i> Disposiciones
+                        </a>
+                    </li>
+                </ul>
+                <form class="d-flex" action="{% url 'digesto:buscar' %}" method="get">
+                    <div class="input-group">
+                        <input class="form-control form-control-sm" type="search" name="q"
+                               placeholder="Buscar en el digesto…"
+                               value="{{ request.GET.q|default:'' }}">
+                        <button class="btn btn-outline-secondary btn-sm" type="submit">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    {% block digesto_content %}{% endblock %}
+</div>
+{% endblock %}

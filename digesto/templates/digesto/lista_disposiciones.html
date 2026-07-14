@@ -1,0 +1,68 @@
+{% extends 'digesto/base_digesto.html' %}
+
+{% block digesto_content %}
+<h2 class="mb-4"><i class="bi bi-list-check"></i> Disposiciones</h2>
+
+<div class="table-responsive">
+    <table class="table table-hover table-sm">
+        <thead class="table-light">
+            <tr>
+                <th>N°</th>
+                <th>Acta</th>
+                <th>Ciclo</th>
+                <th>Texto</th>
+                <th>Estado</th>
+                <th>Deroga</th>
+                <th>Modifica</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for disp in disposiciones %}
+            <tr>
+                <td>
+                    <a href="{% url 'digesto:detalle_disposicion' disp.pk %}">
+                        {{ disp.numero }}
+                    </a>
+                </td>
+                <td>
+                    <a href="{% url 'digesto:detalle_acta' disp.acta.pk %}">
+                        Acta {{ disp.acta.numero }}
+                    </a>
+                </td>
+                <td>{{ disp.acta.ciclo.anio }}</td>
+                <td class="text-muted small">{{ disp.texto|truncatechars:80 }}</td>
+                <td>
+                    {% with estado=disp.estado %}
+                    {% if estado == "vigente" %}
+                    <span class="badge bg-success">vigente</span>
+                    {% elif estado == "derogada" %}
+                    <span class="badge bg-danger">derogada</span>
+                    {% else %}
+                    <span class="badge bg-warning text-dark">modificada</span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+                <td>
+                    {% if disp.deroga %}
+                    <a href="{% url 'digesto:detalle_disposicion' disp.deroga.pk %}" class="small">
+                        Disp. {{ disp.deroga.numero }}/{{ disp.deroga.acta.ciclo.anio }}
+                    </a>
+                    {% else %}—{% endif %}
+                </td>
+                <td>
+                    {% if disp.modifica %}
+                    <a href="{% url 'digesto:detalle_disposicion' disp.modifica.pk %}" class="small">
+                        Disp. {{ disp.modifica.numero }}/{{ disp.modifica.acta.ciclo.anio }}
+                    </a>
+                    {% else %}—{% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center text-muted">Sin disposiciones registradas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
