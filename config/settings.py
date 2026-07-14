@@ -223,6 +223,11 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        "agente_mail": {
+            "handlers": ["file", "console"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
 

@@ -236,3 +236,65 @@ sudo journalctl -u <SERVICE_NAME> -f
 # Test de compresión de PDFs
 python manage.py comprimir_formularios --dry-run
 ```
+
+---
+
+## 11. Agente de Correo (IA)
+
+Ver `issues/agente_mail/` para el plan completo (modelos, vistas, comando). Esta sección cubre
+solo lo que hace falta en el servidor de producción, una vez que el código ya está desplegado.
+
+### 11.1 Nginx — rate limit del webhook de Telegram
+
+En el bloque `http {}` de `/etc/nginx/nginx.conf` (fuera del `server {}` de este sitio):
+
+```nginx
+limit_req_zone $binary_remote_addr zone=agente_mail_webhook:10m rate=10r/s;
+```
+
+En `/etc/nginx/sites-available/<SERVICE_NAME>`, sumar **antes** del `location /` genérico:
+
+```nginx
+    location /agente-mail/telegram/webhook/ {
+        limit_req zone=agente_mail_webhook burst=20 nodelay;
+        proxy_pass http://unix:/run/<SERVICE_NAME>.sock;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+```
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+El resto de las URLs de `agente_mail` (`/microsoft/iniciar/`, `/microsoft/callback/`) ya están
+protegidas por `@login_required` + `is_superuser` a nivel Django — solo el webhook necesita esta
+capa extra en nginx, porque es la única URL que acepta POSTs sin sesión de Django (la protección
+ahí es el secret token de Telegram + el chequeo de `TELEGRAM_ADMIN_IDS`).
+
+### 11.2 Cron
+
+```bash
+crontab -e
+```
+
+```
+*/5 * * * * <PROJECT_DIR>/venv/bin/python <PROJECT_DIR>/manage.py revisar_mails --limite 10 >> /var/log/<SERVICE_NAME>-agente-mail.log 2>&1
+```
+
+### 11.3 Variables de entorno
+
+Ver `.env.example` (sección "Agente de Correo (IA)") para la lista completa con instrucciones de
+dónde conseguir cada valor. Activar recién con `AGENTE_MAIL_ENABLED=True` al final, después de
+completar el flujo de autenticación una vez (`/agente-mail/microsoft/iniciar/` como superusuario).
+
+### 11.4 Vencimiento de secretos
+
+- **`O365_CLIENT_SECRET`**: expira según lo configurado en Azure AD (máx. 24 meses). Anotar la
+  fecha de expiración acá cuando se genere: `<pendiente de completar en el primer deploy>`.
+- **Certificado TLS de `dicivil.frlp.utn.edu.ar`**: verificar vigencia con
+  `echo | openssl s_client -connect dicivil.frlp.utn.edu.ar:443 2>/dev/null | openssl x509 -noout -dates`.
+  Telegram exige HTTPS válido para `setWebhook`.
