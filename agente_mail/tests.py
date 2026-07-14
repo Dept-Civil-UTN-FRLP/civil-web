@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from .models import HistorialDecisiones, MicrosoftToken
+from .services.o365_service import DjangoTokenBackend
 
 
 class HistorialDecisionesTests(TestCase):
@@ -61,3 +62,35 @@ class MicrosoftTokenTests(TestCase):
             cuenta_id="test2", token_data={"expires_at": futuro}
         )
         self.assertFalse(token.esta_vencido)
+
+
+class DjangoTokenBackendTests(TestCase):
+    def test_save_y_load_hacen_round_trip(self):
+        backend = DjangoTokenBackend(cuenta_id="test")
+        backend.token = {
+            "access_token": "abc123",
+            "refresh_token": "def456",
+            "expires_at": 9999999999,
+            "token_type": "Bearer",
+        }
+        backend.save_token()
+
+        backend2 = DjangoTokenBackend(cuenta_id="test")
+        token_cargado = backend2.load_token()
+        self.assertEqual(token_cargado["access_token"], "abc123")
+        self.assertEqual(token_cargado["refresh_token"], "def456")
+
+    def test_check_token_false_si_no_existe(self):
+        backend = DjangoTokenBackend(cuenta_id="inexistente")
+        self.assertFalse(backend.check_token())
+
+    def test_load_token_none_si_no_existe(self):
+        backend = DjangoTokenBackend(cuenta_id="inexistente")
+        self.assertIsNone(backend.load_token())
+
+    def test_delete_token(self):
+        backend = DjangoTokenBackend(cuenta_id="borrar")
+        backend.token = {"access_token": "x"}
+        backend.save_token()
+        self.assertTrue(backend.delete_token())
+        self.assertFalse(backend.check_token())
