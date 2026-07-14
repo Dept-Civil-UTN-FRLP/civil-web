@@ -1,5 +1,10 @@
+from django.urls import path
+
+from . import views
+
 app_name = "agente_mail"
 
-# Patrones reales se agregan en el paso 04 (microsoft/iniciar, microsoft/callback) y en el
-# paso 06 (telegram/webhook).
-urlpatterns = []
+urlpatterns = [
+    path("microsoft/iniciar/", views.iniciar_autenticacion, name="iniciar_autenticacion"),
+    path("microsoft/callback/", views.microsoft_callback, name="microsoft_callback"),
+]
