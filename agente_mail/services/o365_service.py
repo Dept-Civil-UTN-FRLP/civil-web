@@ -81,3 +81,31 @@ def get_account(cuenta_id=CUENTA_ID_DEFAULT):
         token_backend=backend,
     )
     return account
+
+
+def obtener_cuenta_autenticada(cuenta_id=CUENTA_ID_DEFAULT):
+    account = get_account(cuenta_id=cuenta_id)
+    if not account.is_authenticated:
+        raise RuntimeError(
+            "La cuenta de O365 no tiene un token válido. Repetir el flujo de "
+            "iniciar_autenticacion (ver 04_autenticacion_microsoft.md)."
+        )
+    return account
+
+
+def responder_correo(message_id, texto, cuenta_id=CUENTA_ID_DEFAULT):
+    """Responde (Reply) al mensaje original en O365 con el texto final decidido por el admin."""
+    account = obtener_cuenta_autenticada(cuenta_id)
+    mensaje = account.mailbox().get_message(object_id=message_id)
+    if mensaje is None:
+        raise ValueError(f"No se encontró el mensaje {message_id!r} en O365 (¿borrado/movido?).")
+    respuesta = mensaje.reply(to_all=False)
+    respuesta.body = texto
+    respuesta.send()
+
+
+def marcar_como_leido(message_id, cuenta_id=CUENTA_ID_DEFAULT):
+    account = obtener_cuenta_autenticada(cuenta_id)
+    mensaje = account.mailbox().get_message(object_id=message_id)
+    if mensaje is not None:
+        mensaje.mark_as_read()

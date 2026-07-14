@@ -1,11 +1,15 @@
+import json
 from unittest.mock import patch
 
-from django.test import TestCase
+from django.test import RequestFactory, TestCase, override_settings
 from django.utils import timezone
 
+from . import views
 from .models import HistorialDecisiones, MicrosoftToken
 from .services import telegram_service
 from .services.o365_service import DjangoTokenBackend
+
+WEBHOOK_URL = "/agente-mail/telegram/webhook/"
 
 
 class HistorialDecisionesTests(TestCase):
@@ -141,3 +145,132 @@ class TelegramServiceTests(TestCase):
         ok = telegram_service.editar_mensaje_tras_decision(self.hist)
         self.assertFalse(ok)
         mock_post.assert_not_called()
+
+
+@override_settings(
+    TELEGRAM_WEBHOOK_SECRET="secreto-de-test",
+    TELEGRAM_ADMIN_IDS={999},
+)
+class TelegramWebhookTests(TestCase):
+    """Invoca views.telegram_webhook directamente con RequestFactory, sin pasar por la
+    resolución de URLs: config/urls.py registra agente_mail.urls condicionalmente, a nivel de
+    módulo, según settings.AGENTE_MAIL_ENABLED en el momento en que Django importa el
+    urlconf — @override_settings no puede forzar esa reimportación (el módulo ya quedó en
+    sys.modules), así que un test que dependa de esa URL real fallaría con 404 aunque
+    AGENTE_MAIL_ENABLED esté en True durante el test. Llamar a la vista directamente evita el
+    problema por completo y sigue ejercitando toda la lógica real del webhook."""
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.hist = HistorialDecisiones.objects.create(
+            correo_message_id="AAMk...webhook",
+            correo_remitente="alguien@frlp.utn.edu.ar",
+            correo_asunto="Prueba webhook",
+            correo_cuerpo="cuerpo",
+            fecha_recepcion=timezone.now(),
+            accion_propuesta_ia="Borrador",
+        )
+
+    def _post(self, payload, secret="secreto-de-test"):
+        request = self.factory.post(
+            WEBHOOK_URL,
+            data=json.dumps(payload),
+            content_type="application/json",
+            HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN=secret,
+        )
+        return views.telegram_webhook(request)
+
+    def test_sin_secret_token_devuelve_403(self):
+        request = self.factory.post(
+            WEBHOOK_URL, data=json.dumps({}), content_type="application/json"
+        )
+        respuesta = views.telegram_webhook(request)
+        self.assertEqual(respuesta.status_code, 403)
+
+    def test_secret_token_incorrecto_devuelve_403(self):
+        respuesta = self._post({}, secret="otro")
+        self.assertEqual(respuesta.status_code, 403)
+
+    @patch("agente_mail.services.telegram_service.requests.post")
+    def test_usuario_no_autorizado_no_modifica_el_historial(self, mock_post):
+        mock_post.return_value.raise_for_status.return_value = None
+        mock_post.return_value.json.return_value = {"ok": True, "result": {}}
+
+        respuesta = self._post({
+            "callback_query": {
+                "id": "cbq1",
+                "from": {"id": 111},  # no está en TELEGRAM_ADMIN_IDS={999}
+                "data": f"dec_{self.hist.pk}_aprobar",
+            }
+        })
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.hist.refresh_from_db()
+        self.assertEqual(self.hist.estado, HistorialDecisiones.ESTADO_PENDIENTE)
+
+    @patch("agente_mail.services.o365_service.marcar_como_leido")
+    @patch("agente_mail.services.o365_service.responder_correo")
+    @patch("agente_mail.services.telegram_service.requests.post")
+    def test_aprobar_ejecuta_la_accion_y_marca_enviado(
+        self, mock_post, mock_responder, mock_marcar_leido
+    ):
+        mock_post.return_value.raise_for_status.return_value = None
+        mock_post.return_value.json.return_value = {"ok": True, "result": {}}
+
+        respuesta = self._post({
+            "callback_query": {
+                "id": "cbq2",
+                "from": {"id": 999},
+                "data": f"dec_{self.hist.pk}_aprobar",
+            }
+        })
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.hist.refresh_from_db()
+        self.assertEqual(self.hist.estado, HistorialDecisiones.ESTADO_ENVIADO)
+        self.assertEqual(self.hist.decidido_por_telegram_id, 999)
+        mock_responder.assert_called_once_with(self.hist.correo_message_id, self.hist.texto_final)
+        mock_marcar_leido.assert_called_once()
+
+    @patch("agente_mail.services.o365_service.marcar_como_leido")
+    @patch("agente_mail.services.o365_service.responder_correo")
+    @patch("agente_mail.services.telegram_service.requests.post")
+    def test_aprobar_sin_respuesta_necesaria_no_envia_nada(
+        self, mock_post, mock_responder, mock_marcar_leido
+    ):
+        mock_post.return_value.raise_for_status.return_value = None
+        mock_post.return_value.json.return_value = {"ok": True, "result": {}}
+        self.hist.accion_propuesta_ia = "(no requiere respuesta)"
+        self.hist.save(update_fields=["accion_propuesta_ia"])
+
+        respuesta = self._post({
+            "callback_query": {
+                "id": "cbq4",
+                "from": {"id": 999},
+                "data": f"dec_{self.hist.pk}_aprobar",
+            }
+        })
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.hist.refresh_from_db()
+        self.assertEqual(self.hist.estado, HistorialDecisiones.ESTADO_ENVIADO)
+        mock_responder.assert_not_called()
+        mock_marcar_leido.assert_called_once()
+
+    @patch("agente_mail.services.telegram_service.requests.post")
+    def test_doble_click_en_decision_ya_tomada_no_reprocesa(self, mock_post):
+        mock_post.return_value.raise_for_status.return_value = None
+        mock_post.return_value.json.return_value = {"ok": True, "result": {}}
+        self.hist.decidir(999, HistorialDecisiones.ESTADO_DESCARTADO)
+
+        respuesta = self._post({
+            "callback_query": {
+                "id": "cbq3",
+                "from": {"id": 999},
+                "data": f"dec_{self.hist.pk}_aprobar",
+            }
+        })
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.hist.refresh_from_db()
+        self.assertEqual(self.hist.estado, HistorialDecisiones.ESTADO_DESCARTADO)
