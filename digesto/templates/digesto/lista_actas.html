@@ -46,14 +46,14 @@
                     </td>
                     <td>{{ acta.mes|capfirst }}</td>
                     <td>
-                        <span class="badge bg-secondary">{{ acta.disposiciones.count }}</span>
+                        <span class="badge bg-secondary">{{ acta.num_disposiciones }}</span>
                     </td>
                     <td>
-                        <span class="badge bg-secondary">{{ acta.certificaciones.count }}</span>
+                        <span class="badge bg-secondary">{{ acta.num_certificaciones }}</span>
                     </td>
                     <td>
                         {% if acta.pdf %}
-                        <a href="{{ acta.pdf.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                        <a href="{% url 'serve_private_media' path=acta.pdf.name|slice:'8:' %}" target="_blank" class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-file-pdf"></i>
                         </a>
                         {% else %}

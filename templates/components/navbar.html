@@ -125,6 +125,7 @@ Variables esperadas en context:
         </li>
         {% endif %}
 
+        {% if "digesto" in MODULOS_ACTIVOS %}
         <!-- Digesto -->
         <li class="nav-item">
           <a class="nav-link {% if 'digesto' in request.resolver_match.app_name %}active{% endif %}"
@@ -132,6 +133,7 @@ Variables esperadas en context:
             <i class="bi bi-journal-text"></i> Digesto
           </a>
         </li>
+        {% endif %}
 
       </ul>
 

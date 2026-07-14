@@ -104,17 +104,34 @@
         integrity="sha384-mTM6vzy+/UiHrMBClNGViM9qEv0/26iCGqpJKhSzdnjrxbKjO3vkT62ujXQ8B5iv"
         crossorigin="anonymous"></script>
 <script>
-new EasyMDE({
-    element: document.getElementById('id_contenido_md'),
-    spellChecker: false,
-    autosave: { enabled: true, uniqueId: 'acta-{{ acta.pk|default:"nueva" }}' },
-    toolbar: [
-        'bold','italic','heading','|',
-        'unordered-list','ordered-list','|',
-        'link','table','|',
-        'preview','side-by-side','fullscreen','|',
-        'guide'
-    ],
-});
+(function () {
+    var actaPk = '{{ acta.pk|default:"" }}';
+    var autosaveId;
+    if (actaPk) {
+        autosaveId = 'acta-' + actaPk;
+    } else {
+        // Acta nueva: usar un id por pestaña/sesión (sessionStorage) para que el
+        // autosave sobreviva a un refresh accidental sin filtrar contenido de
+        // otras actas nuevas creadas antes en otra sesión.
+        var key = 'digesto_nueva_acta_draft_id';
+        autosaveId = sessionStorage.getItem(key);
+        if (!autosaveId) {
+            autosaveId = 'nueva-' + crypto.randomUUID();
+            sessionStorage.setItem(key, autosaveId);
+        }
+    }
+    new EasyMDE({
+        element: document.getElementById('id_contenido_md'),
+        spellChecker: false,
+        autosave: { enabled: true, uniqueId: autosaveId },
+        toolbar: [
+            'bold','italic','heading','|',
+            'unordered-list','ordered-list','|',
+            'link','table','|',
+            'preview','side-by-side','fullscreen','|',
+            'guide'
+        ],
+    });
+})();
 </script>
 {% endblock %}

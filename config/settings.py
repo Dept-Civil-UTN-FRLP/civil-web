@@ -230,7 +230,7 @@ LOGGING = {
 # ============================================================================
 MODULOS_ACTIVOS = config(
     "MODULOS_ACTIVOS",
-    default="equivalencias,carrera_academica,planta_docente",
+    default="equivalencias,carrera_academica,planta_docente,digesto",
     cast=Csv(),
 )
 

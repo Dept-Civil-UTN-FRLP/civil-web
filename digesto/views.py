@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Count, Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import ActaForm, CertificacionForm, CicloLectivoForm, DisposicionForm
@@ -8,7 +9,11 @@ from .models import Acta, Certificacion, CicloLectivo, Disposicion
 
 @login_required
 def lista_actas_view(request):
-    ciclos = CicloLectivo.objects.prefetch_related("actas").all()
+    actas = Acta.objects.annotate(
+        num_disposiciones=Count("disposiciones", distinct=True),
+        num_certificaciones=Count("certificaciones", distinct=True),
+    )
+    ciclos = CicloLectivo.objects.prefetch_related(Prefetch("actas", queryset=actas))
     return render(request, "digesto/lista_actas.html", {"ciclos": ciclos})
 
 
