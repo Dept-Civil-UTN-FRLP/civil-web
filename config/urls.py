@@ -61,6 +61,9 @@ if "planta_docente" in settings.MODULOS_ACTIVOS:
 if "digesto" in settings.MODULOS_ACTIVOS:
     urlpatterns += [path("digesto/", include("digesto.urls"))]
 
+if settings.AGENTE_MAIL_ENABLED:
+    urlpatterns += [path("agente-mail/", include("agente_mail.urls", namespace="agente_mail"))]
+
 if settings.DEBUG:
     import debug_toolbar
     urlpatterns = [

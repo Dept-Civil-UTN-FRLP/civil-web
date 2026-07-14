@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "equivalencias",
     "carrera_academica",
     "digesto",
+    "agente_mail",
 ]
 
 # Debug toolbar (solo en desarrollo)
@@ -235,6 +236,27 @@ MODULOS_ACTIVOS = config(
 )
 
 DEPARTAMENTO = config("DEPARTAMENTO", default="civil")
+
+# ============================================================================
+# AGENTE DE CORREO (IA) — feature interna, no forma parte de MODULOS_ACTIVOS
+# ============================================================================
+AGENTE_MAIL_ENABLED = config("AGENTE_MAIL_ENABLED", default=False, cast=bool)
+
+O365_CLIENT_ID = config("O365_CLIENT_ID", default="")
+O365_CLIENT_SECRET = config("O365_CLIENT_SECRET", default="")
+O365_TENANT_ID = config("O365_TENANT_ID", default="")
+O365_REDIRECT_URI = config("O365_REDIRECT_URI", default="")
+
+TELEGRAM_BOT_TOKEN = config("TELEGRAM_BOT_TOKEN", default="")
+TELEGRAM_WEBHOOK_SECRET = config("TELEGRAM_WEBHOOK_SECRET", default="")
+TELEGRAM_ADMIN_CHAT = config("TELEGRAM_ADMIN_CHAT", default=0, cast=int)
+TELEGRAM_ADMIN_IDS = config(
+    "TELEGRAM_ADMIN_IDS",
+    default="",
+    cast=lambda s: {int(x) for x in s.split(",") if x.strip()},
+)
+
+GEMINI_API_KEY = config("GEMINI_API_KEY", default="")
 
 # ============================================================================
 # PLANIFICACIONES ANUALES - CONFIGURACIÓN
