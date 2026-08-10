@@ -166,13 +166,10 @@ def generar_pdf_estructura(request, asignatura_id):
             fecha_ultima = min(
                 fecha_primera, primer_abril).strftime('%d/%m/%Y')
         else:
-            # Ordinario / Regular: primera resolución de ese tipo y última redesignación
-            primera_res = resoluciones.first()
+            # Ordinario / Regular: fecha de la resolución de alta/designación más reciente
             ultima_res = resoluciones.last()
-            if primera_res and ultima_res and primera_res.pk != ultima_res.pk:
-                fecha_ultima = f"{formato_fecha_resolucion(primera_res)} / {formato_fecha_resolucion(ultima_res)}"
-            elif primera_res:
-                fecha_ultima = formato_fecha_resolucion(primera_res)
+            if ultima_res:
+                fecha_ultima = formato_fecha_resolucion(ultima_res)
             else:
                 fecha_ultima = str(cargo.fecha_inicio.year)
 
