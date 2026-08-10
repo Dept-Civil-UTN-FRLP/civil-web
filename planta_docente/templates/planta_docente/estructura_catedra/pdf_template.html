@@ -397,18 +397,24 @@
 
     <div class="footer">
         <div class="firmas">
+            {% if incluir_firma_depto %}
             <div class="firma-box">
                 <div class="firma-linea"></div>
                 <div class="firma-texto">Director de Departamento</div>
             </div>
+            {% endif %}
+            {% if incluir_firma_rrhh %}
             <div class="firma-box">
                 <div class="firma-linea"></div>
                 <div class="firma-texto">Director de RRHH</div>
             </div>
+            {% endif %}
+            {% if incluir_firma_secretario %}
             <div class="firma-box">
                 <div class="firma-linea"></div>
                 <div class="firma-texto">Secretario Académico</div>
             </div>
+            {% endif %}
         </div>
         <div class="fecha-generacion">
             Generado el {{ fecha_generacion|date:"d/m/Y H:i" }}

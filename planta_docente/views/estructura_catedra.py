@@ -123,6 +123,9 @@ def generar_pdf_estructura(request, asignatura_id):
     incluir_bloques = request.POST.get("incluir_bloques") == "on"
     incluir_otros_aportes = request.POST.get("incluir_otros_aportes") == "on"
     incluir_adhonorem = request.POST.get("incluir_adhonorem") == "on"
+    incluir_firma_depto = request.POST.get("incluir_firma_depto") == "on"
+    incluir_firma_rrhh = request.POST.get("incluir_firma_rrhh") == "on"
+    incluir_firma_secretario = request.POST.get("incluir_firma_secretario") == "on"
 
     # Obtener cargos activos optimizados
     cargos_query = (
@@ -255,6 +258,9 @@ def generar_pdf_estructura(request, asignatura_id):
         "bloques": bloques,
         "asignaturas_del_area": asignaturas_del_area,
         "MEDIA_ROOT": settings.MEDIA_ROOT,
+        "incluir_firma_depto": incluir_firma_depto,
+        "incluir_firma_rrhh": incluir_firma_rrhh,
+        "incluir_firma_secretario": incluir_firma_secretario,
     }
 
     # Renderizar HTML
