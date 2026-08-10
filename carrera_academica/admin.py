@@ -272,15 +272,17 @@ admin.site.register(Evaluacion, EvaluacionAdmin)
 
 @admin.register(VeedorGraduado)
 class VeedorGraduadoAdmin(admin.ModelAdmin):
-    list_display = ['apellido', 'nombre', 'email', 'titulo', 'año_egreso']
-    search_fields = ['apellido', 'nombre', 'email']
+    list_display = ['apellido', 'nombre', 'email', 'titulo', 'año_egreso', 'dni']
+    list_editable = ['dni']
+    search_fields = ['apellido', 'nombre', 'email', 'dni']
     list_filter = ['año_egreso']
 
 
 @admin.register(VeedorEstudiante)
 class VeedorEstudianteAdmin(admin.ModelAdmin):
-    list_display = ['apellido', 'nombre', 'legajo', 'email']
-    search_fields = ['apellido', 'nombre', 'legajo', 'email']
+    list_display = ['apellido', 'nombre', 'legajo', 'email', 'dni']
+    list_editable = ['dni']
+    search_fields = ['apellido', 'nombre', 'legajo', 'email', 'dni']
 
 
 @admin.register(Jurado)
@@ -329,11 +331,12 @@ class UniversidadAdmin(admin.ModelAdmin):
 
 @admin.register(JuradoExterno)
 class JuradoExternoAdmin(admin.ModelAdmin):
-    list_display = ['apellido', 'nombre', 'universidad',
+    list_display = ['apellido', 'nombre', 'universidad', 'dni',
                     'categoria', 'es_investigador', 'es_jubilado', 'activo']
+    list_editable = ['dni']
     list_filter = ['categoria', 'es_investigador',
                    'es_jubilado', 'activo', 'universidad']
-    search_fields = ['apellido', 'nombre', 'email']
+    search_fields = ['apellido', 'nombre', 'email', 'dni']
     readonly_fields = ['fecha_alta']
 
 
@@ -356,3 +359,41 @@ class TipoFormularioAdmin(admin.ModelAdmin):
             'fields': ('activo', 'fecha_alta')
         }),
     )
+
+
+@admin.register(TokenPortalJurado)
+class TokenPortalJuradoAdmin(admin.ModelAdmin):
+    list_display = [
+        'tipo_persona', 'persona_id', 'creado', 'expira',
+        'revocado', 'ultimo_uso', 'creado_por',
+    ]
+    list_filter = ['tipo_persona', 'revocado']
+    readonly_fields = [
+        'tipo_persona', 'persona_id', 'token_hash', 'creado',
+        'creado_por', 'expira', 'ultimo_uso',
+    ]
+
+    def has_add_permission(self, request):
+        # Los tokens se crean solo desde el flujo de notificación, no a mano.
+        return False
+
+
+@admin.register(AccesoPortalJurado)
+class AccesoPortalJuradoAdmin(admin.ModelAdmin):
+    """Auditoría de accesos al Portal de Jurados — solo lectura."""
+    list_display = [
+        'fecha', 'accion', 'exitoso', 'tipo_persona', 'persona_id',
+        'carrera_academica', 'ip_address',
+    ]
+    list_filter = ['accion', 'exitoso', 'tipo_persona']
+    search_fields = ['ip_address', 'user_agent', 'detalle']
+    readonly_fields = [f.name for f in AccesoPortalJurado._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

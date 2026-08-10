@@ -1042,6 +1042,11 @@ class VeedorGraduado(models.Model):
     telefono = models.CharField(max_length=20, blank=True)
     titulo = models.CharField(max_length=200, help_text="Ej: Ingeniero Civil")
     año_egreso = models.IntegerField(null=True, blank=True)
+    dni = models.IntegerField(
+        null=True, blank=True, unique=True,
+        verbose_name="DNI",
+        help_text="Usado para verificar identidad en el Portal de Jurados",
+    )
 
     def __str__(self):
         return f"{self.apellido}, {self.nombre}"
@@ -1058,6 +1063,11 @@ class VeedorEstudiante(models.Model):
     nombre = models.CharField(max_length=100)
     email = models.EmailField()
     legajo = models.CharField(max_length=20)
+    dni = models.IntegerField(
+        null=True, blank=True, unique=True,
+        verbose_name="DNI",
+        help_text="Usado para verificar identidad en el Portal de Jurados",
+    )
 
     def __str__(self):
         return f"{self.apellido}, {self.nombre} (Leg. {self.legajo})"
@@ -1277,6 +1287,11 @@ class JuradoExterno(models.Model):
     nombre = models.CharField(max_length=100)
     email = models.EmailField()
     telefono = models.CharField(max_length=20, blank=True)
+    dni = models.IntegerField(
+        null=True, blank=True, unique=True,
+        verbose_name="DNI",
+        help_text="Usado para verificar identidad en el Portal de Jurados",
+    )
 
     # Origen institucional
     universidad = models.ForeignKey(
@@ -1325,6 +1340,105 @@ class JuradoExterno(models.Model):
     def es_universidad_externa(self):
         """Verifica si es de universidad externa (no UTN)."""
         return not self.universidad.es_utn
+
+
+class TokenPortalJurado(models.Model):
+    """
+    Link de acceso personal al Portal de Jurados para un ocupante de slot de `Jurado`.
+    Se guarda solo el hash (sha256) del secreto — el valor crudo solo existe en el
+    momento de creación (para incluirlo en el link del email) y nunca se persiste.
+    """
+
+    TIPO_PERSONA_CHOICES = [
+        ("docente", "Docente (interno)"),
+        ("jurado_externo", "Jurado Externo"),
+        ("veedor_graduado", "Veedor Graduado"),
+        ("veedor_estudiante", "Veedor Estudiante"),
+    ]
+
+    tipo_persona = models.CharField(max_length=20, choices=TIPO_PERSONA_CHOICES)
+    persona_id = models.PositiveIntegerField()
+    token_hash = models.CharField(max_length=64, unique=True, db_index=True)
+    creado = models.DateTimeField(auto_now_add=True)
+    creado_por = models.ForeignKey(
+        "auth.User", on_delete=models.SET_NULL, null=True, blank=True
+    )
+    expira = models.DateTimeField()
+    revocado = models.BooleanField(default=False)
+    fecha_revocado = models.DateTimeField(null=True, blank=True)
+    ultimo_uso = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Token Portal de Jurado"
+        verbose_name_plural = "Tokens Portal de Jurados"
+        indexes = [
+            models.Index(fields=["tipo_persona", "persona_id"]),
+        ]
+
+    def __str__(self):
+        return f"Token {self.tipo_persona}#{self.persona_id} ({'revocado' if self.revocado else 'activo'})"
+
+    def esta_vigente(self):
+        return not self.revocado and self.expira > timezone.now()
+
+
+class AccesoPortalJurado(models.Model):
+    """
+    Auditoría de accesos al Portal de Jurados: quién, cuándo, qué vio/descargó,
+    con qué resultado. La identidad es polimórfica (no hay una tabla única de
+    "personas"), por eso se guarda tipo_persona + persona_id en vez de una FK.
+    """
+
+    TIPO_PERSONA_CHOICES = TokenPortalJurado.TIPO_PERSONA_CHOICES
+
+    ACCION_CHOICES = [
+        ("link_ok", "Link verificado correctamente"),
+        ("link_fail_token", "Token inválido/expirado/revocado"),
+        ("link_fail_dni", "DNI incorrecto"),
+        ("vista_dashboard", "Vio listado de CAs"),
+        ("vista_documento", "Vio/descargó un documento"),
+        ("descarga_expediente", "Descargó expediente completo"),
+    ]
+
+    tipo_persona = models.CharField(
+        max_length=20, choices=TIPO_PERSONA_CHOICES, blank=True
+    )
+    persona_id = models.PositiveIntegerField(null=True, blank=True)
+    token = models.ForeignKey(
+        TokenPortalJurado,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="accesos",
+    )
+    carrera_academica = models.ForeignKey(
+        CarreraAcademica,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="accesos_portal_jurado",
+    )
+    formulario = models.ForeignKey(
+        Formulario, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    accion = models.CharField(max_length=25, choices=ACCION_CHOICES)
+    exitoso = models.BooleanField(default=True)
+    detalle = models.CharField(max_length=255, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=300, blank=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Acceso Portal de Jurado"
+        verbose_name_plural = "Accesos Portal de Jurados"
+        ordering = ["-fecha"]
+        indexes = [
+            models.Index(fields=["tipo_persona", "persona_id", "-fecha"]),
+            models.Index(fields=["carrera_academica", "-fecha"]),
+        ]
+
+    def __str__(self):
+        return f"{self.get_accion_display()} - {self.tipo_persona}#{self.persona_id} ({self.fecha:%d/%m/%Y %H:%M})"
 
 
 @receiver(post_delete, sender=Formulario)
