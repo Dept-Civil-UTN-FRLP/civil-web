@@ -49,7 +49,7 @@ class EmailService:
             )
             return 0, ["No hay miembros activos en la junta"]
 
-        documentos = EmailService._obtener_documentos_pertinentes(
+        documentos = EmailService.obtener_documentos_pertinentes(
             evaluacion.carrera_academica, evaluacion.anios_evaluados
         )
 
@@ -81,6 +81,66 @@ class EmailService:
                 errores.append(f"Error con {miembro}: {str(e)}")
 
         return emails_enviados, errores
+
+    @staticmethod
+    def enviar_link_portal_jurado(
+        persona,
+        tipo_persona: str,
+        ca: CarreraAcademica,
+        request,
+        creado_por=None,
+    ) -> tuple[bool, str]:
+        """
+        Envía a un ocupante de un slot de Jurado su link personal al Portal
+        de Jurados (reemplaza el envío de PDFs adjuntos por un link).
+
+        Args:
+            persona: instancia de Docente/JuradoExterno/VeedorGraduado/VeedorEstudiante
+            tipo_persona: uno de TokenPortalJurado.TIPO_PERSONA_CHOICES
+            ca: CarreraAcademica que motiva el envío (solo para el asunto/cuerpo del mail)
+            request: HttpRequest actual, para armar la URL absoluta
+            creado_por: usuario que dispara el envío (para auditoría del token)
+        """
+        from django.conf import settings
+        from django.urls import reverse
+        from carrera_academica.services.token_portal_service import crear_token
+
+        destinatario = EmailService._obtener_email_miembro(persona)
+        if not destinatario:
+            return False, f"{persona} no tiene email registrado"
+
+        _token_obj, raw_token = crear_token(tipo_persona, persona.pk, creado_por)
+        url_portal = request.build_absolute_uri(
+            reverse("carrera_academica:portal_jurado_landing", args=[raw_token])
+        )
+
+        html_body = render_to_string(
+            "emails/ca_portal_jurado_link.html",
+            {
+                "persona": persona,
+                "ca": ca,
+                "url_portal": url_portal,
+                "dias_validez": settings.PORTAL_JURADO_TOKEN_DIAS_VALIDEZ,
+            },
+        )
+
+        email = EmailMessage(
+            subject=f"Portal de Jurados - Documentación de {ca.cargo.docente}",
+            body=html_body,
+            from_email=None,
+            to=[destinatario],
+        )
+        email.content_subtype = "html"
+
+        try:
+            email.send()
+            logger.info(
+                f"Link de portal de jurado enviado a {destinatario} ({tipo_persona}#{persona.pk})"
+            )
+            return True, f"Enlace enviado a {destinatario}"
+        except Exception as e:
+            logger.error(f"Error enviando link de portal de jurado a {destinatario}: {e}")
+            return False, f"Error al enviar: {str(e)}"
 
     @staticmethod
     def enviar_primera_notificacion(
@@ -268,7 +328,7 @@ class EmailService:
         return miembros
 
     @staticmethod
-    def _obtener_documentos_pertinentes(
+    def obtener_documentos_pertinentes(
         ca: CarreraAcademica, anios_evaluados: List[int]
     ) -> List[Formulario]:
         """Obtiene documentos pertinentes para una evaluación."""
