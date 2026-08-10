@@ -153,12 +153,6 @@ def generar_pdf_estructura(request, asignatura_id):
             objeto__in=['alta', 'designacion']
         ).order_by('año', 'numero')
 
-        def formato_fecha_resolucion(res):
-            """Fecha exacta si está cargada, si no el año (resoluciones viejas sin fecha)."""
-            if res.fecha:
-                return res.fecha.strftime('%d/%m/%Y')
-            return str(res.año)
-
         if cargo.caracter == 'int':
             # Interino: la más cercana entre fecha_inicio y 1/4 del año actual
             from datetime import date
@@ -166,12 +160,14 @@ def generar_pdf_estructura(request, asignatura_id):
             fecha_ultima = min(
                 fecha_primera, primer_abril).strftime('%d/%m/%Y')
         else:
-            # Ordinario / Regular: fecha de la resolución de alta/designación más reciente
+            # Ordinario / Regular: fecha de la resolución de alta/designación más reciente.
+            # Si esa resolución no tiene fecha exacta cargada, cae en la fecha de inicio
+            # del cargo (misma que "1ª Desig.") en vez de mostrar un año pelado.
             ultima_res = resoluciones.last()
-            if ultima_res:
-                fecha_ultima = formato_fecha_resolucion(ultima_res)
+            if ultima_res and ultima_res.fecha:
+                fecha_ultima = ultima_res.fecha.strftime('%d/%m/%Y')
             else:
-                fecha_ultima = str(cargo.fecha_inicio.year)
+                fecha_ultima = fecha_primera.strftime('%d/%m/%Y')
 
         # Antigüedad
         antiguedad = calcular_antiguedad(fecha_primera)
