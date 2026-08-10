@@ -155,10 +155,10 @@ def generar_pdf_estructura(request, asignatura_id):
 
         if cargo.caracter == 'int':
             # Interino: la más cercana entre fecha_inicio y 1/4 del año actual
+            # (solo año, para que el formato sea consistente con Ordinario/Regular)
             from datetime import date
             primer_abril = date(timezone.now().year, 4, 1)
-            fecha_ultima = min(
-                fecha_primera, primer_abril).strftime('%d/%m/%Y')
+            fecha_ultima = str(min(fecha_primera, primer_abril).year)
         else:
             # Ordinario / Regular: primera resolución de ese tipo y última redesignación
             primera_res = resoluciones.first()
