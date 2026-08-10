@@ -139,7 +139,7 @@ class DocenteAdmin(admin.ModelAdmin):
 class ResolucionInline(admin.TabularInline):
     model = Resolucion
     extra = 0
-    fields = ("numero", "año", "objeto", "origen", "file")
+    fields = ("numero", "año", "fecha", "objeto", "origen", "file")
 
 
 class CargoAdmin(admin.ModelAdmin):
@@ -159,7 +159,8 @@ class CargoAdmin(admin.ModelAdmin):
 
 
 class ResolucionAdmin(admin.ModelAdmin):
-    list_display = ("__str__", "cargo", "objeto", "file")
+    list_display = ("__str__", "cargo", "numero", "año", "fecha", "objeto", "file")
+    list_editable = ("fecha",)
     search_fields = ("numero", "año", "objeto", "origen", "cargo__docente__apellido")
     list_filter = ("año", "objeto", "origen")
 

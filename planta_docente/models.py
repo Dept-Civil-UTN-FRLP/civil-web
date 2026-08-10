@@ -1855,6 +1855,12 @@ class Resolucion(models.Model):
     )
     numero = models.IntegerField()
     año = models.IntegerField()
+    fecha = models.DateField(
+        "Fecha de la Resolución",
+        null=True,
+        blank=True,
+        help_text="Fecha exacta de la resolución. Registros viejos pueden no tenerla cargada.",
+    )
     objeto = models.CharField(choices=OBJETO_CHOICES, max_length=15)
     origen = models.CharField(choices=ORIGEN_CHOICES, max_length=4)
     file = models.FileField(upload_to="private/resoluciones/", blank=True, null=True)

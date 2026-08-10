@@ -153,20 +153,26 @@ def generar_pdf_estructura(request, asignatura_id):
             objeto__in=['alta', 'designacion']
         ).order_by('año', 'numero')
 
+        def formato_fecha_resolucion(res):
+            """Fecha exacta si está cargada, si no el año (resoluciones viejas sin fecha)."""
+            if res.fecha:
+                return res.fecha.strftime('%d/%m/%Y')
+            return str(res.año)
+
         if cargo.caracter == 'int':
             # Interino: la más cercana entre fecha_inicio y 1/4 del año actual
-            # (solo año, para que el formato sea consistente con Ordinario/Regular)
             from datetime import date
             primer_abril = date(timezone.now().year, 4, 1)
-            fecha_ultima = str(min(fecha_primera, primer_abril).year)
+            fecha_ultima = min(
+                fecha_primera, primer_abril).strftime('%d/%m/%Y')
         else:
             # Ordinario / Regular: primera resolución de ese tipo y última redesignación
             primera_res = resoluciones.first()
             ultima_res = resoluciones.last()
             if primera_res and ultima_res and primera_res.pk != ultima_res.pk:
-                fecha_ultima = f"{primera_res.año} / {ultima_res.año}"
+                fecha_ultima = f"{formato_fecha_resolucion(primera_res)} / {formato_fecha_resolucion(ultima_res)}"
             elif primera_res:
-                fecha_ultima = str(primera_res.año)
+                fecha_ultima = formato_fecha_resolucion(primera_res)
             else:
                 fecha_ultima = str(cargo.fecha_inicio.year)
 

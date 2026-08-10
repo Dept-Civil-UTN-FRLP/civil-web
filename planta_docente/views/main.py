@@ -979,6 +979,7 @@ def crear_resolucion_cargo(request, pk):
         # Obtener datos del formulario
         numero = request.POST.get('numero')
         año = request.POST.get('año')
+        fecha = request.POST.get('fecha')
         objeto = request.POST.get('objeto')
         origen = request.POST.get('origen')
         file = request.FILES.get('file')
@@ -989,6 +990,7 @@ def crear_resolucion_cargo(request, pk):
                 cargo=cargo,
                 numero=int(numero),
                 año=int(año),
+                fecha=fecha or None,
                 objeto=objeto,
                 origen=origen,
                 file=file if file else None
