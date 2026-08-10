@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal de Jurados - UTN FRLP</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #2d3748;
+            margin: 0;
+            padding: 24px;
+            background-color: #ffffff;
+        }
+
+        .container { max-width: 680px; margin: 0 auto; }
+        p { margin-top: 0; margin-bottom: 16px; }
+
+        .button {
+            display: inline-block;
+            background-color: #2b6cb0;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 10px 0 20px 0;
+        }
+
+        .note {
+            font-size: 9.5pt;
+            color: #718096;
+        }
+
+        .signature-area { margin-top: 40px; }
+        .signature-line { border-top: 1px solid #a0aec0; width: 250px; margin-bottom: 8px; }
+        .signature-text { font-size: 10pt; color: #4a5568; line-height: 1.4; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <p>Estimado/a {{ persona }}:</p>
+
+    <p>Se lo/la convoca a participar como jurado en la evaluación de Carrera Académica de <strong>{{ ca.cargo.docente }}</strong>.</p>
+
+    <p>Puede acceder a la documentación correspondiente desde el siguiente enlace personal. Al ingresar, se le solicitará su número de DNI para verificar su identidad.</p>
+
+    <p>
+        <a href="{{ url_portal }}" class="button">Ver documentación</a>
+    </p>
+
+    <p class="note">
+        Este enlace es personal e intransferible, y vence en {{ dias_validez }} días.
+        Si tiene más de una Carrera Académica asignada, todas van a aparecer listadas
+        en el mismo portal.
+    </p>
+
+    <div class="signature-area">
+        <div class="signature-line"></div>
+        <div class="signature-text">
+            <strong>Secretaría del Departamento</strong><br>
+            UTN &ndash; Facultad Regional La Plata
+        </div>
+    </div>
+</div>
+</body>
+</html>

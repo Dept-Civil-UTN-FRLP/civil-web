@@ -906,6 +906,64 @@ def notificar_junta_view(request, pk):
 
 
 @login_required
+def notificar_portal_jurado_view(request, pk):
+    """
+    Envía a cada ocupante de los 6 slots del Jurado de esta CA su link
+    personal al Portal de Jurados (en vez de adjuntar PDFs por mail).
+    No toca enviar_notificacion_junta / JuntaEvaluadora — es una vía paralela.
+    """
+    ca = get_object_or_404(CarreraAcademica, pk=pk)
+    jurado = ca.jurado
+
+    if not jurado:
+        messages.error(request, "Esta CA no tiene un Jurado asignado.")
+        return redirect("carrera_academica:detalle_ca", pk=ca.pk)
+
+    ocupantes = [
+        ("docente", jurado.profesor_titular_1),
+        ("docente", jurado.profesor_suplente_1),
+        ("jurado_externo", jurado.profesor_titular_2),
+        ("jurado_externo", jurado.profesor_suplente_2),
+        ("jurado_externo", jurado.profesor_titular_3),
+        ("jurado_externo", jurado.profesor_suplente_3),
+        ("veedor_graduado", jurado.veedor_graduado_titular),
+        ("veedor_graduado", jurado.veedor_graduado_suplente),
+        ("veedor_estudiante", jurado.veedor_estudiante_titular),
+        ("veedor_estudiante", jurado.veedor_estudiante_suplente),
+    ]
+
+    enviados = 0
+    for tipo_persona, persona in ocupantes:
+        if not persona:
+            continue
+
+        from carrera_academica.services.jurado_portal_service import obtener_dni
+        if obtener_dni(persona) is None:
+            messages.warning(
+                request,
+                f"{persona} no tiene DNI cargado — completalo en el admin antes de notificarlo.",
+            )
+            continue
+
+        exito, mensaje = EmailService.enviar_link_portal_jurado(
+            persona, tipo_persona, ca, request, creado_por=request.user
+        )
+        if exito:
+            enviados += 1
+        else:
+            messages.warning(request, f"{persona}: {mensaje}")
+
+    if enviados:
+        messages.success(
+            request, f"Se enviaron {enviados} enlaces del Portal de Jurados."
+        )
+    elif not any(p for _, p in ocupantes):
+        messages.error(request, "El Jurado de esta CA no tiene integrantes cargados.")
+
+    return redirect("carrera_academica:detalle_ca", pk=ca.pk)
+
+
+@login_required
 def agendar_evaluacion_view(request, pk):
     evaluacion = get_object_or_404(Evaluacion, pk=pk)
     es_fetch = request.headers.get("X-Requested-With") == "fetch"

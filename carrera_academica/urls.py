@@ -1,6 +1,8 @@
 # carrera_academica/urls.py
+from django.conf import settings
 from django.urls import path
 from . import views
+from . import views_portal_jurado
 
 app_name = 'carrera_academica'
 
@@ -101,4 +103,39 @@ urlpatterns = [
          name='crear_universidad'),
     path('universidades/<int:pk>/editar/',
          views.editar_universidad_view, name='editar_universidad'),
+
+    # ===== NOTIFICAR JURADO (PORTAL) =====
+    path('expediente/<int:pk>/notificar-portal-jurado/',
+         views.notificar_portal_jurado_view, name='notificar_portal_jurado'),
 ]
+
+# ===== PORTAL DE JURADOS =====
+# Únicas vistas de esta app SIN @login_required — se protegen con sesión
+# propia (ver carrera_academica/views_portal_jurado.py). Gateadas por un
+# flag independiente de MODULOS_ACTIVOS para poder apagarlas sin tocar el
+# resto del módulo.
+if settings.PORTAL_JURADOS_ENABLED:
+    urlpatterns += [
+        # Las rutas fijas van ANTES que <str:token>/ — si no, ese patrón
+        # genérico matchea primero y "tapa" a todas las demás (ej.
+        # /portal-jurados/dashboard/ matchearía como si "dashboard" fuera
+        # un token).
+        path('portal-jurados/dashboard/',
+             views_portal_jurado.portal_jurado_dashboard_view,
+             name='portal_jurado_dashboard'),
+        path('portal-jurados/documento/<int:formulario_pk>/',
+             views_portal_jurado.portal_jurado_documento_view,
+             name='portal_jurado_documento'),
+        path('portal-jurados/expediente/<int:ca_pk>/',
+             views_portal_jurado.portal_jurado_expediente_completo_view,
+             name='portal_jurado_expediente_completo'),
+        path('portal-jurados/salir/',
+             views_portal_jurado.portal_jurado_logout_view,
+             name='portal_jurado_logout'),
+        path('portal-jurados/sesion-expirada/',
+             views_portal_jurado.portal_jurado_sesion_expirada_view,
+             name='portal_jurado_sesion_expirada'),
+        path('portal-jurados/<str:token>/',
+             views_portal_jurado.portal_jurado_landing_view,
+             name='portal_jurado_landing'),
+    ]

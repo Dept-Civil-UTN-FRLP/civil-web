@@ -237,6 +237,17 @@ MODULOS_ACTIVOS = config(
 DEPARTAMENTO = config("DEPARTAMENTO", default="civil")
 
 # ============================================================================
+# PORTAL DE JURADOS (links personales, sin login)
+# ============================================================================
+PORTAL_JURADOS_ENABLED = config("PORTAL_JURADOS_ENABLED", default=False, cast=bool)
+PORTAL_JURADO_TOKEN_DIAS_VALIDEZ = config(
+    "PORTAL_JURADO_TOKEN_DIAS_VALIDEZ", default=60, cast=int
+)
+PORTAL_JURADO_SESSION_MINUTOS = config(
+    "PORTAL_JURADO_SESSION_MINUTOS", default=60, cast=int
+)
+
+# ============================================================================
 # PLANIFICACIONES ANUALES - CONFIGURACIÓN
 # ============================================================================
 

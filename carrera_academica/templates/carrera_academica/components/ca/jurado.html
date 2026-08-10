@@ -43,11 +43,21 @@
         </div>
 
         <div class="mt-2">
-            <a href="{% url 'carrera_academica:detalle_jurado' ca.jurado.pk %}" 
+            <a href="{% url 'carrera_academica:detalle_jurado' ca.jurado.pk %}"
                class="btn btn-sm btn-outline-primary w-100">
                 <i class="bi bi-eye"></i> Ver Detalle
             </a>
         </div>
+
+        {% if PORTAL_JURADOS_ENABLED %}
+        <div class="mt-2">
+            <a href="{% url 'carrera_academica:notificar_portal_jurado' ca.pk %}"
+               class="btn btn-sm btn-outline-success w-100"
+               onclick="return confirm('¿Enviar el enlace del Portal de Jurados a todos los integrantes de este Jurado?');">
+                <i class="bi bi-send"></i> Notificar Portal de Jurados
+            </a>
+        </div>
+        {% endif %}
 
         {% else %}
         <div class="alert alert-warning mb-0">
