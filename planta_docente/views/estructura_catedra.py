@@ -69,10 +69,9 @@ def formulario_estructura(request, asignatura_id):
     """
     asignatura = get_object_or_404(Asignatura, pk=asignatura_id)
 
-    # Obtener cargos activos (excluyendo Ad-Honorem)
+    # Obtener cargos activos (incluye Ad-Honorem para que se vean en la vista previa)
     cargos = (
         Cargo.objects.filter(asignatura=asignatura, estado="activo")
-        .exclude(caracter="adh")
         .select_related("docente")
         .prefetch_related("resoluciones")
         .order_by("categoria")
@@ -123,15 +122,17 @@ def generar_pdf_estructura(request, asignatura_id):
     incluir_areas = request.POST.get("incluir_areas") == "on"
     incluir_bloques = request.POST.get("incluir_bloques") == "on"
     incluir_otros_aportes = request.POST.get("incluir_otros_aportes") == "on"
+    incluir_adhonorem = request.POST.get("incluir_adhonorem") == "on"
 
     # Obtener cargos activos optimizados
     cargos_query = (
         Cargo.objects.filter(asignatura=asignatura, estado="activo")
-        .exclude(caracter="adh")
         .select_related("docente")
         .prefetch_related("resoluciones")
         .order_by("categoria", "docente__apellido")
     )
+    if not incluir_adhonorem:
+        cargos_query = cargos_query.exclude(caracter="adh")
 
     # Separar profesores y auxiliares
     categorias_profesores = ["tit", "aso", "adj"]
