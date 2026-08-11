@@ -46,7 +46,7 @@
             {% for doc in documentos %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
                 <span>
-                    {{ doc.get_tipo_formulario_display }}
+                    {{ doc.nombre_tipo }}
                     {% if doc.anio_correspondiente %}<span class="text-muted">({{ doc.anio_correspondiente }})</span>{% endif %}
                 </span>
                 <a href="{% url 'carrera_academica:portal_jurado_documento' doc.pk %}"

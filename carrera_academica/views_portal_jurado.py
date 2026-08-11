@@ -17,7 +17,12 @@ from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from carrera_academica.models import AccesoPortalJurado, CarreraAcademica, Formulario
+from carrera_academica.models import (
+    AccesoPortalJurado,
+    CarreraAcademica,
+    Formulario,
+    TipoFormulario,
+)
 from carrera_academica.services import jurado_portal_service as portal_service
 from carrera_academica.services import token_portal_service
 from carrera_academica.services.email_service import EmailService
@@ -176,6 +181,13 @@ def portal_jurado_detalle_view(request, ca_pk):
         if evaluacion
         else []
     )
+
+    # Nombre completo del tipo de formulario (ej. "Plan Anual De Actividades Del
+    # Docente" en vez de "F04") -- para jurados externos que no conocen los
+    # codigos internos de esta regional.
+    nombres_tipo = dict(TipoFormulario.objects.values_list("codigo", "nombre"))
+    for doc in documentos:
+        doc.nombre_tipo = nombres_tipo.get(doc.tipo_formulario, doc.get_tipo_formulario_display())
 
     _registrar_acceso(request, "vista_detalle_ca", carrera_academica_id=ca.pk)
 
