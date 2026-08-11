@@ -210,6 +210,21 @@ class PortalJuradoViewsTestCase(TestCase):
         self.assertContains(resp, self.docente_a.apellido.upper())
         self.assertNotContains(resp, self.docente_b.apellido.upper() + ", " + self.docente_b.nombre)
 
+    def test_idor_detalle_de_otra_ca_da_404(self):
+        self.client.post(self._landing_url(self.raw_a), {"dni": "11111111"})
+        resp = self.client.get(
+            reverse("carrera_academica:portal_jurado_detalle", args=[self.ca_b.pk])
+        )
+        self.assertEqual(resp.status_code, 404)
+
+    def test_detalle_de_ca_propia_muestra_documentos(self):
+        self.client.post(self._landing_url(self.raw_a), {"dni": "11111111"})
+        resp = self.client.get(
+            reverse("carrera_academica:portal_jurado_detalle", args=[self.ca_a.pk])
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, self.docente_a.apellido.upper())
+
     def test_idor_expediente_de_otra_ca_da_404(self):
         """El caso central: jurado A no puede bajar el expediente de la CA de B
         ni siquiera pegando la URL directamente, con su propia sesión válida."""

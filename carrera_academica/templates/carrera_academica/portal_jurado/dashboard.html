@@ -4,7 +4,10 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0">Carreras Académicas donde participás como jurado</h4>
+    <div>
+        <h4 class="mb-0">Mis expedientes</h4>
+        <p class="text-muted mb-0">Tocá un expediente para ver su documentación.</p>
+    </div>
     <a href="{% url 'carrera_academica:portal_jurado_logout' %}" class="btn btn-sm btn-outline-secondary">
         <i class="bi bi-box-arrow-right"></i> Salir
     </a>
@@ -16,53 +19,30 @@
 </div>
 {% endif %}
 
-{% for item in items %}
-<div class="card mb-4 shadow-sm">
-    <div class="card-header d-flex justify-content-between align-items-start">
-        <div>
-            <h5 class="mb-1">{{ item.ca.cargo.docente }}</h5>
-            <div class="text-muted small">{{ item.cargo_info }}</div>
-        </div>
-        <span class="badge bg-secondary">{{ item.ca.get_estado_display }}</span>
-    </div>
-    <div class="card-body">
-        <div class="mb-3">
-            {% if item.evaluacion.fecha_evaluacion %}
-            <span class="badge bg-primary">
-                <i class="bi bi-calendar-event"></i>
-                Reunión: {{ item.evaluacion.fecha_evaluacion|date:"d/m/Y" }} a las {{ item.evaluacion.fecha_evaluacion|date:"H:i" }}hs
-            </span>
-            {% else %}
-            <span class="badge bg-warning text-dark">
-                <i class="bi bi-calendar-x"></i> Fecha de reunión a confirmar
-            </span>
-            {% endif %}
-        </div>
+<div class="row g-4">
+    {% for item in items %}
+    <div class="col-md-6 col-lg-4">
+        <a href="{% url 'carrera_academica:portal_jurado_detalle' item.ca.pk %}" class="text-decoration-none">
+            <div class="folder p-4 pt-4 mt-3 h-100 text-dark">
+                <div class="folder-tab">
+                    <i class="bi bi-folder2"></i> Expediente
+                </div>
 
-        {% if item.documentos %}
-        <ul class="list-group list-group-flush mb-3">
-            {% for doc in item.documentos %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <span>
-                    {{ doc.get_tipo_formulario_display }}
-                    {% if doc.anio_correspondiente %}<span class="text-muted">({{ doc.anio_correspondiente }})</span>{% endif %}
+                <h5 class="mb-1">{{ item.ca.cargo.docente }}</h5>
+                <div class="text-muted small mb-3">{{ item.cargo_info }}</div>
+
+                <hr style="border-top: 1px dashed #c9b489;">
+
+                {% if item.evaluacion.fecha_evaluacion %}
+                <span class="folder-sello agendada">
+                    {{ item.evaluacion.fecha_evaluacion|date:"d/m/Y" }} &middot; {{ item.evaluacion.fecha_evaluacion|date:"H:i" }}hs
                 </span>
-                <a href="{% url 'carrera_academica:portal_jurado_documento' doc.pk %}"
-                   class="btn btn-sm btn-outline-primary" target="_blank">
-                    <i class="bi bi-file-earmark-pdf"></i> Ver
-                </a>
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <p class="text-muted mb-3">Todavía no hay documentación entregada para esta evaluación.</p>
-        {% endif %}
-
-        <a href="{% url 'carrera_academica:portal_jurado_expediente_completo' item.ca.pk %}"
-           class="btn btn-outline-dark btn-sm" target="_blank">
-            <i class="bi bi-folder2-open"></i> Ver expediente completo
+                {% else %}
+                <span class="folder-sello pendiente">Fecha a confirmar</span>
+                {% endif %}
+            </div>
         </a>
     </div>
+    {% endfor %}
 </div>
-{% endfor %}
 {% endblock %}

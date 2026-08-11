@@ -124,6 +124,13 @@ def _minutos_sesion():
     return settings.PORTAL_JURADO_SESSION_MINUTOS
 
 
+def _cargo_info(ca):
+    return (
+        f"{ca.cargo.get_categoria_display()} {ca.cargo.get_caracter_display()} "
+        f"en {ca.cargo.asignatura.nombre.title()}"
+    )
+
+
 @_requiere_sesion_portal
 def portal_jurado_dashboard_view(request):
     tipo_persona, persona_id, _ = _identidad_sesion(request)
@@ -135,21 +142,11 @@ def portal_jurado_dashboard_view(request):
     items = []
     for ca in cas:
         evaluacion = portal_service.obtener_evaluacion_relevante(ca)
-        documentos = (
-            EmailService.obtener_documentos_pertinentes(ca, evaluacion.anios_evaluados)
-            if evaluacion
-            else []
-        )
-        cargo_info = (
-            f"{ca.cargo.get_categoria_display()} {ca.cargo.get_caracter_display()} "
-            f"en {ca.cargo.asignatura.nombre.title()}"
-        )
         items.append(
             {
                 "ca": ca,
                 "evaluacion": evaluacion,
-                "documentos": documentos,
-                "cargo_info": cargo_info,
+                "cargo_info": _cargo_info(ca),
             }
         )
 
@@ -159,6 +156,38 @@ def portal_jurado_dashboard_view(request):
         request,
         "carrera_academica/portal_jurado/dashboard.html",
         {"persona": persona, "items": items},
+    )
+
+
+@_requiere_sesion_portal
+def portal_jurado_detalle_view(request, ca_pk):
+    tipo_persona, persona_id, _ = _identidad_sesion(request)
+
+    ca_autorizadas = portal_service.obtener_cas_para_persona(
+        tipo_persona, persona_id
+    ).values_list("pk", flat=True)
+    if ca_pk not in ca_autorizadas:
+        raise Http404
+
+    ca = get_object_or_404(CarreraAcademica, pk=ca_pk)
+    evaluacion = portal_service.obtener_evaluacion_relevante(ca)
+    documentos = (
+        EmailService.obtener_documentos_pertinentes(ca, evaluacion.anios_evaluados)
+        if evaluacion
+        else []
+    )
+
+    _registrar_acceso(request, "vista_detalle_ca", carrera_academica_id=ca.pk)
+
+    return render(
+        request,
+        "carrera_academica/portal_jurado/detalle.html",
+        {
+            "ca": ca,
+            "evaluacion": evaluacion,
+            "documentos": documentos,
+            "cargo_info": _cargo_info(ca),
+        },
     )
 
 

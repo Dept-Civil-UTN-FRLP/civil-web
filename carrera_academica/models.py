@@ -1396,6 +1396,7 @@ class AccesoPortalJurado(models.Model):
         ("link_fail_token", "Token inválido/expirado/revocado"),
         ("link_fail_dni", "DNI incorrecto"),
         ("vista_dashboard", "Vio listado de CAs"),
+        ("vista_detalle_ca", "Vio el detalle de un expediente"),
         ("vista_documento", "Vio/descargó un documento"),
         ("descarga_expediente", "Descargó expediente completo"),
     ]
