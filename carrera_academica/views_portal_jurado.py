@@ -11,10 +11,10 @@ Django auth.
 """
 import functools
 
+from django.conf import settings
 from django.contrib import messages
-from django.http import Http404, HttpResponse
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
 from django.utils import timezone
 
 from carrera_academica.models import AccesoPortalJurado, CarreraAcademica, Formulario
@@ -211,6 +211,11 @@ def portal_jurado_documento_view(request, formulario_pk):
         carrera_academica_id=formulario.carrera_academica_id,
         formulario_id=formulario.pk,
     )
+
+    if settings.DEBUG:
+        # En local no hay nginx que interprete X-Accel-Redirect -- servir el
+        # archivo directo para poder probar. En producción nunca entra acá.
+        return FileResponse(formulario.archivo.open("rb"), content_type="application/pdf")
 
     # Mismo esquema que config/views_media.py::serve_private_media, pero
     # autorizando por sesión del portal en vez de @login_required.
