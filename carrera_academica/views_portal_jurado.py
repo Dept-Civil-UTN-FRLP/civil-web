@@ -11,6 +11,7 @@ Django auth.
 """
 import functools
 
+from django.contrib import messages
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -19,6 +20,7 @@ from django.utils import timezone
 from carrera_academica.models import AccesoPortalJurado, CarreraAcademica, Formulario
 from carrera_academica.services import jurado_portal_service as portal_service
 from carrera_academica.services import token_portal_service
+from carrera_academica.services.email_service import EmailService
 from carrera_academica.services.pdf_service import PDFService
 
 SESSION_KEY = "portal_jurado"
@@ -132,10 +134,22 @@ def portal_jurado_dashboard_view(request):
     cas = portal_service.obtener_cas_para_persona(tipo_persona, persona_id)
     items = []
     for ca in cas:
+        evaluacion = portal_service.obtener_evaluacion_relevante(ca)
+        documentos = (
+            EmailService.obtener_documentos_pertinentes(ca, evaluacion.anios_evaluados)
+            if evaluacion
+            else []
+        )
+        cargo_info = (
+            f"{ca.cargo.get_categoria_display()} {ca.cargo.get_caracter_display()} "
+            f"en {ca.cargo.asignatura.nombre.title()}"
+        )
         items.append(
             {
                 "ca": ca,
-                "documentos": portal_service.obtener_documentos_pertinentes(ca),
+                "evaluacion": evaluacion,
+                "documentos": documentos,
+                "cargo_info": cargo_info,
             }
         )
 
@@ -195,7 +209,10 @@ def portal_jurado_expediente_completo_view(request, ca_pk):
     output_buffer, errores = PDFService.consolidar_expediente(ca)
 
     if not output_buffer:
-        raise Http404
+        # Autorizado para esta CA, pero no hay nada para consolidar -- no es
+        # un caso de IDOR, así que no corresponde el 404 genérico.
+        messages.info(request, "Todavía no hay documentos para consolidar en esta Carrera Académica.")
+        return redirect("carrera_academica:portal_jurado_dashboard")
 
     _registrar_acceso(request, "descarga_expediente", carrera_academica_id=ca.pk)
 

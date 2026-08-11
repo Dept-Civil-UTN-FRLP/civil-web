@@ -17,6 +17,12 @@
     </nav>
 
     <div class="container pb-5">
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+
         {% block content %}{% endblock %}
     </div>
 </body>

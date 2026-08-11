@@ -18,14 +18,27 @@
 
 {% for item in items %}
 <div class="card mb-4 shadow-sm">
-    <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="card-header d-flex justify-content-between align-items-start">
         <div>
-            <strong>{{ item.ca.cargo.docente }}</strong>
-            <span class="text-muted"> &mdash; {{ item.ca.cargo.asignatura }}</span>
+            <h5 class="mb-1">{{ item.ca.cargo.docente }}</h5>
+            <div class="text-muted small">{{ item.cargo_info }}</div>
         </div>
         <span class="badge bg-secondary">{{ item.ca.get_estado_display }}</span>
     </div>
     <div class="card-body">
+        <div class="mb-3">
+            {% if item.evaluacion.fecha_evaluacion %}
+            <span class="badge bg-primary">
+                <i class="bi bi-calendar-event"></i>
+                Reunión: {{ item.evaluacion.fecha_evaluacion|date:"d/m/Y" }} a las {{ item.evaluacion.fecha_evaluacion|date:"H:i" }}hs
+            </span>
+            {% else %}
+            <span class="badge bg-warning text-dark">
+                <i class="bi bi-calendar-x"></i> Fecha de reunión a confirmar
+            </span>
+            {% endif %}
+        </div>
+
         {% if item.documentos %}
         <ul class="list-group list-group-flush mb-3">
             {% for doc in item.documentos %}
