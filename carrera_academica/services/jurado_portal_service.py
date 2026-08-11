@@ -85,11 +85,26 @@ def obtener_evaluacion_relevante(ca: CarreraAcademica) -> Optional[Evaluacion]:
     return ca.evaluaciones.order_by("-numero_evaluacion").first()
 
 
-def obtener_documentos_pertinentes(ca: CarreraAcademica) -> List:
-    """Mismos documentos que hoy se adjuntan por mail (EmailService), para la evaluación relevante."""
-    from carrera_academica.services.email_service import EmailService
+def obtener_checklist_documentos(ca: CarreraAcademica, evaluacion: Optional[Evaluacion]) -> List:
+    """
+    Checklist completo de documentación pertinente para el jurado, entregada o no:
 
-    evaluacion = obtener_evaluacion_relevante(ca)
-    if not evaluacion:
-        return []
-    return EmailService.obtener_documentos_pertinentes(ca, evaluacion.anios_evaluados)
+    - Generales de la CA (CV, F01, F02, F03): se crean una sola vez al abrir la CA.
+    - Anuales de los años evaluados (F04, F05, F06, F07, ENC, F13): se crean por año
+      al abrir la CA.
+    - Ligados a esta evaluación puntual (F08, F09, F10, F11, F12 -- nómina de junta,
+      notificaciones, acta dictamen): se crean recién al iniciar la evaluación.
+
+    A diferencia de EmailService.obtener_documentos_pertinentes (que solo trae lo ya
+    entregado, porque no se puede adjuntar un archivo inexistente a un mail), acá se
+    traen también los pendientes -- el jurado tiene que poder ver qué falta, no solo
+    lo que ya está.
+    """
+    filtro = Q(anio_correspondiente__isnull=True, evaluacion__isnull=True)
+    if evaluacion:
+        filtro |= Q(anio_correspondiente__in=evaluacion.anios_evaluados)
+        filtro |= Q(evaluacion=evaluacion)
+
+    return list(
+        ca.formularios.filter(filtro).order_by("tipo_formulario", "anio_correspondiente")
+    )

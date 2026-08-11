@@ -25,7 +25,6 @@ from carrera_academica.models import (
 )
 from carrera_academica.services import jurado_portal_service as portal_service
 from carrera_academica.services import token_portal_service
-from carrera_academica.services.email_service import EmailService
 from carrera_academica.services.pdf_service import PDFService
 
 SESSION_KEY = "portal_jurado"
@@ -176,11 +175,7 @@ def portal_jurado_detalle_view(request, ca_pk):
 
     ca = get_object_or_404(CarreraAcademica, pk=ca_pk)
     evaluacion = portal_service.obtener_evaluacion_relevante(ca)
-    documentos = (
-        EmailService.obtener_documentos_pertinentes(ca, evaluacion.anios_evaluados)
-        if evaluacion
-        else []
-    )
+    documentos = portal_service.obtener_checklist_documentos(ca, evaluacion)
 
     # Nombre completo del tipo de formulario (ej. "Plan Anual De Actividades Del
     # Docente" en vez de "F04") -- para jurados externos que no conocen los

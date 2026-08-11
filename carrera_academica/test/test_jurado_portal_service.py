@@ -16,7 +16,9 @@ from carrera_academica.models import (
     VeedorEstudiante,
     VeedorGraduado,
 )
+from carrera_academica.models import Formulario
 from carrera_academica.services.jurado_portal_service import (
+    obtener_checklist_documentos,
     buscar_jurados_por_persona,
     obtener_cas_para_persona,
     obtener_dni,
@@ -174,3 +176,50 @@ class JuradoPortalServiceTestCase(TestCase):
 
     def test_evaluacion_relevante_sin_evaluaciones_es_none(self):
         self.assertIsNone(obtener_evaluacion_relevante(self.ca1))
+
+
+class ChecklistDocumentosTestCase(TestCase):
+    """
+    ca1 se crea vía CarreraAcademica.objects.create(...), lo que dispara la señal
+    crear_formularios_iniciales -- ya tiene el checklist completo (CV/F01/F02/F03
+    generales + F04/F05/F06/F07/ENC por cada año 2020-2025), todos "PEN" sin archivo.
+    """
+
+    def setUp(self):
+        self.docente, self.ca = _crear_ca("Ana", 10000001, "Analisis I")
+
+    def test_generales_aparecen_sin_evaluacion(self):
+        checklist = obtener_checklist_documentos(self.ca, evaluacion=None)
+        tipos = {d.tipo_formulario for d in checklist}
+        self.assertEqual(tipos, {"CV", "F01", "F02", "F03"})
+
+    def test_anuales_de_evaluacion_aparecen_los_de_esos_anios_nomas(self):
+        evaluacion = Evaluacion.objects.create(
+            carrera_academica=self.ca, numero_evaluacion=1,
+            anios_evaluados=[2020, 2021], estado="PRO",
+        )
+        checklist = obtener_checklist_documentos(self.ca, evaluacion)
+
+        anuales = [d for d in checklist if d.anio_correspondiente]
+        anios_presentes = {d.anio_correspondiente for d in anuales}
+        self.assertEqual(anios_presentes, {2020, 2021})
+        tipos_anuales = {d.tipo_formulario for d in anuales}
+        self.assertEqual(tipos_anuales, {"F04", "F05", "F06", "F07", "ENC"})
+
+    def test_ligados_a_la_evaluacion_aparecen(self):
+        evaluacion = Evaluacion.objects.create(
+            carrera_academica=self.ca, numero_evaluacion=1,
+            anios_evaluados=[2020], estado="PRO",
+        )
+        for tipo in ["F08", "F09", "F10", "F11", "F12"]:
+            Formulario.objects.create(
+                carrera_academica=self.ca, tipo_formulario=tipo, evaluacion=evaluacion,
+            )
+
+        checklist = obtener_checklist_documentos(self.ca, evaluacion)
+        tipos = {d.tipo_formulario for d in checklist}
+        self.assertTrue({"F08", "F09", "F10", "F11", "F12"}.issubset(tipos))
+
+    def test_pendientes_no_tienen_archivo(self):
+        checklist = obtener_checklist_documentos(self.ca, evaluacion=None)
+        self.assertTrue(all(not d.archivo for d in checklist))

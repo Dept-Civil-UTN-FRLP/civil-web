@@ -45,19 +45,23 @@
         <ul class="list-group list-group-flush">
             {% for doc in documentos %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
-                <span>
+                <span{% if not doc.archivo %} class="text-muted"{% endif %}>
                     {{ doc.nombre_tipo }}
                     {% if doc.anio_correspondiente %}<span class="text-muted">({{ doc.anio_correspondiente }})</span>{% endif %}
                 </span>
+                {% if doc.archivo %}
                 <a href="{% url 'carrera_academica:portal_jurado_documento' doc.pk %}"
                    class="btn btn-sm btn-outline-primary" target="_blank">
                     <i class="bi bi-eye"></i> Ver
                 </a>
+                {% else %}
+                <span class="badge bg-light text-muted border">Sin cargar</span>
+                {% endif %}
             </li>
             {% endfor %}
         </ul>
         {% else %}
-        <p class="text-muted mb-0">Todavía no hay documentación entregada para esta evaluación.</p>
+        <p class="text-muted mb-0">No hay documentación asociada a esta evaluación.</p>
         {% endif %}
     </div>
 </div>
