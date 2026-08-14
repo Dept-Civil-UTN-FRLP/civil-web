@@ -206,7 +206,9 @@ class ChecklistDocumentosTestCase(TestCase):
         tipos_anuales = {d.tipo_formulario for d in anuales}
         self.assertEqual(tipos_anuales, {"F04", "F05", "F06", "F07", "ENC"})
 
-    def test_ligados_a_la_evaluacion_aparecen(self):
+    def test_ligados_a_la_evaluacion_no_aparecen(self):
+        """F08-F12 son administrativos (nomina de junta, notificaciones, acta
+        dictamen), no documentacion academica -- no le corresponden al jurado."""
         evaluacion = Evaluacion.objects.create(
             carrera_academica=self.ca, numero_evaluacion=1,
             anios_evaluados=[2020], estado="PRO",
@@ -218,7 +220,7 @@ class ChecklistDocumentosTestCase(TestCase):
 
         checklist = obtener_checklist_documentos(self.ca, evaluacion)
         tipos = {d.tipo_formulario for d in checklist}
-        self.assertTrue({"F08", "F09", "F10", "F11", "F12"}.issubset(tipos))
+        self.assertFalse({"F08", "F09", "F10", "F11", "F12"} & tipos)
 
     def test_pendientes_no_tienen_archivo(self):
         checklist = obtener_checklist_documentos(self.ca, evaluacion=None)

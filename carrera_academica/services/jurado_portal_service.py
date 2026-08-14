@@ -87,13 +87,16 @@ def obtener_evaluacion_relevante(ca: CarreraAcademica) -> Optional[Evaluacion]:
 
 def obtener_checklist_documentos(ca: CarreraAcademica, evaluacion: Optional[Evaluacion]) -> List:
     """
-    Checklist completo de documentación pertinente para el jurado, entregada o no:
+    Checklist completo de documentación académica pertinente para el jurado,
+    entregada o no:
 
     - Generales de la CA (CV, F01, F02, F03): se crean una sola vez al abrir la CA.
     - Anuales de los años evaluados (F04, F05, F06, F07, ENC, F13): se crean por año
       al abrir la CA.
-    - Ligados a esta evaluación puntual (F08, F09, F10, F11, F12 -- nómina de junta,
-      notificaciones, acta dictamen): se crean recién al iniciar la evaluación.
+
+    Deliberadamente NO se incluyen F08-F12 (nómina de junta, notificaciones, acta
+    dictamen) -- son notificaciones/actas administrativas dirigidas al jurado mismo
+    o generadas después de su decisión, no documentación académica para revisar.
 
     A diferencia de EmailService.obtener_documentos_pertinentes (que solo trae lo ya
     entregado, porque no se puede adjuntar un archivo inexistente a un mail), acá se
@@ -102,8 +105,7 @@ def obtener_checklist_documentos(ca: CarreraAcademica, evaluacion: Optional[Eval
     """
     filtro = Q(anio_correspondiente__isnull=True, evaluacion__isnull=True)
     if evaluacion:
-        filtro |= Q(anio_correspondiente__in=evaluacion.anios_evaluados)
-        filtro |= Q(evaluacion=evaluacion)
+        filtro |= Q(anio_correspondiente__in=evaluacion.anios_evaluados, evaluacion__isnull=True)
 
     return list(
         ca.formularios.filter(filtro).order_by("tipo_formulario", "anio_correspondiente")
