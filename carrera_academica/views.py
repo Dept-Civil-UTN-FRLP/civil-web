@@ -16,12 +16,14 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.text import slugify
+from django.views.decorators.http import require_POST
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Inches
 from pypdf import PdfWriter
 from weasyprint import HTML
 
+from carrera_academica.services import jurado_portal_service
 from carrera_academica.services.document_service import DocumentService
 from carrera_academica.services.email_service import EmailService
 from carrera_academica.services.pdf_service import PDFService
@@ -248,6 +250,8 @@ def detalle_ca_view(request, pk):
         "resultado_choices": CarreraAcademica.RESULTADO_CIERRE_CHOICES,
         **_preparar_contexto_detalle(ca),
     }
+    if ca.jurado:
+        contexto["miembros_jurado_portal"] = jurado_portal_service.listar_miembros_jurado(ca.jurado)
     return render(request, "carrera_academica/ca_detail.html", contexto)
 
 
@@ -906,10 +910,13 @@ def notificar_junta_view(request, pk):
 
 
 @login_required
+@require_POST
 def notificar_portal_jurado_view(request, pk):
     """
-    Envía a cada ocupante de los 6 slots del Jurado de esta CA su link
-    personal al Portal de Jurados (en vez de adjuntar PDFs por mail).
+    Envía su link personal al Portal de Jurados a los integrantes del Jurado de
+    esta CA que se hayan tildado en el modal (checkbox "destinatarios", valor
+    "tipo_persona:persona_id"). Permite elegir puntualmente titular o suplente,
+    y reenviar a uno solo sin volver a notificar al resto.
     No toca enviar_notificacion_junta / JuntaEvaluadora — es una vía paralela.
     """
     ca = get_object_or_404(CarreraAcademica, pk=pk)
@@ -919,26 +926,27 @@ def notificar_portal_jurado_view(request, pk):
         messages.error(request, "Esta CA no tiene un Jurado asignado.")
         return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
-    ocupantes = [
-        ("docente", jurado.profesor_titular_1),
-        ("docente", jurado.profesor_suplente_1),
-        ("jurado_externo", jurado.profesor_titular_2),
-        ("jurado_externo", jurado.profesor_suplente_2),
-        ("jurado_externo", jurado.profesor_titular_3),
-        ("jurado_externo", jurado.profesor_suplente_3),
-        ("veedor_graduado", jurado.veedor_graduado_titular),
-        ("veedor_graduado", jurado.veedor_graduado_suplente),
-        ("veedor_estudiante", jurado.veedor_estudiante_titular),
-        ("veedor_estudiante", jurado.veedor_estudiante_suplente),
-    ]
+    # Se recalcula server-side quiénes son los miembros reales de este Jurado, y
+    # se descarta cualquier valor del POST que no corresponda a uno de ellos --
+    # así un POST manipulado no puede hacer que se le mande el link a un tercero.
+    miembros_por_valor = {
+        m["valor"]: m
+        for m in jurado_portal_service.listar_miembros_jurado(jurado)
+    }
+
+    seleccionados = request.POST.getlist("destinatarios")
+    if not seleccionados:
+        messages.warning(request, "No se seleccionó ningún destinatario.")
+        return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
     enviados = 0
-    for tipo_persona, persona in ocupantes:
-        if not persona:
+    for valor in seleccionados:
+        miembro = miembros_por_valor.get(valor)
+        if not miembro:
             continue
 
-        from carrera_academica.services.jurado_portal_service import obtener_dni
-        if obtener_dni(persona) is None:
+        persona = miembro["persona"]
+        if not miembro["tiene_dni"]:
             messages.warning(
                 request,
                 f"{persona} no tiene DNI cargado — completalo en el admin antes de notificarlo.",
@@ -946,7 +954,7 @@ def notificar_portal_jurado_view(request, pk):
             continue
 
         exito, mensaje = EmailService.enviar_link_portal_jurado(
-            persona, tipo_persona, ca, request, creado_por=request.user
+            persona, miembro["tipo_persona"], ca, request, creado_por=request.user
         )
         if exito:
             enviados += 1
@@ -957,8 +965,6 @@ def notificar_portal_jurado_view(request, pk):
         messages.success(
             request, f"Se enviaron {enviados} enlaces del Portal de Jurados."
         )
-    elif not any(p for _, p in ocupantes):
-        messages.error(request, "El Jurado de esta CA no tiene integrantes cargados.")
 
     return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 

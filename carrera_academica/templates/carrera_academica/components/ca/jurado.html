@@ -51,11 +51,10 @@
 
         {% if PORTAL_JURADOS_ENABLED %}
         <div class="mt-2">
-            <a href="{% url 'carrera_academica:notificar_portal_jurado' ca.pk %}"
-               class="btn btn-sm btn-outline-success w-100"
-               onclick="return confirm('¿Enviar el enlace del Portal de Jurados a todos los integrantes de este Jurado?');">
+            <button type="button" class="btn btn-sm btn-outline-success w-100"
+                    data-bs-toggle="modal" data-bs-target="#modalNotificarPortal">
                 <i class="bi bi-send"></i> Notificar Portal de Jurados
-            </a>
+            </button>
         </div>
         {% endif %}
 
@@ -74,3 +73,57 @@
         {% endif %}
     </div>
 </div>
+
+{% if PORTAL_JURADOS_ENABLED and ca.jurado %}
+<div class="modal fade" id="modalNotificarPortal" tabindex="-1" aria-labelledby="modalNotificarPortalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'carrera_academica:notificar_portal_jurado' ca.pk %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalNotificarPortalLabel">Notificar Portal de Jurados</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">
+                        Elegí a quién enviarle el enlace personal. Por defecto están tildados los
+                        titulares con DNI cargado — destildá y tildá el suplente si corresponde,
+                        o dejá tildado solo a uno para reenviarle sin volver a notificar al resto.
+                    </p>
+                    <ul class="list-group">
+                        {% for m in miembros_jurado_portal %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="destinatarios"
+                                       value="{{ m.valor }}" id="modalNotifDest{{ forloop.counter }}"
+                                       {% if m.es_titular and m.tiene_dni %}checked{% endif %}
+                                       {% if not m.tiene_dni %}disabled{% endif %}>
+                                <label class="form-check-label" for="modalNotifDest{{ forloop.counter }}">
+                                    <strong>{{ m.rol_label }}</strong>
+                                    <span class="text-muted d-block small">{{ m.persona }}</span>
+                                </label>
+                            </div>
+                            <div class="text-end">
+                                {% if not m.tiene_dni %}
+                                <span class="badge bg-warning text-dark">Sin DNI cargado</span>
+                                {% elif m.ultimo_token %}
+                                <span class="text-muted small">Enviado {{ m.ultimo_token.creado|date:"d/m/Y" }}</span>
+                                {% else %}
+                                <span class="text-muted small">Nunca enviado</span>
+                                {% endif %}
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-send"></i> Enviar a los seleccionados
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}

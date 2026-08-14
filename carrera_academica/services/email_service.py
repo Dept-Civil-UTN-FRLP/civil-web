@@ -64,7 +64,7 @@ class EmailService:
 
         for miembro in miembros:
             try:
-                email_destinatario = EmailService._obtener_email_miembro(miembro)
+                email_destinatario = EmailService.obtener_email_miembro(miembro)
 
                 if email_destinatario:
                     EmailService._enviar_email_individual(
@@ -105,7 +105,7 @@ class EmailService:
         from django.urls import reverse
         from carrera_academica.services.token_portal_service import crear_token
 
-        destinatario = EmailService._obtener_email_miembro(persona)
+        destinatario = EmailService.obtener_email_miembro(persona)
         if not destinatario:
             return False, f"{persona} no tiene email registrado"
 
@@ -351,7 +351,7 @@ class EmailService:
         return list(docs_generales) + list(docs_anuales)
 
     @staticmethod
-    def _obtener_email_miembro(miembro) -> Optional[str]:
+    def obtener_email_miembro(miembro) -> Optional[str]:
         """Obtiene el email de un miembro de la junta."""
         if isinstance(miembro, Docente):
             correo = miembro.correos.filter(principal=True).first()

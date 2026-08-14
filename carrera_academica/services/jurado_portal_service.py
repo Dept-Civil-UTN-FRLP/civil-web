@@ -20,6 +20,20 @@ MODELOS_PERSONA = {
     "veedor_estudiante": VeedorEstudiante,
 }
 
+# (tipo_persona, atributo en Jurado, etiqueta legible, es_titular)
+ROLES_JURADO = [
+    ("docente", "profesor_titular_1", "Profesor Titular 1", True),
+    ("docente", "profesor_suplente_1", "Profesor Suplente 1", False),
+    ("jurado_externo", "profesor_titular_2", "Profesor Titular 2", True),
+    ("jurado_externo", "profesor_suplente_2", "Profesor Suplente 2", False),
+    ("jurado_externo", "profesor_titular_3", "Profesor Titular 3", True),
+    ("jurado_externo", "profesor_suplente_3", "Profesor Suplente 3", False),
+    ("veedor_graduado", "veedor_graduado_titular", "Veedor Graduado Titular", True),
+    ("veedor_graduado", "veedor_graduado_suplente", "Veedor Graduado Suplente", False),
+    ("veedor_estudiante", "veedor_estudiante_titular", "Veedor Estudiante Titular", True),
+    ("veedor_estudiante", "veedor_estudiante_suplente", "Veedor Estudiante Suplente", False),
+]
+
 
 def resolver_persona(tipo_persona: str, persona_id: int):
     """Devuelve la instancia del modelo correspondiente, o None si no existe."""
@@ -110,3 +124,43 @@ def obtener_checklist_documentos(ca: CarreraAcademica, evaluacion: Optional[Eval
     return list(
         ca.formularios.filter(filtro).order_by("tipo_formulario", "anio_correspondiente")
     )
+
+
+def listar_miembros_jurado(jurado: Jurado) -> List[dict]:
+    """
+    Enumera los hasta 10 ocupantes de los slots de un Jurado (titular + suplente de
+    cada uno de los 5 roles), con lo necesario para armar el modal de "a quién
+    notificar": si tiene DNI cargado, su email, y cuándo se le mandó el último link
+    (para poder reenviar a uno solo sin volver a molestar al resto).
+    """
+    from carrera_academica.models import TokenPortalJurado
+    from carrera_academica.services.email_service import EmailService
+
+    miembros = []
+    for tipo_persona, atributo, rol_label, es_titular in ROLES_JURADO:
+        persona = getattr(jurado, atributo)
+        if not persona:
+            continue
+
+        ultimo_token = (
+            TokenPortalJurado.objects.filter(
+                tipo_persona=tipo_persona, persona_id=persona.pk
+            )
+            .order_by("-creado")
+            .first()
+        )
+
+        miembros.append(
+            {
+                "tipo_persona": tipo_persona,
+                "persona_id": persona.pk,
+                "valor": f"{tipo_persona}:{persona.pk}",
+                "persona": persona,
+                "rol_label": rol_label,
+                "es_titular": es_titular,
+                "email": EmailService.obtener_email_miembro(persona),
+                "tiene_dni": obtener_dni(persona) is not None,
+                "ultimo_token": ultimo_token,
+            }
+        )
+    return miembros
