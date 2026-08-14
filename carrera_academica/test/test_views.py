@@ -118,14 +118,21 @@ class DetalleCAViewTestCase(CAViewTestMixin, TestCase):
         archivo = io.BytesIO(b"contenido de prueba")
         archivo.name = "test.pdf"
 
+        # La subida es un endpoint AJAX dedicado (subir_formulario_view) que
+        # responde JSON, no un POST directo a detalle_ca -- esa vista solo
+        # atiende GET.
         response = self.client.post(
-            reverse("carrera_academica:detalle_ca", kwargs={"pk": self.ca.pk}),
-            {"formulario_id": formulario.pk, "archivo": archivo},
+            reverse(
+                "carrera_academica:subir_formulario",
+                kwargs={"ca_pk": self.ca.pk, "formulario_pk": formulario.pk},
+            ),
+            {"archivo": archivo},
         )
-        self.assertRedirects(
-            response,
-            reverse("carrera_academica:detalle_ca", kwargs={"pk": self.ca.pk}),
-        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["ok"])
+        self.assertEqual(data["estado"], "ENT")
+
         formulario.refresh_from_db()
         self.assertEqual(formulario.estado, "ENT")
 
