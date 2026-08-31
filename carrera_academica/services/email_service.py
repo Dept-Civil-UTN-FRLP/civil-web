@@ -18,6 +18,8 @@ from planta_docente.models import Docente
 
 logger = logging.getLogger(__name__)
 
+CONCURSOS_EMAIL = "concursosspa@frlp.utn.edu.ar"
+
 
 class EmailService:
     """Servicio centralizado para envío de emails de Carrera Académica."""
@@ -81,6 +83,45 @@ class EmailService:
         except Exception as e:
             logger.error(f"Error enviando link de portal de jurado a {destinatario}: {e}")
             return False, f"Error al enviar: {str(e)}"
+
+    @staticmethod
+    def enviar_copia_concursos(ca: CarreraAcademica) -> tuple[bool, str]:
+        """
+        Manda el expediente completo consolidado (mismo PDF que arma el botón
+        "Descargar expediente completo" del portal) a la casilla institucional
+        de Concursos, adjunto -- a diferencia del jurado, no es una persona con
+        DNI que pueda entrar al portal, así que va directo por mail.
+        """
+        from carrera_academica.services.pdf_service import PDFService
+        from django.utils.text import slugify
+
+        output_buffer, _errores = PDFService.consolidar_expediente(ca)
+        if not output_buffer:
+            return False, "No se pudo generar el expediente consolidado (no hay documentos para consolidar)."
+
+        email = EmailMessage(
+            subject=f"Expediente de Carrera Académica - {ca.cargo.docente}",
+            body=(
+                f"Se adjunta el expediente consolidado de la Carrera Académica de "
+                f"{ca.cargo.docente} ({ca.cargo.asignatura.nombre.title()}).\n\n"
+                "Departamento de Ingeniería Civil"
+            ),
+            from_email=None,
+            to=[CONCURSOS_EMAIL],
+        )
+        email.attach(
+            f"expediente_{slugify(str(ca.cargo.docente))}.pdf",
+            output_buffer.getvalue(),
+            "application/pdf",
+        )
+
+        try:
+            email.send()
+            logger.info(f"Copia de expediente CA {ca.pk} enviada a {CONCURSOS_EMAIL}")
+            return True, f"Copia del expediente enviada a {CONCURSOS_EMAIL}"
+        except Exception as e:
+            logger.error(f"Error enviando copia a concursos para CA {ca.pk}: {e}")
+            return False, f"Error al enviar copia a concursos: {str(e)}"
 
     @staticmethod
     def enviar_primera_notificacion(

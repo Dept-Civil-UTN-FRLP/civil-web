@@ -23,6 +23,8 @@ from carrera_academica.services.jurado_portal_service import (
     obtener_cas_para_persona,
     obtener_dni,
     obtener_evaluacion_relevante,
+    listar_filas_jurado,
+    listar_miembros_jurado,
 )
 from planta_docente.models import Asignatura, Cargo, Docente
 
@@ -151,6 +153,26 @@ class JuradoPortalServiceTestCase(TestCase):
         self.assertEqual(obtener_dni(self.ext_compartido), 20000001)
         self.assertEqual(obtener_dni(self.veedor_grad), 30000001)
         self.assertEqual(obtener_dni(self.veedor_est), 30000002)
+
+    def test_listar_miembros_jurado_excluye_veedores(self):
+        """jurado1 tiene veedor_graduado_suplente y veedor_estudiante_suplente
+        cargados -- no tienen que aparecer en el listado de notificacion."""
+        tipos = {m["tipo_persona"] for m in listar_miembros_jurado(self.jurado1)}
+        self.assertEqual(tipos, {"docente", "jurado_externo"})
+
+    def test_listar_filas_jurado_empareja_titular_suplente(self):
+        filas = listar_filas_jurado(self.jurado1)
+        self.assertEqual(len(filas), 3)
+
+        fila1, fila2, fila3 = filas
+        self.assertEqual(fila1["titular"]["persona"], self.docente_titular_1)
+        self.assertIsNone(fila1["suplente"])  # jurado1 no tiene interno suplente
+
+        self.assertEqual(fila2["titular"]["persona"], self.ext_compartido)
+        self.assertIsNone(fila2["suplente"])  # tampoco suplente_2
+
+        self.assertEqual(fila3["titular"]["persona"], self.ext_solo_j1)
+        self.assertIsNone(fila3["suplente"])
 
     def test_evaluacion_relevante_prioriza_programada(self):
         Evaluacion.objects.create(

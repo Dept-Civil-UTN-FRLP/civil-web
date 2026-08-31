@@ -20,18 +20,15 @@ MODELOS_PERSONA = {
     "veedor_estudiante": VeedorEstudiante,
 }
 
-# (tipo_persona, atributo en Jurado, etiqueta legible, es_titular)
+# (tipo_persona, atributo en Jurado, etiqueta legible, es_titular, numero de profesor)
+# Los veedores quedan afuera a propósito: no reciben documentación por el portal.
 ROLES_JURADO = [
-    ("docente", "profesor_titular_1", "Profesor Titular 1", True),
-    ("docente", "profesor_suplente_1", "Profesor Suplente 1", False),
-    ("jurado_externo", "profesor_titular_2", "Profesor Titular 2", True),
-    ("jurado_externo", "profesor_suplente_2", "Profesor Suplente 2", False),
-    ("jurado_externo", "profesor_titular_3", "Profesor Titular 3", True),
-    ("jurado_externo", "profesor_suplente_3", "Profesor Suplente 3", False),
-    ("veedor_graduado", "veedor_graduado_titular", "Veedor Graduado Titular", True),
-    ("veedor_graduado", "veedor_graduado_suplente", "Veedor Graduado Suplente", False),
-    ("veedor_estudiante", "veedor_estudiante_titular", "Veedor Estudiante Titular", True),
-    ("veedor_estudiante", "veedor_estudiante_suplente", "Veedor Estudiante Suplente", False),
+    ("docente", "profesor_titular_1", "Profesor Titular 1", True, 1),
+    ("docente", "profesor_suplente_1", "Profesor Suplente 1", False, 1),
+    ("jurado_externo", "profesor_titular_2", "Profesor Titular 2", True, 2),
+    ("jurado_externo", "profesor_suplente_2", "Profesor Suplente 2", False, 2),
+    ("jurado_externo", "profesor_titular_3", "Profesor Titular 3", True, 3),
+    ("jurado_externo", "profesor_suplente_3", "Profesor Suplente 3", False, 3),
 ]
 
 
@@ -128,8 +125,9 @@ def obtener_checklist_documentos(ca: CarreraAcademica, evaluacion: Optional[Eval
 
 def listar_miembros_jurado(jurado: Jurado) -> List[dict]:
     """
-    Enumera los hasta 10 ocupantes de los slots de un Jurado (titular + suplente de
-    cada uno de los 5 roles), con lo necesario para armar el modal de "a quién
+    Enumera los hasta 6 ocupantes de los slots "profesor" de un Jurado (titular +
+    suplente de cada uno de los 3 profesores -- los veedores no entran acá, no
+    reciben documentación), con lo necesario para armar el modal de "a quién
     notificar": si tiene DNI cargado, su email, y cuándo se le mandó el último link
     (para poder reenviar a uno solo sin volver a molestar al resto).
     """
@@ -137,7 +135,7 @@ def listar_miembros_jurado(jurado: Jurado) -> List[dict]:
     from carrera_academica.services.email_service import EmailService
 
     miembros = []
-    for tipo_persona, atributo, rol_label, es_titular in ROLES_JURADO:
+    for tipo_persona, atributo, rol_label, es_titular, numero in ROLES_JURADO:
         persona = getattr(jurado, atributo)
         if not persona:
             continue
@@ -158,9 +156,32 @@ def listar_miembros_jurado(jurado: Jurado) -> List[dict]:
                 "persona": persona,
                 "rol_label": rol_label,
                 "es_titular": es_titular,
+                "numero": numero,
                 "email": EmailService.obtener_email_miembro(persona),
                 "tiene_dni": obtener_dni(persona) is not None,
                 "ultimo_token": ultimo_token,
             }
         )
     return miembros
+
+
+def listar_filas_jurado(jurado: Jurado) -> List[dict]:
+    """
+    Igual que listar_miembros_jurado, pero agrupado en 3 filas (una por cada
+    profesor) con las columnas titular/suplente ya emparejadas -- para el modal
+    de notificación, que se muestra como tabla Titular | Suplente.
+    """
+    miembros = listar_miembros_jurado(jurado)
+    por_numero = {1: {}, 2: {}, 3: {}}
+    for m in miembros:
+        por_numero[m["numero"]]["titular" if m["es_titular"] else "suplente"] = m
+
+    etiquetas = {1: "Profesor 1 (Interno)", 2: "Profesor 2 (Externo)", 3: "Profesor 3 (Externo)"}
+    return [
+        {
+            "etiqueta": etiquetas[n],
+            "titular": por_numero[n].get("titular"),
+            "suplente": por_numero[n].get("suplente"),
+        }
+        for n in (1, 2, 3)
+    ]

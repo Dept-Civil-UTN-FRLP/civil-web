@@ -249,7 +249,7 @@ def detalle_ca_view(request, pk):
         **_preparar_contexto_detalle(ca),
     }
     if ca.jurado:
-        contexto["miembros_jurado_portal"] = jurado_portal_service.listar_miembros_jurado(ca.jurado)
+        contexto["filas_jurado_portal"] = jurado_portal_service.listar_filas_jurado(ca.jurado)
     return render(request, "carrera_academica/ca_detail.html", contexto)
 
 
@@ -844,7 +844,9 @@ def notificar_portal_jurado_view(request, pk):
     Envía su link personal al Portal de Jurados a los integrantes del Jurado de
     esta CA que se hayan tildado en el modal (checkbox "destinatarios", valor
     "tipo_persona:persona_id"). Permite elegir puntualmente titular o suplente,
-    y reenviar a uno solo sin volver a notificar al resto.
+    y reenviar a uno solo sin volver a notificar al resto. Además, si se tilda
+    "enviar_concursos", manda una copia del expediente completo a la casilla de
+    Concursos (no es un jurado, va directo por mail, no por el portal).
     """
     ca = get_object_or_404(CarreraAcademica, pk=pk)
     jurado = ca.jurado
@@ -862,7 +864,9 @@ def notificar_portal_jurado_view(request, pk):
     }
 
     seleccionados = request.POST.getlist("destinatarios")
-    if not seleccionados:
+    enviar_concursos = request.POST.get("enviar_concursos") == "1"
+
+    if not seleccionados and not enviar_concursos:
         messages.warning(request, "No se seleccionó ningún destinatario.")
         return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
@@ -892,6 +896,13 @@ def notificar_portal_jurado_view(request, pk):
         messages.success(
             request, f"Se enviaron {enviados} enlaces del Portal de Jurados."
         )
+
+    if enviar_concursos:
+        exito, mensaje = EmailService.enviar_copia_concursos(ca)
+        if exito:
+            messages.success(request, mensaje)
+        else:
+            messages.warning(request, mensaje)
 
     return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 

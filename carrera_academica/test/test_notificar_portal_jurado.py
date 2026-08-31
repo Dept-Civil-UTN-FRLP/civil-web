@@ -4,25 +4,57 @@ Tests de la vista staff-facing que envia los links del Portal de Jurados
 (notificar_portal_jurado_view) -- el modal con checkboxes que reemplazo el
 envio automatico a los 10 slots.
 """
+import io
 from datetime import date
 
 from django.contrib.auth.models import User
 from django.core import mail
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from pypdf import PdfWriter
 
 from carrera_academica.models import (
     CarreraAcademica,
+    Formulario,
     Jurado,
     JuradoExterno,
     TokenPortalJurado,
     Universidad,
+    VeedorEstudiante,
+    VeedorGraduado,
 )
 from planta_docente.models import Asignatura, Cargo, Docente
 
 
+def _pdf_bytes():
+    writer = PdfWriter()
+    writer.add_blank_page(width=72, height=72)
+    buf = io.BytesIO()
+    writer.write(buf)
+    return buf.getvalue()
+
+
 @override_settings(PORTAL_JURADOS_ENABLED=True)
 class NotificarPortalJuradoViewTestCase(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Aislar los archivos subidos en los tests del media/ real.
+        import shutil
+        import tempfile
+
+        cls._media_root_temp = tempfile.mkdtemp()
+        cls._media_override = override_settings(MEDIA_ROOT=cls._media_root_temp)
+        cls._media_override.enable()
+        cls._shutil = shutil
+        super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        cls._media_override.disable()
+        cls._shutil.rmtree(cls._media_root_temp, ignore_errors=True)
+
     def setUp(self):
         self.user = User.objects.create_user(username="staff", password="testpass123")
         self.client.login(username="staff", password="testpass123")
@@ -47,6 +79,13 @@ class NotificarPortalJuradoViewTestCase(TestCase):
             fecha_vencimiento_actual=date(2025, 1, 1), estado="ACT",
         )
 
+        # Formulario con archivo real, para que consolidar_expediente (usado
+        # por "enviar copia a concursos") tenga algo para consolidar.
+        cv = self.ca.formularios.get(tipo_formulario="CV")
+        cv.archivo = SimpleUploadedFile("cv.pdf", _pdf_bytes(), content_type="application/pdf")
+        cv.estado = "ENT"
+        cv.save()
+
         universidad = Universidad.objects.create(
             sigla="UNLP", nombre_completo="Universidad Nacional de La Plata", es_utn=False,
         )
@@ -62,10 +101,20 @@ class NotificarPortalJuradoViewTestCase(TestCase):
             apellido="Ajeno", nombre="OtroJurado", email="ajeno@test.com",
             universidad=universidad, categoria="titular", dni=33333333,
         )
+        self.veedor_graduado = VeedorGraduado.objects.create(
+            apellido="Veedor", nombre="Graduado", email="veedorgrad@test.com",
+            titulo="Ingeniero Civil", dni=44444444,
+        )
+        self.veedor_estudiante = VeedorEstudiante.objects.create(
+            apellido="Veedor", nombre="Estudiante", email="veedorest@test.com",
+            legajo="9999", dni=55555555,
+        )
         self.jurado = Jurado.objects.create(
             departamento="civil", profesor_titular_1=docente,
             profesor_titular_2=self.titular, profesor_suplente_2=self.suplente_sin_dni,
             profesor_titular_3=self.titular,
+            veedor_graduado_titular=self.veedor_graduado,
+            veedor_estudiante_titular=self.veedor_estudiante,
         )
         self.ca.jurado = self.jurado
         self.ca.save()
@@ -122,3 +171,39 @@ class NotificarPortalJuradoViewTestCase(TestCase):
     def test_get_no_permitido(self):
         resp = self.client.get(self.url)
         self.assertEqual(resp.status_code, 405)
+
+    def test_veedores_no_reciben_link_aunque_los_manden_tildados(self):
+        """Los veedores no son parte del checklist de destinatarios -- ni
+        siquiera un POST manipulado con su tipo_persona:id les manda algo,
+        porque listar_miembros_jurado ya no los incluye."""
+        resp = self.client.post(
+            self.url,
+            {"destinatarios": [f"veedor_graduado:{self.veedor_graduado.pk}"]},
+        )
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(
+            TokenPortalJurado.objects.filter(tipo_persona="veedor_graduado").count(), 0
+        )
+
+    def test_enviar_concursos_solo_manda_copia_del_expediente(self):
+        """Tildar solo 'enviar_concursos', sin ningún destinatario del portal,
+        tiene que mandar la copia igual (no debe bloquearse por "sin
+        selección")."""
+        resp = self.client.post(self.url, {"enviar_concursos": "1"})
+        self.assertRedirects(resp, reverse("carrera_academica:detalle_ca", args=[self.ca.pk]))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["concursosspa@frlp.utn.edu.ar"])
+        self.assertEqual(len(mail.outbox[0].attachments), 1)
+
+    def test_enviar_concursos_junto_con_destinatarios(self):
+        resp = self.client.post(
+            self.url,
+            {
+                "destinatarios": [f"jurado_externo:{self.titular.pk}"],
+                "enviar_concursos": "1",
+            },
+        )
+        self.assertRedirects(resp, reverse("carrera_academica:detalle_ca", args=[self.ca.pk]))
+        self.assertEqual(len(mail.outbox), 2)
+        destinatarios = {m.to[0] for m in mail.outbox}
+        self.assertEqual(destinatarios, {"titular@test.com", "concursosspa@frlp.utn.edu.ar"})

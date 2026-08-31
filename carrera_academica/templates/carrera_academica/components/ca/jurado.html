@@ -89,37 +89,44 @@
                         Elegí a quién enviarle el enlace personal. Por defecto están tildados los
                         titulares con DNI cargado — destildá y tildá el suplente si corresponde,
                         o dejá tildado solo a uno para reenviarle sin volver a notificar al resto.
+                        Los veedores no reciben documentación por el portal.
                     </p>
-                    <ul class="list-group">
-                        {% for m in miembros_jurado_portal %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="destinatarios"
-                                       value="{{ m.valor }}" id="modalNotifDest{{ forloop.counter }}"
-                                       {% if m.es_titular and m.tiene_dni %}checked{% endif %}
-                                       {% if not m.tiene_dni %}disabled{% endif %}>
-                                <label class="form-check-label" for="modalNotifDest{{ forloop.counter }}">
-                                    <strong>{{ m.rol_label }}</strong>
-                                    <span class="text-muted d-block small">{{ m.persona }}</span>
-                                </label>
-                            </div>
-                            <div class="text-end">
-                                {% if not m.tiene_dni %}
-                                <span class="badge bg-warning text-dark">Sin DNI cargado</span>
-                                {% elif m.ultimo_token %}
-                                <span class="text-muted small">Enviado {{ m.ultimo_token.creado|date:"d/m/Y" }}</span>
-                                {% else %}
-                                <span class="text-muted small">Nunca enviado</span>
-                                {% endif %}
-                            </div>
-                        </li>
-                        {% endfor %}
-                    </ul>
+                    <table class="table table-bordered table-sm align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 20%"></th>
+                                <th>Titular</th>
+                                <th>Suplente</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for fila in filas_jurado_portal %}
+                            <tr>
+                                <th class="small text-muted">{{ fila.etiqueta }}</th>
+                                <td>
+                                    {% include 'carrera_academica/components/ca/_notif_portal_celda.html' with m=fila.titular %}
+                                </td>
+                                <td>
+                                    {% include 'carrera_academica/components/ca/_notif_portal_celda.html' with m=fila.suplente %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <hr>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="enviar_concursos"
+                               value="1" id="modalNotifConcursos">
+                        <label class="form-check-label" for="modalNotifConcursos">
+                            Enviar copia del expediente completo a <strong>concursosspa@frlp.utn.edu.ar</strong>
+                        </label>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-success">
-                        <i class="bi bi-send"></i> Enviar a los seleccionados
+                        <i class="bi bi-send"></i> Enviar
                     </button>
                 </div>
             </form>
