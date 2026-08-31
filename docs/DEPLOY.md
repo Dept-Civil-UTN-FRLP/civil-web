@@ -257,9 +257,14 @@ Con `PORTAL_JURADOS_ENABLED=False` (default) las URLs del portal ni se registran
 — es el kill switch, independiente de `MODULOS_ACTIVOS` (esa gatea toda la app
 `carrera_academica`, esto solo la superficie pública nueva).
 
-**Rate limiting (nginx)** — la única ruta adivinable/fuerza-bruteable es la de
-entrada con DNI (`/carrera/portal-jurados/<token>/`); el resto de las vistas
-requieren una sesión ya verificada, así que no necesitan `limit_req` propio.
+**Rate limiting (nginx)** — las rutas adivinables/fuerza-bruteables son las de
+entrada: DNI (`/carrera/portal-jurados/<token>/`) y contraseña
+(`/carrera/portal-concursos/<token>/`, para compartir un expediente puntual
+con Concursos sin pasar por el flujo de jurado con DNI); el resto de las
+vistas del portal de jurados requieren una sesión ya verificada, así que no
+necesitan `limit_req` propio (el portal de concursos no usa sesión, pero cada
+intento ya revalida token+contraseña contra la base, así que igual conviene
+el mismo límite).
 
 En el bloque `http {}` de `/etc/nginx/nginx.conf`:
 
@@ -271,7 +276,7 @@ En `/etc/nginx/sites-available/<SERVICE_NAME>`, agregar **antes** del
 `location /` genérico (mismo `proxy_pass` que el resto del sitio):
 
 ```nginx
-location ~ ^/carrera/portal-jurados/[^/]+/$ {
+location ~ ^/carrera/portal-(jurados|concursos)/[^/]+/$ {
     limit_req zone=portal_jurados burst=10 nodelay;
     include proxy_params;
     proxy_pass http://unix:/run/<SERVICE_NAME>.sock;

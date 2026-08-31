@@ -845,8 +845,10 @@ def notificar_portal_jurado_view(request, pk):
     esta CA que se hayan tildado en el modal (checkbox "destinatarios", valor
     "tipo_persona:persona_id"). Permite elegir puntualmente titular o suplente,
     y reenviar a uno solo sin volver a notificar al resto. Además, si se tilda
-    "enviar_concursos", manda una copia del expediente completo a la casilla de
-    Concursos (no es un jurado, va directo por mail, no por el portal).
+    "enviar_concursos" (con una contraseña puesta a mano), manda a la casilla
+    de Concursos un link + contraseña para bajar el expediente completo --
+    Concursos no es una persona con DNI, por eso el mecanismo de acceso es
+    distinto al del resto del Jurado.
     """
     ca = get_object_or_404(CarreraAcademica, pk=pk)
     jurado = ca.jurado
@@ -865,10 +867,15 @@ def notificar_portal_jurado_view(request, pk):
 
     seleccionados = request.POST.getlist("destinatarios")
     enviar_concursos = request.POST.get("enviar_concursos") == "1"
+    concursos_password = request.POST.get("concursos_password", "").strip()
 
     if not seleccionados and not enviar_concursos:
         messages.warning(request, "No se seleccionó ningún destinatario.")
         return redirect("carrera_academica:detalle_ca", pk=ca.pk)
+
+    if enviar_concursos and not concursos_password:
+        messages.warning(request, "Ingresá una contraseña para el link de Concursos.")
+        enviar_concursos = False
 
     enviados = 0
     for valor in seleccionados:
@@ -898,7 +905,9 @@ def notificar_portal_jurado_view(request, pk):
         )
 
     if enviar_concursos:
-        exito, mensaje = EmailService.enviar_copia_concursos(ca)
+        exito, mensaje = EmailService.enviar_link_concursos(
+            ca, concursos_password, request, creado_por=request.user
+        )
         if exito:
             messages.success(request, mensaje)
         else:

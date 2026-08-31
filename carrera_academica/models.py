@@ -1228,6 +1228,39 @@ class TokenPortalJurado(models.Model):
         return not self.revocado and self.expira > timezone.now()
 
 
+class TokenPortalConcursos(models.Model):
+    """
+    Link + contraseña para compartir el expediente completo de UNA CarreraAcademica
+    puntual con una casilla institucional (ej. Concursos) que no es una persona con
+    DNI en el sistema. La contraseña la elige el staff al generar el link (no es
+    parte del mail que se manda -- se comunica por otro medio), y se guarda solo su
+    hash, igual que el token.
+    """
+
+    carrera_academica = models.ForeignKey(
+        CarreraAcademica, on_delete=models.CASCADE, related_name="tokens_concursos"
+    )
+    token_hash = models.CharField(max_length=64, unique=True, db_index=True)
+    password_hash = models.CharField(max_length=64)
+    creado = models.DateTimeField(auto_now_add=True)
+    creado_por = models.ForeignKey(
+        "auth.User", on_delete=models.SET_NULL, null=True, blank=True
+    )
+    expira = models.DateTimeField()
+    revocado = models.BooleanField(default=False)
+    ultimo_uso = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Token Portal de Concursos"
+        verbose_name_plural = "Tokens Portal de Concursos"
+        indexes = [
+            models.Index(fields=["carrera_academica"]),
+        ]
+
+    def __str__(self):
+        return f"Token concursos CA {self.carrera_academica_id} ({'revocado' if self.revocado else 'activo'})"
+
+
 class AccesoPortalJurado(models.Model):
     """
     Auditoría de accesos al Portal de Jurados: quién, cuándo, qué vio/descargó,

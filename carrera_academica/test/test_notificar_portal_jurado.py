@@ -185,15 +185,24 @@ class NotificarPortalJuradoViewTestCase(TestCase):
             TokenPortalJurado.objects.filter(tipo_persona="veedor_graduado").count(), 0
         )
 
-    def test_enviar_concursos_solo_manda_copia_del_expediente(self):
-        """Tildar solo 'enviar_concursos', sin ningún destinatario del portal,
-        tiene que mandar la copia igual (no debe bloquearse por "sin
-        selección")."""
-        resp = self.client.post(self.url, {"enviar_concursos": "1"})
+    def test_enviar_concursos_solo_manda_link_sin_password_en_el_mail(self):
+        """Tildar solo 'enviar_concursos' con contraseña, sin ningún
+        destinatario del portal, tiene que mandar el link igual (no debe
+        bloquearse por "sin selección"), y no es un PDF adjunto."""
+        resp = self.client.post(
+            self.url, {"enviar_concursos": "1", "concursos_password": "clave123"}
+        )
         self.assertRedirects(resp, reverse("carrera_academica:detalle_ca", args=[self.ca.pk]))
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ["concursosspa@frlp.utn.edu.ar"])
-        self.assertEqual(len(mail.outbox[0].attachments), 1)
+        self.assertEqual(len(mail.outbox[0].attachments), 0)
+        self.assertNotIn("clave123", mail.outbox[0].body)
+
+    def test_enviar_concursos_sin_password_no_manda_nada(self):
+        resp = self.client.post(self.url, {"enviar_concursos": "1", "concursos_password": ""})
+        self.assertEqual(len(mail.outbox), 0)
+        msgs = [str(m.message) for m in resp.wsgi_request._messages]
+        self.assertTrue(any("contraseña" in m for m in msgs))
 
     def test_enviar_concursos_junto_con_destinatarios(self):
         resp = self.client.post(
@@ -201,6 +210,7 @@ class NotificarPortalJuradoViewTestCase(TestCase):
             {
                 "destinatarios": [f"jurado_externo:{self.titular.pk}"],
                 "enviar_concursos": "1",
+                "concursos_password": "clave123",
             },
         )
         self.assertRedirects(resp, reverse("carrera_academica:detalle_ca", args=[self.ca.pk]))

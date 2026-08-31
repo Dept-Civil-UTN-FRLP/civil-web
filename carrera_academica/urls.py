@@ -130,4 +130,10 @@ if settings.PORTAL_JURADOS_ENABLED:
         path('portal-jurados/<str:token>/',
              views_portal_jurado.portal_jurado_landing_view,
              name='portal_jurado_landing'),
+        # Portal de Concursos: prefijo propio ("portal-concursos/"), no
+        # comparte el catch-all de arriba -- link + contraseña para
+        # descargar el expediente de UNA CA, no una persona con DNI.
+        path('portal-concursos/<str:token>/',
+             views_portal_jurado.portal_concursos_landing_view,
+             name='portal_concursos_landing'),
     ]

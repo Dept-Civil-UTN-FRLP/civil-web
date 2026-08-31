@@ -10,6 +10,7 @@ Su protección es una sesión propia (ver `_requiere_sesion_portal`), no la de
 Django auth.
 """
 import functools
+import logging
 
 from django.conf import settings
 from django.contrib import messages
@@ -26,6 +27,8 @@ from carrera_academica.models import (
 from carrera_academica.services import jurado_portal_service as portal_service
 from carrera_academica.services import token_portal_service
 from carrera_academica.services.pdf_service import PDFService
+
+logger = logging.getLogger(__name__)
 
 SESSION_KEY = "portal_jurado"
 
@@ -271,3 +274,47 @@ def portal_jurado_logout_view(request):
 
 def portal_jurado_sesion_expirada_view(request):
     return render(request, "carrera_academica/portal_jurado/sesion_expirada.html")
+
+
+def portal_concursos_landing_view(request, token):
+    """
+    GET: formulario de contraseña. POST: verifica token + contraseña y
+    devuelve el expediente completo directo -- a diferencia del portal de
+    jurados, no hay sesión ni dashboard, es un link de un solo propósito
+    (descargar este expediente) para una casilla institucional, no una
+    persona que tenga que volver a entrar.
+    """
+    error = None
+
+    if request.method == "POST":
+        password_ingresada = request.POST.get("password", "")
+        token_obj = token_portal_service.verificar_token_concursos(token)
+
+        if not token_obj:
+            logger.warning("Portal concursos: token inválido/vencido/revocado")
+            error = "Enlace inválido o expirado. Contactá a Secretaría Académica."
+        elif not token_portal_service.verificar_password_concursos(token_obj, password_ingresada):
+            logger.warning(
+                f"Portal concursos: contraseña incorrecta para CA {token_obj.carrera_academica_id}"
+            )
+            error = "Enlace inválido o expirado. Contactá a Secretaría Académica."
+        else:
+            ca = token_obj.carrera_academica
+            output_buffer, _errores = PDFService.consolidar_expediente(ca)
+
+            if not output_buffer:
+                error = "Todavía no hay documentos para consolidar en este expediente."
+            else:
+                token_obj.ultimo_uso = timezone.now()
+                token_obj.save(update_fields=["ultimo_uso"])
+                logger.info(f"Portal concursos: expediente CA {ca.pk} descargado")
+
+                response = HttpResponse(output_buffer, content_type="application/pdf")
+                response["Content-Disposition"] = f'attachment; filename="expediente_{ca.pk}.pdf"'
+                return response
+
+    return render(
+        request,
+        "carrera_academica/portal_jurado/concursos_landing.html",
+        {"token": token, "error": error},
+    )
