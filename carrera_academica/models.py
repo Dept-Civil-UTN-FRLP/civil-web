@@ -1241,7 +1241,7 @@ class TokenPortalConcursos(models.Model):
         CarreraAcademica, on_delete=models.CASCADE, related_name="tokens_concursos"
     )
     token_hash = models.CharField(max_length=64, unique=True, db_index=True)
-    password_hash = models.CharField(max_length=64)
+    password_hash = models.CharField(max_length=128)
     creado = models.DateTimeField(auto_now_add=True)
     creado_por = models.ForeignKey(
         "auth.User", on_delete=models.SET_NULL, null=True, blank=True

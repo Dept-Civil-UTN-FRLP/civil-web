@@ -11,6 +11,7 @@ from datetime import timedelta
 from typing import Optional, Tuple
 
 from django.conf import settings
+from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.models import User
 from django.utils import timezone
 
@@ -74,7 +75,7 @@ def crear_token_concursos(
     token = TokenPortalConcursos.objects.create(
         carrera_academica=ca,
         token_hash=_hash(raw),
-        password_hash=_hash(password),
+        password_hash=make_password(password),
         creado_por=creado_por,
         expira=timezone.now()
         + timedelta(days=settings.PORTAL_JURADO_TOKEN_DIAS_VALIDEZ),
@@ -96,4 +97,4 @@ def verificar_token_concursos(raw_secret: str) -> Optional[TokenPortalConcursos]
 def verificar_password_concursos(token: TokenPortalConcursos, password: str) -> bool:
     if not password:
         return False
-    return _hash(password) == token.password_hash
+    return check_password(password, token.password_hash)
