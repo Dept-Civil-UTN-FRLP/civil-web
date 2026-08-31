@@ -47,11 +47,17 @@
 
     <p>Se comparte el expediente completo de la Carrera Académica de <strong>{{ ca.cargo.docente }}</strong> ({{ ca.cargo.asignatura.nombre|title }}).</p>
 
-    <p>Pueden descargarlo desde el siguiente enlace. Al ingresar, se les va a pedir una contraseña, que les vamos a comunicar por otro medio (no va en este mail).</p>
+    {% if evaluacion and evaluacion.fecha_evaluacion %}
+    <p>Próxima evaluación: <strong>{{ evaluacion.fecha_evaluacion|date:"d/m/Y H:i" }} hs</strong>.</p>
+    {% endif %}
+
+    <p>Pueden descargarlo desde el siguiente enlace, con la contraseña:</p>
 
     <p>
         <a href="{{ url_portal }}" class="button">Descargar expediente</a>
     </p>
+
+    <p>Contraseña: <strong>{{ password }}</strong></p>
 
     <p class="note">
         Este enlace vence en {{ dias_validez }} días.

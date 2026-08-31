@@ -14,8 +14,11 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from pypdf import PdfWriter
 
+from datetime import datetime, timezone as dt_timezone
+
 from carrera_academica.models import (
     CarreraAcademica,
+    Evaluacion,
     Formulario,
     Jurado,
     JuradoExterno,
@@ -119,6 +122,12 @@ class NotificarPortalJuradoViewTestCase(TestCase):
         self.ca.jurado = self.jurado
         self.ca.save()
 
+        Evaluacion.objects.create(
+            carrera_academica=self.ca, numero_evaluacion=1,
+            anios_evaluados=[2020], estado="PRO",
+            fecha_evaluacion=datetime(2026, 9, 15, 14, 30, tzinfo=dt_timezone.utc),
+        )
+
         self.url = reverse("carrera_academica:notificar_portal_jurado", args=[self.ca.pk])
 
     def test_sin_seleccion_no_envia_nada(self):
@@ -185,10 +194,12 @@ class NotificarPortalJuradoViewTestCase(TestCase):
             TokenPortalJurado.objects.filter(tipo_persona="veedor_graduado").count(), 0
         )
 
-    def test_enviar_concursos_solo_manda_link_sin_password_en_el_mail(self):
+    def test_enviar_concursos_solo_manda_link_con_password_en_el_mail(self):
         """Tildar solo 'enviar_concursos' con contraseña, sin ningún
         destinatario del portal, tiene que mandar el link igual (no debe
-        bloquearse por "sin selección"), y no es un PDF adjunto."""
+        bloquearse por "sin selección"), no es un PDF adjunto, y el mail
+        incluye la contraseña en texto plano (a pedido explícito del
+        usuario, para no depender de comunicarla por otro medio)."""
         resp = self.client.post(
             self.url, {"enviar_concursos": "1", "concursos_password": "clave123"}
         )
@@ -196,7 +207,8 @@ class NotificarPortalJuradoViewTestCase(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ["concursosspa@frlp.utn.edu.ar"])
         self.assertEqual(len(mail.outbox[0].attachments), 0)
-        self.assertNotIn("clave123", mail.outbox[0].body)
+        self.assertIn("clave123", mail.outbox[0].body)
+        self.assertIn("15/09/2026", mail.outbox[0].body)
 
     def test_enviar_concursos_sin_password_no_manda_nada(self):
         resp = self.client.post(self.url, {"enviar_concursos": "1", "concursos_password": ""})

@@ -93,10 +93,10 @@ class EmailService:
         PDF adjunto, para no pesar el mail) para descargar el expediente
         completo de ESTA CA puntual. Como no es una persona con DNI, la
         verificación es con una contraseña que elige quien genera el link acá
-        mismo -- esa contraseña NO se incluye en el mail, se comunica por
-        otro medio (el mail solo explica que hace falta pedirla).
+        mismo; a pedido explícito del usuario esa contraseña sí va en el
+        mail, junto con la fecha y hora de la próxima evaluación.
         """
-        from carrera_academica.services import token_portal_service
+        from carrera_academica.services import jurado_portal_service, token_portal_service
         from django.conf import settings
         from django.urls import reverse
 
@@ -104,12 +104,15 @@ class EmailService:
         url_portal = request.build_absolute_uri(
             reverse("carrera_academica:portal_concursos_landing", args=[raw])
         )
+        evaluacion = jurado_portal_service.obtener_evaluacion_relevante(ca)
 
         html_body = render_to_string(
             "emails/ca_portal_concursos_link.html",
             {
                 "ca": ca,
                 "url_portal": url_portal,
+                "password": password,
+                "evaluacion": evaluacion,
                 "dias_validez": settings.PORTAL_JURADO_TOKEN_DIAS_VALIDEZ,
             },
         )
