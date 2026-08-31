@@ -15,9 +15,6 @@ admin.site.register(Bloque)
 admin.site.register(Correo)
 # Lo registramos para consultas, aunque se maneja inline
 admin.site.register(Formulario)
-admin.site.register(JuntaEvaluadora)
-admin.site.register(MiembroExterno)
-admin.site.register(Veedor)
 admin.site.register(MembreteAnual)
 
 # ==============================================================================
@@ -182,11 +179,6 @@ class FormularioInline(admin.TabularInline):
     readonly_fields = ("tipo_formulario", "anio_correspondiente", "evaluacion")
 
 
-# Stacked se ve mejor para este caso
-class JuntaEvaluadoraInline(admin.StackedInline):
-    model = JuntaEvaluadora
-
-
 # Creamos un nuevo inline para mostrar las Evaluaciones dentro de CarreraAcademica
 class EvaluacionInline(admin.TabularInline):
     model = Evaluacion
@@ -207,7 +199,7 @@ class CarreraAcademicaAdmin(admin.ModelAdmin):
     )
     list_filter = ("estado",)
     search_fields = ("cargo__docente__apellido", "numero_expediente")
-    inlines = [JuntaEvaluadoraInline, EvaluacionInline, FormularioInline]
+    inlines = [EvaluacionInline, FormularioInline]
 
     # ✅ OPTIMIZACIÓN: select_related y prefetch_related en el admin
     def get_queryset(self, request):

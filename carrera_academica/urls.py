@@ -22,11 +22,6 @@ urlpatterns = [
     ),
     path("nueva/", views.crear_ca_view, name="crear_ca"),
     path(
-        "expediente/<int:pk>/editar_junta/",
-        views.editar_junta_view,
-        name="editar_junta",
-    ),
-    path(
         "expediente/<int:pk>/asignar_expediente/",
         views.asignar_expediente_view,
         name="asignar_expediente",
@@ -49,14 +44,8 @@ urlpatterns = [
         views.consolidar_pdf_view,
         name="consolidar_pdf",
     ),
-    path(
-        "expediente/<int:pk>/generar_propuesta_jurado/",
-        views.generar_propuesta_jurado_view,
-        name="generar_propuesta_jurado",
-    ),
     path("expediente/<int:pk>/notificar_pendientes/", views.notificar_pendientes_view, name="notificar_pendientes"),
     path("formulario/<int:pk>/descargar_plantilla/", views.descargar_plantilla_view, name="descargar_plantilla"),
-    path("evaluacion/<int:pk>/notificar_junta/", views.notificar_junta_view, name="notificar_junta"),
     path("evaluacion/<int:pk>/agendar/", views.agendar_evaluacion_view, name="agendar_evaluacion"),
     path("expediente/<int:pk>/gestionar-anios/", views.gestionar_anios_ca_view, name="gestionar_anios_ca"),
     path("expediente/<int:pk>/anio/<int:anio>/formularios/", views.gestionar_formularios_anio_view, name="gestionar_formularios_anio"),

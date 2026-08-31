@@ -35,7 +35,6 @@ from .forms import (
     CarreraAcademicaForm,
     EvaluacionForm,
     ExpedienteForm,
-    JuntaEvaluadoraForm,
     ResolucionForm,
     JuradoForm,
     VeedorGraduadoForm,
@@ -49,7 +48,6 @@ from .models import (
     Docente,
     Evaluacion,
     Formulario,
-    JuntaEvaluadora,
     MembreteAnual,
     PlantillaDocumento,
     Jurado,
@@ -610,37 +608,6 @@ def crear_ca_view(request):
 
 
 @login_required
-def editar_junta_view(request, pk):
-    """Vista optimizada para editar junta."""
-    # ✅ OPTIMIZACIÓN: Precargar relaciones necesarias
-    ca = get_object_or_404(
-        CarreraAcademica.objects.select_related("cargo__docente", "cargo__asignatura"),
-        pk=pk,
-    )
-
-    junta, created = JuntaEvaluadora.objects.get_or_create(carrera_academica=ca)
-
-    if request.method == "POST":
-        form = JuntaEvaluadoraForm(request.POST, instance=junta)
-        if form.is_valid():
-            form.save()
-            messages.success(
-                request, "La Junta Evaluadora ha sido actualizada exitosamente."
-            )
-            return redirect("carrera_academica:detalle_ca", pk=ca.pk)
-    else:
-        form = JuntaEvaluadoraForm(instance=junta)
-
-    contexto = {
-        "form": form,
-        "ca": ca,
-        "categoria_choices": Cargo.CATEGORIA_CHOICES,
-        "dedicacion_choices": Cargo.DEDICACION_CHOICES,
-    }
-    return render(request, "carrera_academica/junta_update.html", contexto)
-
-
-@login_required
 def desvincular_resolucion_ca_view(request, pk, campo):
     """Desvincula una resolución (designación o puesta en función) de una CA."""
     if request.method != "POST":
@@ -820,25 +787,6 @@ def consolidar_pdf_view(request, pk):
 
 
 @login_required
-def generar_propuesta_jurado_view(request, pk):
-    """Vista para generar PDF de propuesta de jurado."""
-    ca = get_object_or_404(CarreraAcademica, pk=pk)
-
-    signature_path = "/static/images/firma_holografica.png"
-    pdf_file = PDFService.generar_propuesta_jurado(ca, signature_path)
-
-    if not pdf_file:
-        messages.error(request, "No se pudo generar la propuesta de jurado")
-        return redirect("carrera_academica:detalle_ca", pk=ca.pk)
-
-    response = HttpResponse(pdf_file, content_type="application/pdf")
-    response["Content-Disposition"] = (
-        f'attachment; filename="propuesta_jurado_{slugify(ca.cargo.docente)}.pdf"'
-    )
-    return response
-
-
-@login_required
 def notificar_pendientes_view(request, pk):
     """Vista para notificar formularios pendientes."""
     ca = get_object_or_404(CarreraAcademica, pk=pk)
@@ -890,26 +838,6 @@ def descargar_plantilla_view(request, pk):
 
 
 @login_required
-def notificar_junta_view(request, pk):
-    """Vista para notificar a la junta evaluadora."""
-    evaluacion = get_object_or_404(Evaluacion, pk=pk)
-    ca = evaluacion.carrera_academica
-
-    emails_enviados, errores = EmailService.enviar_notificacion_junta(evaluacion)
-
-    if emails_enviados > 0:
-        messages.success(
-            request,
-            f"Se han enviado {emails_enviados} correos a los miembros de la junta.",
-        )
-
-    for error in errores:
-        messages.warning(request, error)
-
-    return redirect("carrera_academica:detalle_ca", pk=ca.pk)
-
-
-@login_required
 @require_POST
 def notificar_portal_jurado_view(request, pk):
     """
@@ -917,7 +845,6 @@ def notificar_portal_jurado_view(request, pk):
     esta CA que se hayan tildado en el modal (checkbox "destinatarios", valor
     "tipo_persona:persona_id"). Permite elegir puntualmente titular o suplente,
     y reenviar a uno solo sin volver a notificar al resto.
-    No toca enviar_notificacion_junta / JuntaEvaluadora — es una vía paralela.
     """
     ca = get_object_or_404(CarreraAcademica, pk=pk)
     jurado = ca.jurado

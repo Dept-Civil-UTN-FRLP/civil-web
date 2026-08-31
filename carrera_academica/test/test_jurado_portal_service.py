@@ -1,7 +1,7 @@
 # carrera_academica/test/test_jurado_portal_service.py
 """
 Tests para la resolución DNI -> Jurado -> CarreraAcademica del Portal de
-Jurados. No toca JuntaEvaluadora (modelo viejo) — solo Jurado.
+Jurados.
 """
 from datetime import date
 

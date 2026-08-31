@@ -2,8 +2,8 @@
 """
 Resolución de identidad para el Portal de Jurados: dado un tipo de persona + id
 (o un DNI), encuentra a qué Jurado(s) pertenece y qué CarreraAcademica(s) tiene
-asignadas. No usa el modelo JuntaEvaluadora (viejo, 1 por CA) — solo Jurado,
-que soporta que una misma persona esté en varias CA a la vez.
+asignadas. Jurado es reutilizable: una misma persona puede estar en varias CA
+a la vez.
 """
 from typing import List, Optional
 
