@@ -23,6 +23,7 @@ from carrera_academica.models import (
     CarreraAcademica,
     Formulario,
     TipoFormulario,
+    TokenPortalConcursos,
 )
 from carrera_academica.services import jurado_portal_service as portal_service
 from carrera_academica.services import token_portal_service
@@ -276,13 +277,40 @@ def portal_jurado_sesion_expirada_view(request):
     return render(request, "carrera_academica/portal_jurado/sesion_expirada.html")
 
 
+SESSION_KEY_CONCURSOS = "portal_concursos"
+
+
+def _requiere_sesion_concursos(view_func):
+    @functools.wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.session.get(SESSION_KEY_CONCURSOS):
+            return redirect("carrera_academica:portal_concursos_sesion_expirada")
+        return view_func(request, *args, **kwargs)
+
+    return wrapper
+
+
+def _token_concursos_de_sesion(request):
+    """
+    Re-resuelve el token desde la sesión y lo revalida en vivo contra la
+    base (no confiar solo en que la sesión exista: el token puede haberse
+    revocado o vencido después de que se abrió la sesión). None si no es
+    válido.
+    """
+    token_id = (request.session.get(SESSION_KEY_CONCURSOS) or {}).get("token_id")
+    if not token_id:
+        return None
+    return TokenPortalConcursos.objects.filter(
+        pk=token_id, revocado=False, expira__gt=timezone.now()
+    ).first()
+
+
 def portal_concursos_landing_view(request, token):
     """
-    GET: formulario de contraseña. POST: verifica token + contraseña y
-    devuelve el expediente completo directo -- a diferencia del portal de
-    jurados, no hay sesión ni dashboard, es un link de un solo propósito
-    (descargar este expediente) para una casilla institucional, no una
-    persona que tenga que volver a entrar.
+    GET: formulario de contraseña. POST: verifica token + contraseña y abre
+    sesión (mismo patrón que el portal de jurados) hacia el dashboard con
+    todos los formularios de esta CA, para verlos/descargarlos uno por uno
+    o consolidados.
     """
     error = None
 
@@ -299,22 +327,97 @@ def portal_concursos_landing_view(request, token):
             )
             error = "Enlace inválido o expirado. Contactá a Secretaría Académica."
         else:
-            ca = token_obj.carrera_academica
-            output_buffer, _errores = PDFService.consolidar_expediente(ca)
+            token_obj.ultimo_uso = timezone.now()
+            token_obj.save(update_fields=["ultimo_uso"])
 
-            if not output_buffer:
-                error = "Todavía no hay documentos para consolidar en este expediente."
-            else:
-                token_obj.ultimo_uso = timezone.now()
-                token_obj.save(update_fields=["ultimo_uso"])
-                logger.info(f"Portal concursos: expediente CA {ca.pk} descargado")
+            request.session.cycle_key()
+            request.session[SESSION_KEY_CONCURSOS] = {"token_id": token_obj.pk}
+            request.session.set_expiry(60 * _minutos_sesion())
 
-                response = HttpResponse(output_buffer, content_type="application/pdf")
-                response["Content-Disposition"] = f'attachment; filename="expediente_{ca.pk}.pdf"'
-                return response
+            logger.info(f"Portal concursos: sesión abierta para CA {token_obj.carrera_academica_id}")
+            return redirect("carrera_academica:portal_concursos_dashboard")
 
     return render(
         request,
         "carrera_academica/portal_jurado/concursos_landing.html",
         {"token": token, "error": error},
     )
+
+
+@_requiere_sesion_concursos
+def portal_concursos_dashboard_view(request):
+    token_obj = _token_concursos_de_sesion(request)
+    if not token_obj:
+        return redirect("carrera_academica:portal_concursos_sesion_expirada")
+
+    ca = token_obj.carrera_academica
+    formularios = ca.formularios.select_related("evaluacion").order_by(
+        "anio_correspondiente", "tipo_formulario"
+    )
+    nombres_tipo = dict(TipoFormulario.objects.values_list("codigo", "nombre"))
+    for f in formularios:
+        f.nombre_tipo = nombres_tipo.get(f.tipo_formulario, f.get_tipo_formulario_display())
+
+    return render(
+        request,
+        "carrera_academica/portal_jurado/concursos_dashboard.html",
+        {"ca": ca, "formularios": formularios, "cargo_info": _cargo_info(ca)},
+    )
+
+
+@_requiere_sesion_concursos
+def portal_concursos_documento_view(request, formulario_pk):
+    token_obj = _token_concursos_de_sesion(request)
+    if not token_obj:
+        return redirect("carrera_academica:portal_concursos_sesion_expirada")
+
+    formulario = get_object_or_404(
+        Formulario, pk=formulario_pk, carrera_academica_id=token_obj.carrera_academica_id
+    )
+    if not formulario.archivo:
+        raise Http404
+
+    logger.info(
+        f"Portal concursos: documento {formulario.pk} descargado (CA {token_obj.carrera_academica_id})"
+    )
+
+    if settings.DEBUG:
+        return FileResponse(formulario.archivo.open("rb"), content_type="application/pdf")
+
+    rel_path = formulario.archivo.name
+    if rel_path.startswith("private/"):
+        rel_path = rel_path[len("private/") :]
+
+    response = HttpResponse()
+    response["Content-Type"] = ""
+    response["X-Accel-Redirect"] = f"/protected-media/private/{rel_path}"
+    return response
+
+
+@_requiere_sesion_concursos
+def portal_concursos_expediente_completo_view(request):
+    token_obj = _token_concursos_de_sesion(request)
+    if not token_obj:
+        return redirect("carrera_academica:portal_concursos_sesion_expirada")
+
+    ca = token_obj.carrera_academica
+    output_buffer, _errores = PDFService.consolidar_expediente(ca)
+
+    if not output_buffer:
+        messages.info(request, "Todavía no hay documentos para consolidar en este expediente.")
+        return redirect("carrera_academica:portal_concursos_dashboard")
+
+    logger.info(f"Portal concursos: expediente CA {ca.pk} descargado")
+
+    response = HttpResponse(output_buffer, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="expediente_{ca.pk}.pdf"'
+    return response
+
+
+def portal_concursos_logout_view(request):
+    request.session.pop(SESSION_KEY_CONCURSOS, None)
+    return redirect("carrera_academica:portal_concursos_sesion_expirada")
+
+
+def portal_concursos_sesion_expirada_view(request):
+    return render(request, "carrera_academica/portal_jurado/concursos_sesion_expirada.html")

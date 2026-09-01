@@ -131,8 +131,24 @@ if settings.PORTAL_JURADOS_ENABLED:
              views_portal_jurado.portal_jurado_landing_view,
              name='portal_jurado_landing'),
         # Portal de Concursos: prefijo propio ("portal-concursos/"), no
-        # comparte el catch-all de arriba -- link + contraseña para
-        # descargar el expediente de UNA CA, no una persona con DNI.
+        # comparte el catch-all de arriba -- link + contraseña para acceder
+        # al expediente de UNA CA (no una persona con DNI). Mismas rutas
+        # fijas antes que <str:token>/ por la misma razón que arriba.
+        path('portal-concursos/dashboard/',
+             views_portal_jurado.portal_concursos_dashboard_view,
+             name='portal_concursos_dashboard'),
+        path('portal-concursos/documento/<int:formulario_pk>/',
+             views_portal_jurado.portal_concursos_documento_view,
+             name='portal_concursos_documento'),
+        path('portal-concursos/descargar/',
+             views_portal_jurado.portal_concursos_expediente_completo_view,
+             name='portal_concursos_expediente_completo'),
+        path('portal-concursos/salir/',
+             views_portal_jurado.portal_concursos_logout_view,
+             name='portal_concursos_logout'),
+        path('portal-concursos/sesion-expirada/',
+             views_portal_jurado.portal_concursos_sesion_expirada_view,
+             name='portal_concursos_sesion_expirada'),
         path('portal-concursos/<str:token>/',
              views_portal_jurado.portal_concursos_landing_view,
              name='portal_concursos_landing'),
