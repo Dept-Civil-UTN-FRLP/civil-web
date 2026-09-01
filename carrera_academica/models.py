@@ -1274,6 +1274,7 @@ class AccesoPortalJurado(models.Model):
         ("link_ok", "Link verificado correctamente"),
         ("link_fail_token", "Token inválido/expirado/revocado"),
         ("link_fail_dni", "DNI incorrecto"),
+        ("link_fail_password", "Contraseña incorrecta"),
         ("vista_dashboard", "Vio listado de CAs"),
         ("vista_detalle_ca", "Vio el detalle de un expediente"),
         ("vista_documento", "Vio/descargó un documento"),
@@ -1290,6 +1291,14 @@ class AccesoPortalJurado(models.Model):
         null=True,
         blank=True,
         related_name="accesos",
+    )
+    token_concursos = models.ForeignKey(
+        "TokenPortalConcursos",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="accesos",
+        help_text="Set en vez de 'token' cuando el acceso es del Portal de Concursos (una casilla, no una persona).",
     )
     carrera_academica = models.ForeignKey(
         CarreraAcademica,
@@ -1318,7 +1327,8 @@ class AccesoPortalJurado(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.get_accion_display()} - {self.tipo_persona}#{self.persona_id} ({self.fecha:%d/%m/%Y %H:%M})"
+        quien = f"{self.tipo_persona}#{self.persona_id}" if self.tipo_persona else "Concursos"
+        return f"{self.get_accion_display()} - {quien} ({self.fecha:%d/%m/%Y %H:%M})"
 
 
 @receiver(post_delete, sender=Formulario)

@@ -290,6 +290,20 @@ def _requiere_sesion_concursos(view_func):
     return wrapper
 
 
+def _registrar_acceso_concursos(request, accion, exitoso=True, **extra):
+    token_concursos_id = extra.pop(
+        "token_concursos_id", (request.session.get(SESSION_KEY_CONCURSOS) or {}).get("token_id")
+    )
+    AccesoPortalJurado.objects.create(
+        token_concursos_id=token_concursos_id,
+        accion=accion,
+        exitoso=exitoso,
+        ip_address=request.META.get("REMOTE_ADDR"),
+        user_agent=request.META.get("HTTP_USER_AGENT", "")[:300],
+        **extra,
+    )
+
+
 def _token_concursos_de_sesion(request):
     """
     Re-resuelve el token desde la sesión y lo revalida en vivo contra la
@@ -320,10 +334,15 @@ def portal_concursos_landing_view(request, token):
 
         if not token_obj:
             logger.warning("Portal concursos: token inválido/vencido/revocado")
+            _registrar_acceso_concursos(request, "link_fail_token", exitoso=False, token_concursos_id=None)
             error = "Enlace inválido o expirado. Contactá a Secretaría Académica."
         elif not token_portal_service.verificar_password_concursos(token_obj, password_ingresada):
             logger.warning(
                 f"Portal concursos: contraseña incorrecta para CA {token_obj.carrera_academica_id}"
+            )
+            _registrar_acceso_concursos(
+                request, "link_fail_password", exitoso=False,
+                token_concursos_id=token_obj.pk, carrera_academica_id=token_obj.carrera_academica_id,
             )
             error = "Enlace inválido o expirado. Contactá a Secretaría Académica."
         else:
@@ -335,6 +354,10 @@ def portal_concursos_landing_view(request, token):
             request.session.set_expiry(60 * _minutos_sesion())
 
             logger.info(f"Portal concursos: sesión abierta para CA {token_obj.carrera_academica_id}")
+            _registrar_acceso_concursos(
+                request, "link_ok",
+                token_concursos_id=token_obj.pk, carrera_academica_id=token_obj.carrera_academica_id,
+            )
             return redirect("carrera_academica:portal_concursos_dashboard")
 
     return render(
@@ -358,6 +381,8 @@ def portal_concursos_dashboard_view(request):
     for f in formularios:
         f.nombre_tipo = nombres_tipo.get(f.tipo_formulario, f.get_tipo_formulario_display())
 
+    _registrar_acceso_concursos(request, "vista_dashboard", carrera_academica_id=ca.pk)
+
     return render(
         request,
         "carrera_academica/portal_jurado/concursos_dashboard.html",
@@ -379,6 +404,10 @@ def portal_concursos_documento_view(request, formulario_pk):
 
     logger.info(
         f"Portal concursos: documento {formulario.pk} descargado (CA {token_obj.carrera_academica_id})"
+    )
+    _registrar_acceso_concursos(
+        request, "vista_documento",
+        carrera_academica_id=token_obj.carrera_academica_id, formulario_id=formulario.pk,
     )
 
     if settings.DEBUG:
@@ -408,6 +437,7 @@ def portal_concursos_expediente_completo_view(request):
         return redirect("carrera_academica:portal_concursos_dashboard")
 
     logger.info(f"Portal concursos: expediente CA {ca.pk} descargado")
+    _registrar_acceso_concursos(request, "descarga_expediente", carrera_academica_id=ca.pk)
 
     response = HttpResponse(output_buffer, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="expediente_{ca.pk}.pdf"'

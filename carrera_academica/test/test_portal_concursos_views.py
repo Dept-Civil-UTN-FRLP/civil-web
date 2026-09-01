@@ -14,7 +14,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from pypdf import PdfWriter
 
-from carrera_academica.models import CarreraAcademica
+from carrera_academica.models import AccesoPortalJurado, CarreraAcademica
 from carrera_academica.services.token_portal_service import crear_token_concursos
 from planta_docente.models import Asignatura, Cargo, Docente
 
@@ -171,4 +171,34 @@ class PortalConcursosViewsTestCase(TestCase):
         resp = self.client.get(self.dashboard_url)
         self.assertRedirects(
             resp, reverse("carrera_academica:portal_concursos_sesion_expirada")
+        )
+
+    def test_password_incorrecta_queda_auditada(self):
+        self.client.post(self.url, {"password": "noesesta"})
+        acceso = AccesoPortalJurado.objects.get(accion="link_fail_password")
+        self.assertFalse(acceso.exitoso)
+        self.assertEqual(acceso.carrera_academica_id, self.ca.pk)
+        self.assertEqual(acceso.token_concursos_id, self.token_obj.pk)
+
+    def test_login_y_navegacion_queda_auditada(self):
+        self._login()
+        self.assertTrue(
+            AccesoPortalJurado.objects.filter(
+                accion="link_ok", token_concursos_id=self.token_obj.pk,
+                carrera_academica_id=self.ca.pk, exitoso=True,
+            ).exists()
+        )
+
+        self.client.get(self.dashboard_url)
+        self.assertTrue(
+            AccesoPortalJurado.objects.filter(
+                accion="vista_dashboard", carrera_academica_id=self.ca.pk
+            ).exists()
+        )
+
+        self.client.get(reverse("carrera_academica:portal_concursos_expediente_completo"))
+        self.assertTrue(
+            AccesoPortalJurado.objects.filter(
+                accion="descarga_expediente", carrera_academica_id=self.ca.pk
+            ).exists()
         )
