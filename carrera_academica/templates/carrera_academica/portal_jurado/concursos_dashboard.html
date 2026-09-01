@@ -14,6 +14,11 @@
     </a>
 </div>
 
+<a href="{% url 'carrera_academica:portal_concursos_expediente_completo' %}"
+   class="btn btn-outline-dark mb-4" target="_blank">
+    <i class="bi bi-folder2-open"></i> Consolidar y descargar todo
+</a>
+
 <div class="card mb-4 shadow-sm">
     <div class="card-header">
         <i class="bi bi-file-earmark-pdf"></i> Formularios del expediente
@@ -24,8 +29,7 @@
             {% for f in formularios %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
                 <span{% if not f.archivo %} class="text-muted"{% endif %}>
-                    {{ f.nombre_tipo }}
-                    {% if f.anio_correspondiente %}<span class="text-muted">({{ f.anio_correspondiente }})</span>{% endif %}
+                    {% if f.anio_correspondiente %}{{ f.anio_correspondiente }} - {% endif %}{{ f.nombre_tipo }}
                     <span class="badge bg-light text-muted border">{{ f.get_estado_display }}</span>
                 </span>
                 {% if f.archivo %}
@@ -44,9 +48,4 @@
         {% endif %}
     </div>
 </div>
-
-<a href="{% url 'carrera_academica:portal_concursos_expediente_completo' %}"
-   class="btn btn-outline-dark" target="_blank">
-    <i class="bi bi-folder2-open"></i> Consolidar y descargar todo
-</a>
 {% endblock %}
