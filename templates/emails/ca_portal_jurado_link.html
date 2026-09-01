@@ -47,6 +47,10 @@
 
     <p>Se lo/la convoca a participar como jurado en la evaluación de Carrera Académica de <strong>{{ ca.cargo.docente }}</strong>.</p>
 
+    {% if evaluacion and evaluacion.fecha_evaluacion %}
+    <p>Fecha y hora de la evaluación: <strong>{{ evaluacion.fecha_evaluacion|date:"d/m/Y H:i" }} hs</strong>.</p>
+    {% endif %}
+
     <p>Puede acceder a la documentación correspondiente desde el siguiente enlace personal. Al ingresar, se le solicitará su número de DNI para verificar su identidad.</p>
 
     <p>

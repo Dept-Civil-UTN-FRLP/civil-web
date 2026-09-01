@@ -146,7 +146,7 @@ def portal_jurado_dashboard_view(request):
     if not persona:
         return redirect("carrera_academica:portal_jurado_sesion_expirada")
 
-    cas = portal_service.obtener_cas_para_persona(tipo_persona, persona_id)
+    cas = portal_service.obtener_cas_con_evaluacion_programada(tipo_persona, persona_id)
     items = []
     for ca in cas:
         evaluacion = portal_service.obtener_evaluacion_relevante(ca)

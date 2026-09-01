@@ -140,6 +140,7 @@ class NotificarPortalJuradoViewTestCase(TestCase):
         self.assertRedirects(resp, reverse("carrera_academica:detalle_ca", args=[self.ca.pk]))
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ["titular@test.com"])
+        self.assertIn("15/09/2026", mail.outbox[0].body)
         self.assertEqual(
             TokenPortalJurado.objects.filter(
                 tipo_persona="jurado_externo", persona_id=self.titular.pk

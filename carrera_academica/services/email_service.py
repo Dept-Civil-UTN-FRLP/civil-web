@@ -45,6 +45,7 @@ class EmailService:
         """
         from django.conf import settings
         from django.urls import reverse
+        from carrera_academica.services import jurado_portal_service
         from carrera_academica.services.token_portal_service import crear_token
 
         destinatario = EmailService.obtener_email_miembro(persona)
@@ -55,6 +56,7 @@ class EmailService:
         url_portal = request.build_absolute_uri(
             reverse("carrera_academica:portal_jurado_landing", args=[raw_token])
         )
+        evaluacion = jurado_portal_service.obtener_evaluacion_relevante(ca)
 
         html_body = render_to_string(
             "emails/ca_portal_jurado_link.html",
@@ -62,6 +64,7 @@ class EmailService:
                 "persona": persona,
                 "ca": ca,
                 "url_portal": url_portal,
+                "evaluacion": evaluacion,
                 "dias_validez": settings.PORTAL_JURADO_TOKEN_DIAS_VALIDEZ,
             },
         )

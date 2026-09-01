@@ -22,6 +22,7 @@ import carrera_academica.urls as ca_urls
 from carrera_academica.models import (
     AccesoPortalJurado,
     CarreraAcademica,
+    Evaluacion,
     Formulario,
     Jurado,
     JuradoExterno,
@@ -156,6 +157,15 @@ class PortalJuradoViewsTestCase(TestCase):
             archivo=SimpleUploadedFile("cv_b.pdf", _pdf_bytes(), content_type="application/pdf"),
         )
 
+        Evaluacion.objects.create(
+            carrera_academica=self.ca_a, numero_evaluacion=1, anios_evaluados=[2020],
+            estado="PRO", fecha_evaluacion=timezone.now() + timedelta(days=5),
+        )
+        Evaluacion.objects.create(
+            carrera_academica=self.ca_b, numero_evaluacion=1, anios_evaluados=[2020],
+            estado="PRO", fecha_evaluacion=timezone.now() + timedelta(days=5),
+        )
+
         self.token_a, self.raw_a = crear_token("docente", self.docente_a.pk)
 
     def _landing_url(self, raw_token):
@@ -209,6 +219,40 @@ class PortalJuradoViewsTestCase(TestCase):
         resp = self.client.get(reverse("carrera_academica:portal_jurado_dashboard"))
         self.assertContains(resp, self.docente_a.apellido.upper())
         self.assertNotContains(resp, self.docente_b.apellido.upper() + ", " + self.docente_b.nombre)
+
+    def test_dashboard_no_muestra_ca_sin_evaluacion_programada(self):
+        """Una CA donde la persona es jurado pero sin ninguna Evaluacion no
+        tiene nada que mostrar en el dashboard todavía."""
+        docente_sin_eval, ca_sin_eval = _crear_ca(55555555, "Analisis III", apellido="Gamma")
+        jurado_sin_eval = Jurado.objects.create(
+            departamento="civil", profesor_titular_1=self.docente_a,
+            profesor_titular_2=self.ext_a, profesor_titular_3=self.ext_a2,
+        )
+        ca_sin_eval.jurado = jurado_sin_eval
+        ca_sin_eval.save()
+
+        self.client.post(self._landing_url(self.raw_a), {"dni": "11111111"})
+        resp = self.client.get(reverse("carrera_academica:portal_jurado_dashboard"))
+        self.assertNotContains(resp, docente_sin_eval.apellido.upper() + ", " + docente_sin_eval.nombre)
+
+    def test_dashboard_no_muestra_evaluacion_ya_realizada(self):
+        """Si la única Evaluacion de esa CA ya se marcó Realizada, no corresponde
+        seguir mostrándola como pendiente en el portal."""
+        docente_pasada, ca_pasada = _crear_ca(66666666, "Analisis IV", apellido="Delta")
+        jurado_pasada = Jurado.objects.create(
+            departamento="civil", profesor_titular_1=self.docente_a,
+            profesor_titular_2=self.ext_a, profesor_titular_3=self.ext_a2,
+        )
+        ca_pasada.jurado = jurado_pasada
+        ca_pasada.save()
+        Evaluacion.objects.create(
+            carrera_academica=ca_pasada, numero_evaluacion=1, anios_evaluados=[2020],
+            estado="REA", fecha_evaluacion=timezone.now() - timedelta(days=5),
+        )
+
+        self.client.post(self._landing_url(self.raw_a), {"dni": "11111111"})
+        resp = self.client.get(reverse("carrera_academica:portal_jurado_dashboard"))
+        self.assertNotContains(resp, docente_pasada.apellido.upper() + ", " + docente_pasada.nombre)
 
     def test_idor_detalle_de_otra_ca_da_404(self):
         self.client.post(self._landing_url(self.raw_a), {"dni": "11111111"})

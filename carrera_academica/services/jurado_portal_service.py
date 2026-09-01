@@ -8,6 +8,7 @@ a la vez.
 from typing import List, Optional
 
 from django.db.models import Q, QuerySet
+from django.utils import timezone
 
 from carrera_academica.models import CarreraAcademica, Evaluacion, Jurado
 from carrera_academica.models import JuradoExterno, VeedorGraduado, VeedorEstudiante
@@ -83,6 +84,22 @@ def obtener_cas_para_persona(tipo_persona: str, persona_id: int) -> QuerySet:
         .distinct()
         .select_related("cargo__docente", "cargo__asignatura")
     )
+
+
+def obtener_cas_con_evaluacion_programada(tipo_persona: str, persona_id: int) -> QuerySet:
+    """
+    Igual que obtener_cas_para_persona, pero solo las CA que tienen una
+    evaluación Programada vigente (sin fecha todavía -- "a confirmar" -- o
+    con fecha futura). Para el listado del dashboard: no tiene sentido
+    mostrarle al jurado una CA cuya evaluación ya se realizó/canceló, o que
+    todavía no tiene ninguna evaluación programada.
+    """
+    ahora = timezone.now()
+    vigente = Q(evaluaciones__estado="PRO") & (
+        Q(evaluaciones__fecha_evaluacion__isnull=True)
+        | Q(evaluaciones__fecha_evaluacion__gte=ahora)
+    )
+    return obtener_cas_para_persona(tipo_persona, persona_id).filter(vigente).distinct()
 
 
 def obtener_evaluacion_relevante(ca: CarreraAcademica) -> Optional[Evaluacion]:
