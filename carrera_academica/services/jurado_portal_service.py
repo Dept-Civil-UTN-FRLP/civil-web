@@ -136,7 +136,7 @@ def obtener_checklist_documentos(ca: CarreraAcademica, evaluacion: Optional[Eval
         filtro |= Q(anio_correspondiente__in=evaluacion.anios_evaluados, evaluacion__isnull=True)
 
     return list(
-        ca.formularios.filter(filtro).order_by("tipo_formulario", "anio_correspondiente")
+        ca.formularios.filter(filtro).order_by("anio_correspondiente", "tipo_formulario")
     )
 
 
