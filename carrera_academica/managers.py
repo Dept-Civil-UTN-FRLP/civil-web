@@ -28,27 +28,19 @@ class CarreraAcademicaQuerySet(models.QuerySet):
     def with_full_detail(self):
         """
         Precarga todas las relaciones para la vista de detalle.
-        Incluye junta evaluadora y todos los formularios.
+        Incluye el jurado y todos los formularios.
         """
         return self.select_related(
             "cargo",
             "cargo__docente",
             "cargo__asignatura",
-            "junta_evaluadora",
-            "junta_evaluadora__miembro_interno_titular",
-            "junta_evaluadora__miembro_interno_suplente",
-            "junta_evaluadora__veedor_alumno_titular",
-            "junta_evaluadora__veedor_alumno_suplente",
-            "junta_evaluadora__veedor_graduado_titular",
-            "junta_evaluadora__veedor_graduado_suplente",
+            "jurado",
             "resolucion_designacion",
             "resolucion_puesta_en_funcion",
         ).prefetch_related(
             "formularios",
             "evaluaciones__formularios",
             "cargo__resoluciones",
-            "junta_evaluadora__miembros_externos_titulares",
-            "junta_evaluadora__miembros_externos_suplentes",
         )
 
     def activas(self):

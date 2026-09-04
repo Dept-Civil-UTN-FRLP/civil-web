@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expediente Carrera Académica - UTN FRLP</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #2d3748;
+            margin: 0;
+            padding: 24px;
+            background-color: #ffffff;
+        }
+
+        .container { max-width: 680px; margin: 0 auto; }
+        p { margin-top: 0; margin-bottom: 16px; }
+
+        .button {
+            display: inline-block;
+            background-color: #2b6cb0;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 10px 0 20px 0;
+        }
+
+        .note {
+            font-size: 9.5pt;
+            color: #718096;
+        }
+
+        .signature-area { margin-top: 40px; }
+        .signature-line { border-top: 1px solid #a0aec0; width: 250px; margin-bottom: 8px; }
+        .signature-text { font-size: 10pt; color: #4a5568; line-height: 1.4; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <p>Estimados:</p>
+
+    <p>Se comparte el expediente completo de la Carrera Académica de <strong>{{ ca.cargo.docente }}</strong> ({{ ca.cargo.asignatura.nombre|title }}).</p>
+
+    {% if evaluacion and evaluacion.fecha_evaluacion %}
+    <p>Próxima evaluación: <strong>{{ evaluacion.fecha_evaluacion|date:"d/m/Y H:i" }} hs</strong>.</p>
+    {% endif %}
+
+    <p>Pueden acceder a la documentación completa desde el siguiente enlace, con la contraseña. Van a poder ver y descargar cada formulario por separado, o consolidar y descargar todo el expediente de una vez.</p>
+
+    <p>
+        <a href="{{ url_portal }}" class="button">Ver expediente</a>
+    </p>
+
+    <p>Contraseña: <strong>{{ password }}</strong></p>
+
+    <p class="note">
+        Este enlace vence en {{ dias_validez }} días.
+    </p>
+
+    <div class="signature-area">
+        <div class="signature-line"></div>
+        <div class="signature-text">
+            <strong>Secretaría del Departamento</strong><br>
+            UTN &ndash; Facultad Regional La Plata
+        </div>
+    </div>
+</div>
+</body>
+</html>

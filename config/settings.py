@@ -154,9 +154,9 @@ LOGOUT_REDIRECT_URL = "/"
 
 # Email Configuration
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.office365.com"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+EMAIL_HOST = config("EMAIL_HOST", default="smtp.office365.com")
+EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("SMTP_PASS")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
@@ -235,6 +235,17 @@ MODULOS_ACTIVOS = config(
 )
 
 DEPARTAMENTO = config("DEPARTAMENTO", default="civil")
+
+# ============================================================================
+# PORTAL DE JURADOS (links personales, sin login)
+# ============================================================================
+PORTAL_JURADOS_ENABLED = config("PORTAL_JURADOS_ENABLED", default=False, cast=bool)
+PORTAL_JURADO_TOKEN_DIAS_VALIDEZ = config(
+    "PORTAL_JURADO_TOKEN_DIAS_VALIDEZ", default=60, cast=int
+)
+PORTAL_JURADO_SESSION_MINUTOS = config(
+    "PORTAL_JURADO_SESSION_MINUTOS", default=60, cast=int
+)
 
 # ============================================================================
 # PLANIFICACIONES ANUALES - CONFIGURACIÓN

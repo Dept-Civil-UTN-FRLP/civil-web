@@ -43,11 +43,20 @@
         </div>
 
         <div class="mt-2">
-            <a href="{% url 'carrera_academica:detalle_jurado' ca.jurado.pk %}" 
+            <a href="{% url 'carrera_academica:detalle_jurado' ca.jurado.pk %}"
                class="btn btn-sm btn-outline-primary w-100">
                 <i class="bi bi-eye"></i> Ver Detalle
             </a>
         </div>
+
+        {% if PORTAL_JURADOS_ENABLED %}
+        <div class="mt-2">
+            <button type="button" class="btn btn-sm btn-outline-success w-100"
+                    data-bs-toggle="modal" data-bs-target="#modalNotificarPortal">
+                <i class="bi bi-send"></i> Notificar Portal de Jurados
+            </button>
+        </div>
+        {% endif %}
 
         {% else %}
         <div class="alert alert-warning mb-0">
@@ -64,3 +73,76 @@
         {% endif %}
     </div>
 </div>
+
+{% if PORTAL_JURADOS_ENABLED and ca.jurado %}
+<div class="modal fade" id="modalNotificarPortal" tabindex="-1" aria-labelledby="modalNotificarPortalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'carrera_academica:notificar_portal_jurado' ca.pk %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalNotificarPortalLabel">Notificar Portal de Jurados</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">
+                        Elegí a quién enviarle el enlace personal. Por defecto están tildados los
+                        titulares con DNI cargado — destildá y tildá el suplente si corresponde,
+                        o dejá tildado solo a uno para reenviarle sin volver a notificar al resto.
+                        Los veedores no reciben documentación por el portal.
+                    </p>
+                    <table class="table table-bordered table-sm align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 20%"></th>
+                                <th>Titular</th>
+                                <th>Suplente</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for fila in filas_jurado_portal %}
+                            <tr>
+                                <th class="small text-muted">{{ fila.etiqueta }}</th>
+                                <td>
+                                    {% include 'carrera_academica/components/ca/_notif_portal_celda.html' with m=fila.titular %}
+                                </td>
+                                <td>
+                                    {% include 'carrera_academica/components/ca/_notif_portal_celda.html' with m=fila.suplente %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <hr>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="enviar_concursos"
+                               value="1" id="modalNotifConcursos">
+                        <label class="form-check-label" for="modalNotifConcursos">
+                            Enviar link del expediente completo a <strong>concursosspa@frlp.utn.edu.ar</strong>
+                        </label>
+                    </div>
+                    <div class="mt-2" id="modalNotifConcursosPassword" style="display: none;">
+                        <label for="concursos_password" class="form-label small text-muted mb-1">
+                            Contraseña para ese link (se incluye en el mail, junto con la fecha y hora de la próxima evaluación)
+                        </label>
+                        <input type="text" class="form-control form-control-sm"
+                               id="concursos_password" name="concursos_password">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-send"></i> Enviar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+document.getElementById('modalNotifConcursos').addEventListener('change', function() {
+    document.getElementById('modalNotifConcursosPassword').style.display = this.checked ? 'block' : 'none';
+});
+</script>
+{% endif %}

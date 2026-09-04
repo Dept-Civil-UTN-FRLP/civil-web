@@ -1,0 +1,48 @@
+{% extends 'carrera_academica/portal_jurado/base_portal.html' %}
+
+{% block title %}Mis Carreras Académicas{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0">Mis expedientes</h4>
+        <p class="text-muted mb-0">Tocá un expediente para ver su documentación.</p>
+    </div>
+    <a href="{% url 'carrera_academica:portal_jurado_logout' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-box-arrow-right"></i> Salir
+    </a>
+</div>
+
+{% if not items %}
+<div class="alert alert-info">
+    No encontramos Carreras Académicas asignadas a tu nombre por el momento.
+</div>
+{% endif %}
+
+<div class="row g-4">
+    {% for item in items %}
+    <div class="col-md-6 col-lg-4">
+        <a href="{% url 'carrera_academica:portal_jurado_detalle' item.ca.pk %}" class="text-decoration-none">
+            <div class="folder p-4 pt-4 mt-3 h-100 text-dark">
+                <div class="folder-tab">
+                    <i class="bi bi-folder2"></i> Expediente
+                </div>
+
+                <h5 class="mb-1">{{ item.ca.cargo.docente }}</h5>
+                <div class="text-muted small mb-3">{{ item.cargo_info }}</div>
+
+                <hr style="border-top: 1px dashed #c9b489;">
+
+                {% if item.evaluacion.fecha_evaluacion %}
+                <span class="folder-sello agendada">
+                    {{ item.evaluacion.fecha_evaluacion|date:"d/m/Y" }} &middot; {{ item.evaluacion.fecha_evaluacion|date:"H:i" }}hs
+                </span>
+                {% else %}
+                <span class="folder-sello pendiente">Fecha a confirmar</span>
+                {% endif %}
+            </div>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

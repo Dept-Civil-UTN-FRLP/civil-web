@@ -16,12 +16,14 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.text import slugify
+from django.views.decorators.http import require_POST
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Inches
 from pypdf import PdfWriter
 from weasyprint import HTML
 
+from carrera_academica.services import jurado_portal_service
 from carrera_academica.services.document_service import DocumentService
 from carrera_academica.services.email_service import EmailService
 from carrera_academica.services.pdf_service import PDFService
@@ -33,7 +35,6 @@ from .forms import (
     CarreraAcademicaForm,
     EvaluacionForm,
     ExpedienteForm,
-    JuntaEvaluadoraForm,
     ResolucionForm,
     JuradoForm,
     VeedorGraduadoForm,
@@ -47,7 +48,6 @@ from .models import (
     Docente,
     Evaluacion,
     Formulario,
-    JuntaEvaluadora,
     MembreteAnual,
     PlantillaDocumento,
     Jurado,
@@ -248,6 +248,8 @@ def detalle_ca_view(request, pk):
         "resultado_choices": CarreraAcademica.RESULTADO_CIERRE_CHOICES,
         **_preparar_contexto_detalle(ca),
     }
+    if ca.jurado:
+        contexto["filas_jurado_portal"] = jurado_portal_service.listar_filas_jurado(ca.jurado)
     return render(request, "carrera_academica/ca_detail.html", contexto)
 
 
@@ -606,37 +608,6 @@ def crear_ca_view(request):
 
 
 @login_required
-def editar_junta_view(request, pk):
-    """Vista optimizada para editar junta."""
-    # ✅ OPTIMIZACIÓN: Precargar relaciones necesarias
-    ca = get_object_or_404(
-        CarreraAcademica.objects.select_related("cargo__docente", "cargo__asignatura"),
-        pk=pk,
-    )
-
-    junta, created = JuntaEvaluadora.objects.get_or_create(carrera_academica=ca)
-
-    if request.method == "POST":
-        form = JuntaEvaluadoraForm(request.POST, instance=junta)
-        if form.is_valid():
-            form.save()
-            messages.success(
-                request, "La Junta Evaluadora ha sido actualizada exitosamente."
-            )
-            return redirect("carrera_academica:detalle_ca", pk=ca.pk)
-    else:
-        form = JuntaEvaluadoraForm(instance=junta)
-
-    contexto = {
-        "form": form,
-        "ca": ca,
-        "categoria_choices": Cargo.CATEGORIA_CHOICES,
-        "dedicacion_choices": Cargo.DEDICACION_CHOICES,
-    }
-    return render(request, "carrera_academica/junta_update.html", contexto)
-
-
-@login_required
 def desvincular_resolucion_ca_view(request, pk, campo):
     """Desvincula una resolución (designación o puesta en función) de una CA."""
     if request.method != "POST":
@@ -816,25 +787,6 @@ def consolidar_pdf_view(request, pk):
 
 
 @login_required
-def generar_propuesta_jurado_view(request, pk):
-    """Vista para generar PDF de propuesta de jurado."""
-    ca = get_object_or_404(CarreraAcademica, pk=pk)
-
-    signature_path = "/static/images/firma_holografica.png"
-    pdf_file = PDFService.generar_propuesta_jurado(ca, signature_path)
-
-    if not pdf_file:
-        messages.error(request, "No se pudo generar la propuesta de jurado")
-        return redirect("carrera_academica:detalle_ca", pk=ca.pk)
-
-    response = HttpResponse(pdf_file, content_type="application/pdf")
-    response["Content-Disposition"] = (
-        f'attachment; filename="propuesta_jurado_{slugify(ca.cargo.docente)}.pdf"'
-    )
-    return response
-
-
-@login_required
 def notificar_pendientes_view(request, pk):
     """Vista para notificar formularios pendientes."""
     ca = get_object_or_404(CarreraAcademica, pk=pk)
@@ -886,21 +838,80 @@ def descargar_plantilla_view(request, pk):
 
 
 @login_required
-def notificar_junta_view(request, pk):
-    """Vista para notificar a la junta evaluadora."""
-    evaluacion = get_object_or_404(Evaluacion, pk=pk)
-    ca = evaluacion.carrera_academica
+@require_POST
+def notificar_portal_jurado_view(request, pk):
+    """
+    Envía su link personal al Portal de Jurados a los integrantes del Jurado de
+    esta CA que se hayan tildado en el modal (checkbox "destinatarios", valor
+    "tipo_persona:persona_id"). Permite elegir puntualmente titular o suplente,
+    y reenviar a uno solo sin volver a notificar al resto. Además, si se tilda
+    "enviar_concursos" (con una contraseña puesta a mano), manda a la casilla
+    de Concursos un link + contraseña para bajar el expediente completo --
+    Concursos no es una persona con DNI, por eso el mecanismo de acceso es
+    distinto al del resto del Jurado.
+    """
+    ca = get_object_or_404(CarreraAcademica, pk=pk)
+    jurado = ca.jurado
 
-    emails_enviados, errores = EmailService.enviar_notificacion_junta(evaluacion)
+    if not jurado:
+        messages.error(request, "Esta CA no tiene un Jurado asignado.")
+        return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
-    if emails_enviados > 0:
+    # Se recalcula server-side quiénes son los miembros reales de este Jurado, y
+    # se descarta cualquier valor del POST que no corresponda a uno de ellos --
+    # así un POST manipulado no puede hacer que se le mande el link a un tercero.
+    miembros_por_valor = {
+        m["valor"]: m
+        for m in jurado_portal_service.listar_miembros_jurado(jurado)
+    }
+
+    seleccionados = request.POST.getlist("destinatarios")
+    enviar_concursos = request.POST.get("enviar_concursos") == "1"
+    concursos_password = request.POST.get("concursos_password", "").strip()
+
+    if not seleccionados and not enviar_concursos:
+        messages.warning(request, "No se seleccionó ningún destinatario.")
+        return redirect("carrera_academica:detalle_ca", pk=ca.pk)
+
+    if enviar_concursos and not concursos_password:
+        messages.warning(request, "Ingresá una contraseña para el link de Concursos.")
+        enviar_concursos = False
+
+    enviados = 0
+    for valor in seleccionados:
+        miembro = miembros_por_valor.get(valor)
+        if not miembro:
+            continue
+
+        persona = miembro["persona"]
+        if not miembro["tiene_dni"]:
+            messages.warning(
+                request,
+                f"{persona} no tiene DNI cargado — completalo en el admin antes de notificarlo.",
+            )
+            continue
+
+        exito, mensaje = EmailService.enviar_link_portal_jurado(
+            persona, miembro["tipo_persona"], ca, request, creado_por=request.user
+        )
+        if exito:
+            enviados += 1
+        else:
+            messages.warning(request, f"{persona}: {mensaje}")
+
+    if enviados:
         messages.success(
-            request,
-            f"Se han enviado {emails_enviados} correos a los miembros de la junta.",
+            request, f"Se enviaron {enviados} enlaces del Portal de Jurados."
         )
 
-    for error in errores:
-        messages.warning(request, error)
+    if enviar_concursos:
+        exito, mensaje = EmailService.enviar_link_concursos(
+            ca, concursos_password, request, creado_por=request.user
+        )
+        if exito:
+            messages.success(request, mensaje)
+        else:
+            messages.warning(request, mensaje)
 
     return redirect("carrera_academica:detalle_ca", pk=ca.pk)
 
