@@ -12,4 +12,5 @@ def modulos_activos(request):
         "MODULOS_ACTIVOS": settings.MODULOS_ACTIVOS,
         "DEPARTAMENTO": departamento,
         "DEPARTAMENTO_LABEL": DEPARTAMENTO_LABELS.get(departamento, departamento.title()),
+        "PORTAL_JURADOS_ENABLED": settings.PORTAL_JURADOS_ENABLED,
     }

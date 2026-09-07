@@ -1,0 +1,72 @@
+{% extends 'carrera_academica/portal_jurado/base_portal.html' %}
+
+{% block title %}{{ ca.cargo.docente }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{% url 'carrera_academica:portal_jurado_dashboard' %}">Mis expedientes</a>
+        </li>
+        <li class="breadcrumb-item active">{{ ca.cargo.docente }}</li>
+    </ol>
+</nav>
+
+<div class="folder p-4 pt-4 mt-3 mb-4">
+    <div class="folder-tab">
+        <i class="bi bi-folder2-open"></i> Expediente
+    </div>
+
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+        <div>
+            <h4 class="mb-1">{{ ca.cargo.docente }}</h4>
+            <div class="text-muted">{{ cargo_info }}</div>
+        </div>
+        <span class="badge bg-secondary">{{ ca.get_estado_display }}</span>
+    </div>
+
+    <hr style="border-top: 1px dashed #c9b489;">
+
+    {% if evaluacion.fecha_evaluacion %}
+    <span class="folder-sello agendada">
+        Reunión: {{ evaluacion.fecha_evaluacion|date:"d/m/Y" }} &middot; {{ evaluacion.fecha_evaluacion|date:"H:i" }}hs
+    </span>
+    {% else %}
+    <span class="folder-sello pendiente">Fecha de reunión a confirmar</span>
+    {% endif %}
+</div>
+
+<div class="card mb-4 shadow-sm">
+    <div class="card-header">
+        <i class="bi bi-file-earmark-pdf"></i> Documentación
+    </div>
+    <div class="card-body">
+        {% if documentos %}
+        <ul class="list-group list-group-flush">
+            {% for doc in documentos %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span{% if not doc.archivo %} class="text-muted"{% endif %}>
+                    {% if doc.anio_correspondiente %}{{ doc.anio_correspondiente }} - {% endif %}{{ doc.nombre_tipo }}
+                </span>
+                {% if doc.archivo %}
+                <a href="{% url 'carrera_academica:portal_jurado_documento' doc.pk %}"
+                   class="btn btn-sm btn-outline-primary" target="_blank">
+                    <i class="bi bi-eye"></i> Ver
+                </a>
+                {% else %}
+                <span class="badge bg-light text-muted border">Sin cargar</span>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted mb-0">No hay documentación asociada a esta evaluación.</p>
+        {% endif %}
+    </div>
+</div>
+
+<a href="{% url 'carrera_academica:portal_jurado_expediente_completo' ca.pk %}"
+   class="btn btn-outline-dark" target="_blank">
+    <i class="bi bi-folder2-open"></i> Descargar expediente completo
+</a>
+{% endblock %}

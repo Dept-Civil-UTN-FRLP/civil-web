@@ -1,0 +1,51 @@
+{% extends 'carrera_academica/portal_jurado/base_portal.html' %}
+
+{% block title %}{{ ca.cargo.docente }} - Expediente{% endblock %}
+{% block navbar_titulo %}Portal de Concursos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+    <div>
+        <h4 class="mb-1">{{ ca.cargo.docente }}</h4>
+        <div class="text-muted">{{ cargo_info }}</div>
+    </div>
+    <a href="{% url 'carrera_academica:portal_concursos_logout' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-box-arrow-right"></i> Salir
+    </a>
+</div>
+
+<a href="{% url 'carrera_academica:portal_concursos_expediente_completo' %}"
+   class="btn btn-outline-dark mb-4" target="_blank">
+    <i class="bi bi-folder2-open"></i> Consolidar y descargar todo
+</a>
+
+<div class="card mb-4 shadow-sm">
+    <div class="card-header">
+        <i class="bi bi-file-earmark-pdf"></i> Formularios del expediente
+    </div>
+    <div class="card-body">
+        {% if formularios %}
+        <ul class="list-group list-group-flush">
+            {% for f in formularios %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span{% if not f.archivo %} class="text-muted"{% endif %}>
+                    {% if f.anio_correspondiente %}{{ f.anio_correspondiente }} - {% endif %}{{ f.nombre_tipo }}
+                    <span class="badge bg-light text-muted border">{{ f.get_estado_display }}</span>
+                </span>
+                {% if f.archivo %}
+                <a href="{% url 'carrera_academica:portal_concursos_documento' f.pk %}"
+                   class="btn btn-sm btn-outline-primary" target="_blank">
+                    <i class="bi bi-eye"></i> Ver
+                </a>
+                {% else %}
+                <span class="badge bg-light text-muted border">Sin cargar</span>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted mb-0">Este expediente todavía no tiene formularios.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

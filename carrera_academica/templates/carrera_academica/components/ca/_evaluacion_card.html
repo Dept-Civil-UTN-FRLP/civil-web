@@ -5,14 +5,6 @@
             <strong>{{ evaluacion }}</strong>
             <span class="fw-normal small text-muted">(Años: {{ evaluacion.anios_evaluados|join:", " }})</span>
         </div>
-        <div>
-            <a href="{% url 'carrera_academica:notificar_junta' pk=evaluacion.pk %}" class="btn btn-primary btn-sm">
-                Notificar a Junta
-            </a>
-            <a href="{% url 'carrera_academica:editar_junta' pk=evaluacion.pk %}" class="btn btn-outline-secondary btn-sm">
-                Editar Junta
-            </a>
-        </div>
     </div>
     <div class="card-body">
         <form action="{% url 'carrera_academica:agendar_evaluacion' pk=evaluacion.pk %}"

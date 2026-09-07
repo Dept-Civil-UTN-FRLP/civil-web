@@ -236,3 +236,60 @@ sudo journalctl -u <SERVICE_NAME> -f
 # Test de compresión de PDFs
 python manage.py comprimir_formularios --dry-run
 ```
+
+---
+
+## 11. Portal de Jurados
+
+Reemplaza el envío de documentación por mail con adjuntos por un link personal:
+el jurado entra a `/carrera/portal-jurados/<token>/`, confirma su DNI, y ve las
+Carreras Académicas donde participa. Ver `carrera_academica/views_portal_jurado.py`.
+
+**Variables de entorno** (agregar al `.env`, ver `.env.example`):
+
+```env
+PORTAL_JURADOS_ENABLED=True
+PORTAL_JURADO_TOKEN_DIAS_VALIDEZ=60
+PORTAL_JURADO_SESSION_MINUTOS=60
+```
+
+Con `PORTAL_JURADOS_ENABLED=False` (default) las URLs del portal ni se registran
+— es el kill switch, independiente de `MODULOS_ACTIVOS` (esa gatea toda la app
+`carrera_academica`, esto solo la superficie pública nueva).
+
+**Rate limiting (nginx)** — las rutas adivinables/fuerza-bruteables son las de
+entrada: DNI (`/carrera/portal-jurados/<token>/`) y contraseña
+(`/carrera/portal-concursos/<token>/`, para compartir un expediente puntual
+con Concursos sin pasar por el flujo de jurado con DNI); el resto de las
+vistas del portal de jurados requieren una sesión ya verificada, así que no
+necesitan `limit_req` propio (el portal de concursos no usa sesión, pero cada
+intento ya revalida token+contraseña contra la base, así que igual conviene
+el mismo límite).
+
+En el bloque `http {}` de `/etc/nginx/nginx.conf`:
+
+```nginx
+limit_req_zone $binary_remote_addr zone=portal_jurados:10m rate=5r/m;
+```
+
+En `/etc/nginx/sites-available/<SERVICE_NAME>`, agregar **antes** del
+`location /` genérico (mismo `proxy_pass` que el resto del sitio):
+
+```nginx
+location ~ ^/carrera/portal-(jurados|concursos)/[^/]+/$ {
+    limit_req zone=portal_jurados burst=10 nodelay;
+    include proxy_params;
+    proxy_pass http://unix:/run/<SERVICE_NAME>.sock;
+}
+```
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+**No hace falta agregar ni tocar ningún `location` de medios**: el portal sirve
+los PDFs reusando el mismo mecanismo que ya usa el resto del sitio
+(`X-Accel-Redirect` hacia `/protected-media/private/...`, servido internamente
+por el bloque `location /protected-media/private/ { internal; ... }` ya
+existente en el nginx del servidor).

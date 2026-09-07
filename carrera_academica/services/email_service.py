@@ -13,74 +13,128 @@ from carrera_academica.models import (
     CarreraAcademica,
     Evaluacion,
     Formulario,
-    JuntaEvaluadora,
-    MiembroExterno,
 )
 from planta_docente.models import Docente
 
 logger = logging.getLogger(__name__)
+
+CONCURSOS_EMAIL = "concursosspa@frlp.utn.edu.ar"
 
 
 class EmailService:
     """Servicio centralizado para envío de emails de Carrera Académica."""
 
     @staticmethod
-    def enviar_notificacion_junta(evaluacion: Evaluacion) -> tuple[int, List[str]]:
+    def enviar_link_portal_jurado(
+        persona,
+        tipo_persona: str,
+        ca: CarreraAcademica,
+        request,
+        creado_por=None,
+    ) -> tuple[bool, str]:
         """
-        Envía notificación a todos los miembros activos de la junta evaluadora.
+        Envía a un ocupante de un slot de Jurado su link personal al Portal
+        de Jurados (reemplaza el envío de PDFs adjuntos por un link).
 
         Args:
-            evaluacion: Instancia de Evaluacion
-
-        Returns:
-            tuple: (cantidad_enviados, lista_errores)
+            persona: instancia de Docente/JuradoExterno/VeedorGraduado/VeedorEstudiante
+            tipo_persona: uno de TokenPortalJurado.TIPO_PERSONA_CHOICES
+            ca: CarreraAcademica que motiva el envío (solo para el asunto/cuerpo del mail)
+            request: HttpRequest actual, para armar la URL absoluta
+            creado_por: usuario que dispara el envío (para auditoría del token)
         """
-        junta = getattr(evaluacion.carrera_academica, "junta_evaluadora", None)
+        from django.conf import settings
+        from django.urls import reverse
+        from carrera_academica.services import jurado_portal_service
+        from carrera_academica.services.token_portal_service import crear_token
 
-        if not junta:
-            logger.error(f"Evaluación {evaluacion.pk} no tiene junta asignada")
-            return 0, ["No hay junta evaluadora asignada"]
+        destinatario = EmailService.obtener_email_miembro(persona)
+        if not destinatario:
+            return False, f"{persona} no tiene email registrado"
 
-        miembros = EmailService._obtener_miembros_activos(junta)
+        _token_obj, raw_token = crear_token(tipo_persona, persona.pk, creado_por)
+        url_portal = request.build_absolute_uri(
+            reverse("carrera_academica:portal_jurado_landing", args=[raw_token])
+        )
+        evaluacion = jurado_portal_service.obtener_evaluacion_relevante(ca)
 
-        if not miembros:
-            logger.warning(
-                f"No hay miembros activos en junta de evaluación {evaluacion.pk}"
-            )
-            return 0, ["No hay miembros activos en la junta"]
-
-        documentos = EmailService._obtener_documentos_pertinentes(
-            evaluacion.carrera_academica, evaluacion.anios_evaluados
+        html_body = render_to_string(
+            "emails/ca_portal_jurado_link.html",
+            {
+                "persona": persona,
+                "ca": ca,
+                "url_portal": url_portal,
+                "evaluacion": evaluacion,
+                "dias_validez": settings.PORTAL_JURADO_TOKEN_DIAS_VALIDEZ,
+            },
         )
 
-        if not documentos:
-            logger.warning(
-                f"No hay documentos para enviar en evaluación {evaluacion.pk}"
+        email = EmailMessage(
+            subject=f"Portal de Jurados - Documentación de {ca.cargo.docente}",
+            body=html_body,
+            from_email=None,
+            to=[destinatario],
+        )
+        email.content_subtype = "html"
+
+        try:
+            email.send()
+            logger.info(
+                f"Link de portal de jurado enviado a {destinatario} ({tipo_persona}#{persona.pk})"
             )
-            return 0, ["No hay documentos entregados para enviar"]
+            return True, f"Enlace enviado a {destinatario}"
+        except Exception as e:
+            logger.error(f"Error enviando link de portal de jurado a {destinatario}: {e}")
+            return False, f"Error al enviar: {str(e)}"
 
-        emails_enviados = 0
-        errores = []
+    @staticmethod
+    def enviar_link_concursos(
+        ca: CarreraAcademica, password: str, request, creado_por=None
+    ) -> tuple[bool, str]:
+        """
+        Manda a la casilla institucional de Concursos un link personal (no un
+        PDF adjunto, para no pesar el mail) para descargar el expediente
+        completo de ESTA CA puntual. Como no es una persona con DNI, la
+        verificación es con una contraseña que elige quien genera el link acá
+        mismo; a pedido explícito del usuario esa contraseña sí va en el
+        mail, junto con la fecha y hora de la próxima evaluación.
+        """
+        from carrera_academica.services import jurado_portal_service, token_portal_service
+        from django.conf import settings
+        from django.urls import reverse
 
-        for miembro in miembros:
-            try:
-                email_destinatario = EmailService._obtener_email_miembro(miembro)
+        token, raw = token_portal_service.crear_token_concursos(ca, password, creado_por)
+        url_portal = request.build_absolute_uri(
+            reverse("carrera_academica:portal_concursos_landing", args=[raw])
+        )
+        evaluacion = jurado_portal_service.obtener_evaluacion_relevante(ca)
 
-                if email_destinatario:
-                    EmailService._enviar_email_individual(
-                        destinatario=email_destinatario,
-                        evaluacion=evaluacion,
-                        documentos=documentos,
-                    )
-                    emails_enviados += 1
-                else:
-                    errores.append(f"No se encontró email para {miembro}")
+        html_body = render_to_string(
+            "emails/ca_portal_concursos_link.html",
+            {
+                "ca": ca,
+                "url_portal": url_portal,
+                "password": password,
+                "evaluacion": evaluacion,
+                "dias_validez": settings.PORTAL_JURADO_TOKEN_DIAS_VALIDEZ,
+            },
+        )
 
-            except Exception as e:
-                logger.error(f"Error enviando email a {miembro}: {e}")
-                errores.append(f"Error con {miembro}: {str(e)}")
+        email = EmailMessage(
+            subject=f"Expediente de Carrera Académica - {ca.cargo.docente}",
+            body=html_body,
+            from_email=None,
+            to=[CONCURSOS_EMAIL],
+        )
+        email.content_subtype = "html"
 
-        return emails_enviados, errores
+        try:
+            email.send()
+            logger.info(f"Link de portal de concursos enviado para CA {ca.pk}")
+            return True, f"Enlace enviado a {CONCURSOS_EMAIL}"
+        except Exception as e:
+            logger.error(f"Error enviando link de concursos para CA {ca.pk}: {e}")
+            return False, f"Error al enviar: {str(e)}"
 
     @staticmethod
     def enviar_primera_notificacion(
@@ -244,31 +298,7 @@ class EmailService:
             return False, f"Error al enviar: {str(e)}"
 
     @staticmethod
-    def _obtener_miembros_activos(junta: JuntaEvaluadora) -> List:
-        """Obtiene lista de miembros activos de la junta."""
-        miembros = []
-
-        # Miembro interno
-        if junta.asistencia_status.get("miembro_interno_titular") == "ausente":
-            if junta.miembro_interno_suplente:
-                miembros.append(junta.miembro_interno_suplente)
-        else:
-            if junta.miembro_interno_titular:
-                miembros.append(junta.miembro_interno_titular)
-
-        # Miembros externos titulares
-        miembros.extend(junta.miembros_externos_titulares.all())
-
-        # Veedores titulares
-        if junta.veedor_alumno_titular:
-            miembros.append(junta.veedor_alumno_titular)
-        if junta.veedor_graduado_titular:
-            miembros.append(junta.veedor_graduado_titular)
-
-        return miembros
-
-    @staticmethod
-    def _obtener_documentos_pertinentes(
+    def obtener_documentos_pertinentes(
         ca: CarreraAcademica, anios_evaluados: List[int]
     ) -> List[Formulario]:
         """Obtiene documentos pertinentes para una evaluación."""
@@ -291,48 +321,14 @@ class EmailService:
         return list(docs_generales) + list(docs_anuales)
 
     @staticmethod
-    def _obtener_email_miembro(miembro) -> Optional[str]:
-        """Obtiene el email de un miembro de la junta."""
+    def obtener_email_miembro(miembro) -> Optional[str]:
+        """Obtiene el email de un miembro (Docente interno, o externo/veedor)."""
         if isinstance(miembro, Docente):
             correo = miembro.correos.filter(principal=True).first()
             return correo.email if correo else None
         else:
-            # MiembroExterno o Veedor
+            # JuradoExterno, VeedorGraduado o VeedorEstudiante
             return miembro.email
-
-    @staticmethod
-    def _enviar_email_individual(
-        destinatario: str, evaluacion: Evaluacion, documentos: List[Formulario]
-    ):
-        """Envía email individual a un miembro de la junta."""
-        ca = evaluacion.carrera_academica
-
-        fecha_texto = (
-            evaluacion.fecha_evaluacion.strftime("%d/%m/%Y a las %H:%Mhs")
-            if evaluacion.fecha_evaluacion
-            else "a confirmar"
-        )
-
-        email = EmailMessage(
-            subject=f"Convocatoria y Documentación para Junta Evaluadora - {ca.cargo.docente}",
-            body=f"""Estimado/a Miembro de la Junta Evaluadora,
-
-Se le convoca a participar en la evaluación para la Carrera Académica de {ca.cargo.docente}. 
-La misma está agendada para el {fecha_texto}.
-
-Se adjunta toda la documentación relevante del expediente para su análisis.
-
-Saludos cordiales,
-Departamento de Ingeniería Civil""",
-            from_email=None,
-            to=[destinatario],
-        )
-
-        for doc in documentos:
-            if doc.archivo:
-                email.attach_file(doc.archivo.path)
-
-        email.send()
 
     @staticmethod
     def _preparar_email_recordatorio(

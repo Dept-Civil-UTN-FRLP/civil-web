@@ -826,160 +826,6 @@ class Formulario(models.Model):
         return f"{self.tipo_formulario} de {self.carrera_academica.cargo.docente}"
 
 
-class MiembroExterno(models.Model):
-    nombre_completo = models.CharField(max_length=255)
-    email = models.EmailField()
-    universidad_origen = models.CharField(
-        max_length=255, help_text="Ej: Universidad Nacional de Buenos Aires"
-    )
-    cargo_info = models.CharField(
-        max_length=255, help_text="Ej: Titular con Dedicación Exclusiva"
-    )
-    resolucion_designacion = models.CharField(
-        max_length=100,
-        blank=True,
-        help_text="Nro. de resolución de designación a la junta",
-    )
-
-    def __str__(self):
-        return f"{self.nombre_completo} ({self.universidad_origen})"
-
-    class Meta:
-        verbose_name = "Miembro Externo"
-        verbose_name_plural = "Miembros Externos"
-
-
-class Veedor(models.Model):
-    CLAUSTRO_CHOICES = [
-        ("ALU", "Alumno"),
-        ("GRA", "Graduado"),
-    ]
-    nombre_completo = models.CharField(max_length=255, unique=True)
-    email = models.EmailField(blank=True, null=True)
-    claustro = models.CharField(max_length=3, choices=CLAUSTRO_CHOICES)
-
-    def __str__(self):
-        return f"{self.nombre_completo} ({self.get_claustro_display()})"
-
-
-class JuntaEvaluadora(models.Model):
-    carrera_academica = models.OneToOneField(
-        CarreraAcademica, on_delete=models.CASCADE, related_name="junta_evaluadora"
-    )
-
-    # Miembros Internos (locales)
-    miembro_interno_titular = models.ForeignKey(
-        Docente,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="juntas_titular_interno",
-    )
-    miembro_interno_suplente = models.ForeignKey(
-        Docente,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="juntas_suplente_interno",
-    )
-
-    # Miembros Externos
-    miembros_externos_titulares = models.ManyToManyField(
-        MiembroExterno, related_name="juntas_titular_externo", blank=True
-    )
-    miembros_externos_suplentes = models.ManyToManyField(
-        MiembroExterno, related_name="juntas_suplente_externo", blank=True
-    )
-
-    # Veedores
-    veedor_alumno_titular = models.ForeignKey(
-        Veedor,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="veedor_alumno_tit",
-        limit_choices_to={"claustro": "ALU"},
-    )
-    veedor_alumno_suplente = models.ForeignKey(
-        Veedor,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="veedor_alumno_sup",
-        limit_choices_to={"claustro": "ALU"},
-    )
-    veedor_graduado_titular = models.ForeignKey(
-        Veedor,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="veedor_graduado_tit",
-        limit_choices_to={"claustro": "GRA"},
-    )
-    veedor_graduado_suplente = models.ForeignKey(
-        Veedor,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="veedor_graduado_sup",
-        limit_choices_to={"claustro": "GRA"},
-    )
-
-    asistencia_status = models.JSONField(default=dict, blank=True)
-
-    def clean(self):
-        """Validaciones a nivel de modelo."""
-        super().clean()
-        errors = {}
-
-        # Validación 1: Debe haber al menos un miembro interno
-        if not self.miembro_interno_titular and not self.miembro_interno_suplente:
-            errors["miembro_interno_titular"] = ValidationError(
-                "Debe haber al menos un miembro interno (titular o suplente).",
-                code="missing_internal_member",
-            )
-
-        # Validación 2: Titular y suplente no pueden ser la misma persona
-        if (
-            self.miembro_interno_titular
-            and self.miembro_interno_suplente
-            and self.miembro_interno_titular == self.miembro_interno_suplente
-        ):
-            errors["miembro_interno_suplente"] = ValidationError(
-                "El miembro interno suplente no puede ser la misma persona que el titular.",
-                code="duplicate_internal_member",
-            )
-
-        # Validación 3: Los veedores alumnos deben ser del claustro correcto
-        # Esto ya está manejado con limit_choices_to en el modelo
-
-        if errors:
-            raise ValidationError(errors)
-
-    def tiene_quorum_minimo(self):
-        """Verifica si la junta tiene el quórum mínimo para funcionar."""
-        miembros_count = 0
-
-        if self.miembro_interno_titular or self.miembro_interno_suplente:
-            miembros_count += 1
-
-        miembros_count += self.miembros_externos_titulares.count()
-
-        return miembros_count >= 3  # Mínimo 3 miembros
-
-    class Meta:
-        verbose_name = "Junta Evaluadora"
-        verbose_name_plural = "Juntas Evaluadoras"
-        # Agregar índices
-        indexes = [
-            # Índice para búsqueda por CA (relación 1-1)
-            models.Index(fields=["carrera_academica"], name="junta_ca_idx"),
-        ]
-
-    def __str__(self):
-        return f"Junta para {self.carrera_academica}"
-
-
 class MembreteAnual(models.Model):
     anio = models.IntegerField(
         unique=True, help_text="Año al que corresponde este membrete"
@@ -1042,6 +888,11 @@ class VeedorGraduado(models.Model):
     telefono = models.CharField(max_length=20, blank=True)
     titulo = models.CharField(max_length=200, help_text="Ej: Ingeniero Civil")
     año_egreso = models.IntegerField(null=True, blank=True)
+    dni = models.IntegerField(
+        null=True, blank=True, unique=True,
+        verbose_name="DNI",
+        help_text="Usado para verificar identidad en el Portal de Jurados",
+    )
 
     def __str__(self):
         return f"{self.apellido}, {self.nombre}"
@@ -1058,6 +909,11 @@ class VeedorEstudiante(models.Model):
     nombre = models.CharField(max_length=100)
     email = models.EmailField()
     legajo = models.CharField(max_length=20)
+    dni = models.IntegerField(
+        null=True, blank=True, unique=True,
+        verbose_name="DNI",
+        help_text="Usado para verificar identidad en el Portal de Jurados",
+    )
 
     def __str__(self):
         return f"{self.apellido}, {self.nombre} (Leg. {self.legajo})"
@@ -1277,6 +1133,11 @@ class JuradoExterno(models.Model):
     nombre = models.CharField(max_length=100)
     email = models.EmailField()
     telefono = models.CharField(max_length=20, blank=True)
+    dni = models.IntegerField(
+        null=True, blank=True, unique=True,
+        verbose_name="DNI",
+        help_text="Usado para verificar identidad en el Portal de Jurados",
+    )
 
     # Origen institucional
     universidad = models.ForeignKey(
@@ -1325,6 +1186,149 @@ class JuradoExterno(models.Model):
     def es_universidad_externa(self):
         """Verifica si es de universidad externa (no UTN)."""
         return not self.universidad.es_utn
+
+
+class TokenPortalJurado(models.Model):
+    """
+    Link de acceso personal al Portal de Jurados para un ocupante de slot de `Jurado`.
+    Se guarda solo el hash (sha256) del secreto — el valor crudo solo existe en el
+    momento de creación (para incluirlo en el link del email) y nunca se persiste.
+    """
+
+    TIPO_PERSONA_CHOICES = [
+        ("docente", "Docente (interno)"),
+        ("jurado_externo", "Jurado Externo"),
+        ("veedor_graduado", "Veedor Graduado"),
+        ("veedor_estudiante", "Veedor Estudiante"),
+    ]
+
+    tipo_persona = models.CharField(max_length=20, choices=TIPO_PERSONA_CHOICES)
+    persona_id = models.PositiveIntegerField()
+    token_hash = models.CharField(max_length=64, unique=True, db_index=True)
+    creado = models.DateTimeField(auto_now_add=True)
+    creado_por = models.ForeignKey(
+        "auth.User", on_delete=models.SET_NULL, null=True, blank=True
+    )
+    expira = models.DateTimeField()
+    revocado = models.BooleanField(default=False)
+    fecha_revocado = models.DateTimeField(null=True, blank=True)
+    ultimo_uso = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Token Portal de Jurado"
+        verbose_name_plural = "Tokens Portal de Jurados"
+        indexes = [
+            models.Index(fields=["tipo_persona", "persona_id"]),
+        ]
+
+    def __str__(self):
+        return f"Token {self.tipo_persona}#{self.persona_id} ({'revocado' if self.revocado else 'activo'})"
+
+    def esta_vigente(self):
+        return not self.revocado and self.expira > timezone.now()
+
+
+class TokenPortalConcursos(models.Model):
+    """
+    Link + contraseña para compartir el expediente completo de UNA CarreraAcademica
+    puntual con una casilla institucional (ej. Concursos) que no es una persona con
+    DNI en el sistema. La contraseña la elige el staff al generar el link (no es
+    parte del mail que se manda -- se comunica por otro medio), y se guarda solo su
+    hash, igual que el token.
+    """
+
+    carrera_academica = models.ForeignKey(
+        CarreraAcademica, on_delete=models.CASCADE, related_name="tokens_concursos"
+    )
+    token_hash = models.CharField(max_length=64, unique=True, db_index=True)
+    password_hash = models.CharField(max_length=128)
+    creado = models.DateTimeField(auto_now_add=True)
+    creado_por = models.ForeignKey(
+        "auth.User", on_delete=models.SET_NULL, null=True, blank=True
+    )
+    expira = models.DateTimeField()
+    revocado = models.BooleanField(default=False)
+    ultimo_uso = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Token Portal de Concursos"
+        verbose_name_plural = "Tokens Portal de Concursos"
+        indexes = [
+            models.Index(fields=["carrera_academica"]),
+        ]
+
+    def __str__(self):
+        return f"Token concursos CA {self.carrera_academica_id} ({'revocado' if self.revocado else 'activo'})"
+
+
+class AccesoPortalJurado(models.Model):
+    """
+    Auditoría de accesos al Portal de Jurados: quién, cuándo, qué vio/descargó,
+    con qué resultado. La identidad es polimórfica (no hay una tabla única de
+    "personas"), por eso se guarda tipo_persona + persona_id en vez de una FK.
+    """
+
+    TIPO_PERSONA_CHOICES = TokenPortalJurado.TIPO_PERSONA_CHOICES
+
+    ACCION_CHOICES = [
+        ("link_ok", "Link verificado correctamente"),
+        ("link_fail_token", "Token inválido/expirado/revocado"),
+        ("link_fail_dni", "DNI incorrecto"),
+        ("link_fail_password", "Contraseña incorrecta"),
+        ("vista_dashboard", "Vio listado de CAs"),
+        ("vista_detalle_ca", "Vio el detalle de un expediente"),
+        ("vista_documento", "Vio/descargó un documento"),
+        ("descarga_expediente", "Descargó expediente completo"),
+    ]
+
+    tipo_persona = models.CharField(
+        max_length=20, choices=TIPO_PERSONA_CHOICES, blank=True
+    )
+    persona_id = models.PositiveIntegerField(null=True, blank=True)
+    token = models.ForeignKey(
+        TokenPortalJurado,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="accesos",
+    )
+    token_concursos = models.ForeignKey(
+        "TokenPortalConcursos",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="accesos",
+        help_text="Set en vez de 'token' cuando el acceso es del Portal de Concursos (una casilla, no una persona).",
+    )
+    carrera_academica = models.ForeignKey(
+        CarreraAcademica,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="accesos_portal_jurado",
+    )
+    formulario = models.ForeignKey(
+        Formulario, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    accion = models.CharField(max_length=25, choices=ACCION_CHOICES)
+    exitoso = models.BooleanField(default=True)
+    detalle = models.CharField(max_length=255, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=300, blank=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Acceso Portal de Jurado"
+        verbose_name_plural = "Accesos Portal de Jurados"
+        ordering = ["-fecha"]
+        indexes = [
+            models.Index(fields=["tipo_persona", "persona_id", "-fecha"]),
+            models.Index(fields=["carrera_academica", "-fecha"]),
+        ]
+
+    def __str__(self):
+        quien = f"{self.tipo_persona}#{self.persona_id}" if self.tipo_persona else "Concursos"
+        return f"{self.get_accion_display()} - {quien} ({self.fecha:%d/%m/%Y %H:%M})"
 
 
 @receiver(post_delete, sender=Formulario)

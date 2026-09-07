@@ -6,7 +6,6 @@ from django.utils import timezone
 
 from .models import (
     CarreraAcademica,
-    JuntaEvaluadora,
     VeedorGraduado,
     VeedorEstudiante,
     Jurado,
@@ -156,65 +155,6 @@ class CargoForm(forms.ModelForm):
             raise ValidationError(
                 "Los cargos Ad-Honorem no pueden tener dedicación exclusiva o semi-exclusiva.",
                 code="invalid_dedication",
-            )
-
-        return cleaned_data
-
-
-class JuntaEvaluadoraForm(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        queryset_internos = Docente.objects.filter(
-            cargo_docente__caracter__in=["ord", "reg"]
-        ).distinct()
-        self.fields["miembro_interno_titular"].queryset = queryset_internos
-        self.fields["miembro_interno_suplente"].queryset = queryset_internos
-
-    class Meta:
-        model = JuntaEvaluadora
-        fields = [
-            "miembro_interno_titular",
-            "miembro_interno_suplente",
-            "miembros_externos_titulares",
-            "miembros_externos_suplentes",
-            "veedor_alumno_titular",
-            "veedor_alumno_suplente",
-            "veedor_graduado_titular",
-            "veedor_graduado_suplente",
-        ]
-        widgets = {
-            "miembro_interno_titular": forms.Select(attrs={"class": "form-select"}),
-            "miembro_interno_suplente": forms.Select(attrs={"class": "form-select"}),
-            "miembros_externos_titulares": forms.SelectMultiple(
-                attrs={"class": "form-select", "size": 5}
-            ),
-            "miembros_externos_suplentes": forms.SelectMultiple(
-                attrs={"class": "form-select", "size": 5}
-            ),
-            "veedor_alumno_titular": forms.Select(attrs={"class": "form-select"}),
-            "veedor_alumno_suplente": forms.Select(attrs={"class": "form-select"}),
-            "veedor_graduado_titular": forms.Select(attrs={"class": "form-select"}),
-            "veedor_graduado_suplente": forms.Select(attrs={"class": "form-select"}),
-        }
-
-    def clean(self):
-        """Validaciones cruzadas."""
-        cleaned_data = super().clean()
-        tit_interno = cleaned_data.get("miembro_interno_titular")
-        sup_interno = cleaned_data.get("miembro_interno_suplente")
-
-        # Validar que titular y suplente no sean la misma persona
-        if tit_interno and sup_interno and tit_interno == sup_interno:
-            raise ValidationError(
-                "El miembro titular y suplente no pueden ser la misma persona.",
-                code="duplicate_member",
-            )
-
-        # Validar que haya al menos un miembro interno
-        if not tit_interno and not sup_interno:
-            raise ValidationError(
-                "Debe haber al menos un miembro interno (titular o suplente).",
-                code="missing_internal_member",
             )
 
         return cleaned_data

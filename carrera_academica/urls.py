@@ -1,6 +1,8 @@
 # carrera_academica/urls.py
+from django.conf import settings
 from django.urls import path
 from . import views
+from . import views_portal_jurado
 
 app_name = 'carrera_academica'
 
@@ -19,11 +21,6 @@ urlpatterns = [
         name="registrar_resolucion",
     ),
     path("nueva/", views.crear_ca_view, name="crear_ca"),
-    path(
-        "expediente/<int:pk>/editar_junta/",
-        views.editar_junta_view,
-        name="editar_junta",
-    ),
     path(
         "expediente/<int:pk>/asignar_expediente/",
         views.asignar_expediente_view,
@@ -47,14 +44,8 @@ urlpatterns = [
         views.consolidar_pdf_view,
         name="consolidar_pdf",
     ),
-    path(
-        "expediente/<int:pk>/generar_propuesta_jurado/",
-        views.generar_propuesta_jurado_view,
-        name="generar_propuesta_jurado",
-    ),
     path("expediente/<int:pk>/notificar_pendientes/", views.notificar_pendientes_view, name="notificar_pendientes"),
     path("formulario/<int:pk>/descargar_plantilla/", views.descargar_plantilla_view, name="descargar_plantilla"),
-    path("evaluacion/<int:pk>/notificar_junta/", views.notificar_junta_view, name="notificar_junta"),
     path("evaluacion/<int:pk>/agendar/", views.agendar_evaluacion_view, name="agendar_evaluacion"),
     path("expediente/<int:pk>/gestionar-anios/", views.gestionar_anios_ca_view, name="gestionar_anios_ca"),
     path("expediente/<int:pk>/anio/<int:anio>/formularios/", views.gestionar_formularios_anio_view, name="gestionar_formularios_anio"),
@@ -101,4 +92,64 @@ urlpatterns = [
          name='crear_universidad'),
     path('universidades/<int:pk>/editar/',
          views.editar_universidad_view, name='editar_universidad'),
+
+    # ===== NOTIFICAR JURADO (PORTAL) =====
+    path('expediente/<int:pk>/notificar-portal-jurado/',
+         views.notificar_portal_jurado_view, name='notificar_portal_jurado'),
 ]
+
+# ===== PORTAL DE JURADOS =====
+# Únicas vistas de esta app SIN @login_required — se protegen con sesión
+# propia (ver carrera_academica/views_portal_jurado.py). Gateadas por un
+# flag independiente de MODULOS_ACTIVOS para poder apagarlas sin tocar el
+# resto del módulo.
+if settings.PORTAL_JURADOS_ENABLED:
+    urlpatterns += [
+        # Las rutas fijas van ANTES que <str:token>/ — si no, ese patrón
+        # genérico matchea primero y "tapa" a todas las demás (ej.
+        # /portal-jurados/dashboard/ matchearía como si "dashboard" fuera
+        # un token).
+        path('portal-jurados/dashboard/',
+             views_portal_jurado.portal_jurado_dashboard_view,
+             name='portal_jurado_dashboard'),
+        path('portal-jurados/documento/<int:formulario_pk>/',
+             views_portal_jurado.portal_jurado_documento_view,
+             name='portal_jurado_documento'),
+        path('portal-jurados/expediente/<int:ca_pk>/',
+             views_portal_jurado.portal_jurado_detalle_view,
+             name='portal_jurado_detalle'),
+        path('portal-jurados/expediente/<int:ca_pk>/descargar/',
+             views_portal_jurado.portal_jurado_expediente_completo_view,
+             name='portal_jurado_expediente_completo'),
+        path('portal-jurados/salir/',
+             views_portal_jurado.portal_jurado_logout_view,
+             name='portal_jurado_logout'),
+        path('portal-jurados/sesion-expirada/',
+             views_portal_jurado.portal_jurado_sesion_expirada_view,
+             name='portal_jurado_sesion_expirada'),
+        path('portal-jurados/<str:token>/',
+             views_portal_jurado.portal_jurado_landing_view,
+             name='portal_jurado_landing'),
+        # Portal de Concursos: prefijo propio ("portal-concursos/"), no
+        # comparte el catch-all de arriba -- link + contraseña para acceder
+        # al expediente de UNA CA (no una persona con DNI). Mismas rutas
+        # fijas antes que <str:token>/ por la misma razón que arriba.
+        path('portal-concursos/dashboard/',
+             views_portal_jurado.portal_concursos_dashboard_view,
+             name='portal_concursos_dashboard'),
+        path('portal-concursos/documento/<int:formulario_pk>/',
+             views_portal_jurado.portal_concursos_documento_view,
+             name='portal_concursos_documento'),
+        path('portal-concursos/descargar/',
+             views_portal_jurado.portal_concursos_expediente_completo_view,
+             name='portal_concursos_expediente_completo'),
+        path('portal-concursos/salir/',
+             views_portal_jurado.portal_concursos_logout_view,
+             name='portal_concursos_logout'),
+        path('portal-concursos/sesion-expirada/',
+             views_portal_jurado.portal_concursos_sesion_expirada_view,
+             name='portal_concursos_sesion_expirada'),
+        path('portal-concursos/<str:token>/',
+             views_portal_jurado.portal_concursos_landing_view,
+             name='portal_concursos_landing'),
+    ]

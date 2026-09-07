@@ -1,0 +1,23 @@
+{# carrera_academica/components/ca/_notif_portal_celda.html #}
+{# Celda de la tabla titular/suplente del modal "Notificar Portal de Jurados". #}
+{# Parámetro: m (dict de listar_miembros_jurado, o None si el slot está vacío). #}
+{% if m %}
+<div class="form-check">
+    <input class="form-check-input" type="checkbox" name="destinatarios"
+           value="{{ m.valor }}" id="modalNotifDest{{ m.valor|slugify }}"
+           {% if m.es_titular and m.tiene_dni %}checked{% endif %}
+           {% if not m.tiene_dni %}disabled{% endif %}>
+    <label class="form-check-label small" for="modalNotifDest{{ m.valor|slugify }}">
+        {{ m.persona }}
+    </label>
+</div>
+{% if not m.tiene_dni %}
+<span class="badge bg-warning text-dark">Sin DNI cargado</span>
+{% elif m.ultimo_token %}
+<span class="text-muted small">Enviado {{ m.ultimo_token.creado|date:"d/m/Y" }}</span>
+{% else %}
+<span class="text-muted small">Nunca enviado</span>
+{% endif %}
+{% else %}
+<span class="text-muted small">Sin asignar</span>
+{% endif %}
