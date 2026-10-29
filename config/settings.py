@@ -157,6 +157,8 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = config("EMAIL_HOST", default="smtp.office365.com")
 EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+# Timeout de socket SMTP (s): menor que el de gunicorn (30 s) para que un SMTP colgado no mate al worker
+EMAIL_TIMEOUT = config("EMAIL_TIMEOUT", default=20, cast=int)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("SMTP_PASS")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
