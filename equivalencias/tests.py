@@ -48,3 +48,15 @@ class DocumentacionGridTests(SimpleTestCase):
         self.assertIn("/file/equivalencias/perez-juan/abc.PDF", html)
         self.assertIn("bi-file-pdf", html)
         self.assertIn("Documento 1", html)
+
+
+class ActaFirmadaLinkTests(SimpleTestCase):
+    def test_el_link_del_acta_pasa_por_la_vista_protegida(self):
+        from django.template import Context, Template
+
+        t = Template(
+            "{% url 'serve_private_media' path=archivo.name|slice:'8:' %}")
+        url = t.render(Context({"archivo": SimpleNamespace(
+            name="private/equivalencias/perez-juan/acta.pdf")}))
+
+        self.assertEqual(url, "/file/equivalencias/perez-juan/acta.pdf")
