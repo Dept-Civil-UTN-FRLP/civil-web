@@ -3,15 +3,13 @@ Component: Grid Documentación
 Grid responsive con documentos adjuntos por tipo
 
 Parámetros requeridos:
-- solicitud: Objeto SolicitudEquivalencia
+- documentos: QuerySet de DocumentoAdjunto de la solicitud
 
 Uso:
-{% include 'equivalencias/components/documentacion_grid.html' with solicitud=solicitud %}
+{% include 'equivalencias/components/documentacion_grid.html' with documentos=documentos %}
 {% endcomment %}
 
 {% load static %}
-
-{% with documentos=solicitud.documentacion_equivalencia_set.all %}
 
 {% if documentos %}
 <div class="card mb-4">
@@ -22,25 +20,27 @@ Uso:
     <div class="card-body">
         <div class="row">
             {% for doc in documentos %}
+            {% with nombre=doc.archivo.name|lower %}
             <div class="col-md-6 col-lg-4 mb-3">
                 <div class="card h-100 border-secondary">
                     <div class="card-body d-flex flex-column">
                         <div class="text-center mb-2">
-                            {% if doc.archivo.name|slice:"-4:" == ".pdf" %}
+                            {% if nombre|slice:"-4:" == ".pdf" %}
                                 <i class="bi bi-file-pdf text-danger" style="font-size: 3rem;"></i>
-                            {% elif doc.archivo.name|slice:"-4:" == ".doc" or doc.archivo.name|slice:"-5:" == ".docx" %}
+                            {% elif nombre|slice:"-4:" == ".doc" or nombre|slice:"-5:" == ".docx" %}
                                 <i class="bi bi-file-word text-primary" style="font-size: 3rem;"></i>
-                            {% elif doc.archivo.name|slice:"-4:" == ".jpg" or doc.archivo.name|slice:"-4:" == ".png" or doc.archivo.name|slice:"-5:" == ".jpeg" %}
+                            {% elif nombre|slice:"-4:" == ".jpg" or nombre|slice:"-4:" == ".png" or nombre|slice:"-5:" == ".jpeg" %}
                                 <i class="bi bi-file-image text-success" style="font-size: 3rem;"></i>
                             {% else %}
                                 <i class="bi bi-file-earmark text-secondary" style="font-size: 3rem;"></i>
                             {% endif %}
                         </div>
-                        <p class="small text-muted mb-2 text-center text-truncate" title="{{ doc.archivo.name }}">
-                            {{ doc.archivo.name|slice:"27:" }}
+                        <p class="small text-muted mb-2 text-center">
+                            Documento {{ forloop.counter }}
+                            {% if doc.fecha_subida %}<br>{{ doc.fecha_subida|date:"d/m/Y H:i" }}{% endif %}
                         </p>
                         <div class="mt-auto">
-                            <a href="/file/{{ doc.archivo.name|slice:'8:' }}" 
+                            <a href="{% url 'serve_private_media' path=doc.archivo.name|slice:'8:' %}" 
                                target="_blank" 
                                class="btn btn-sm btn-outline-primary w-100"
                                data-bs-toggle="tooltip"
@@ -51,10 +51,9 @@ Uso:
                     </div>
                 </div>
             </div>
+            {% endwith %}
             {% endfor %}
         </div>
     </div>
 </div>
 {% endif %}
-
-{% endwith %}

@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from unittest import mock
 
 from django.test import SimpleTestCase
@@ -31,3 +32,19 @@ class RegistroErrorEnvioTests(SimpleTestCase):
         self.assertEqual(detalle.error_envio, "")
         detalle.save.assert_called_once_with(
             update_fields=["estado_asignatura", "error_envio"])
+
+
+class DocumentacionGridTests(SimpleTestCase):
+    def test_muestra_los_documentos_aunque_la_extension_este_en_mayuscula(self):
+        from django.template.loader import render_to_string
+
+        doc = SimpleNamespace(
+            archivo=SimpleNamespace(name="private/equivalencias/perez-juan/abc.PDF"),
+            fecha_subida=None,
+        )
+        html = render_to_string(
+            "equivalencias/components/documentacion_grid.html", {"documentos": [doc]})
+
+        self.assertIn("/file/equivalencias/perez-juan/abc.PDF", html)
+        self.assertIn("bi-file-pdf", html)
+        self.assertIn("Documento 1", html)
