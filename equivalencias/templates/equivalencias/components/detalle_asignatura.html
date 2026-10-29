@@ -81,8 +81,15 @@ Uso:
         {% endif %}
     </form>
 
-    <!-- Botón reenviar si está pendiente -->
-    {% if detalle.estado_asignatura == 'Enviada a Cátedra' %}
+    {% if detalle.error_envio %}
+    <div class="alert alert-danger small mt-2 mb-0">
+        <i class="bi bi-exclamation-triangle"></i>
+        <strong>Falló el envío del correo a la cátedra.</strong> {{ detalle.error_envio }}
+    </div>
+    {% endif %}
+
+    <!-- Botón reenviar si está pendiente o si falló el envío -->
+    {% if detalle.estado_asignatura == 'Enviada a Cátedra' or detalle.error_envio or detalle.estado_asignatura == 'Pendiente de envío' %}
     <div class="text-end mt-2">
         <form method="post" action="{% url 'reenviar_email_asignatura' pk=solicitud.pk detalle_pk=detalle.pk %}">
             {% csrf_token %}
