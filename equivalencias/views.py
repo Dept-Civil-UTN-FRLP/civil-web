@@ -4,12 +4,14 @@
 import io
 import mimetypes
 import os
+import threading
 from datetime import date
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.mail import EmailMessage
+from django.db import connection
 from django.db.models import Avg, Case, Count, F, Value, When
 from django.db.models.functions import ExtractMonth, Trim, TruncMonth
 from django.http import HttpResponse
@@ -144,6 +146,41 @@ def _enviar_email_catedra(detalle_solicitud):
     )
 
     email.send()
+
+
+def _registrar_error_envio(detalle, error):
+    """Deja constancia en el detalle de la solicitud de que falló el envío."""
+    ahora = timezone.localtime().strftime("%d/%m/%Y %H:%M")
+    detalle.error_envio = f"{ahora} - {type(error).__name__}: {error}"
+    detalle.save(update_fields=["error_envio"])
+
+
+def _enviar_email_catedra_en_segundo_plano(detalle_id):
+    """
+    Envía el correo a la cátedra en un hilo aparte, para que un SMTP lento
+    no bloquee el request (gunicorn mata al worker a los 30 s).
+    Si el envío sale bien marca el detalle como "Enviada a Cátedra".
+    """
+    def _tarea():
+        try:
+            detalle = DetalleSolicitud.objects.get(pk=detalle_id)
+            try:
+                _enviar_email_catedra(detalle)
+            except Exception as e:
+                logger.exception(
+                    "Error al enviar email a la cátedra (detalle %s)", detalle_id)
+                _registrar_error_envio(detalle, e)
+            else:
+                detalle.estado_asignatura = "Enviada a Cátedra"
+                detalle.error_envio = ""
+                detalle.save(update_fields=["estado_asignatura", "error_envio"])
+        except Exception:
+            logger.exception(
+                "Error inesperado en el envío en segundo plano (detalle %s)", detalle_id)
+        finally:
+            connection.close()
+
+    threading.Thread(target=_tarea, daemon=True).start()
 
 
 def _calculate_statistics(solicitudes_qs, is_historical_view=False):
@@ -456,44 +493,19 @@ def crear_solicitud_view(request):
         for doc in documentos:
             DocumentoAdjunto.objects.create(solicitud=nueva_solicitud, archivo=doc)
 
-        # --- Bucle para procesar cada asignatura y enviar correo ---
-        enviados_exitosamente = 0
+        # --- Bucle para procesar cada asignatura; el correo se envía en segundo plano ---
         for asig_id in asignatura_ids:
             asig_para_equiv = get_object_or_404(AsignaturaParaEquivalencia, pk=asig_id)
 
-            # 1. Creamos el registro del detalle de la solicitud
             detalle_solicitud = DetalleSolicitud.objects.create(
                 id_solicitud=nueva_solicitud, id_asignatura=asig_para_equiv
             )
+            _enviar_email_catedra_en_segundo_plano(detalle_solicitud.pk)
 
-            # 2. Enviamos el correo usando la función auxiliar
-            try:
-                # La función se encarga de todo: generar Word, adjuntar y enviar.
-                _enviar_email_catedra(detalle_solicitud)
-
-                detalle_solicitud.estado_asignatura = "Enviada a Cátedra"
-                detalle_solicitud.save()
-
-                enviados_exitosamente += 1
-
-            except Exception as e:
-                # Si algo falla en el envío, informamos al usuario.
-                messages.error(
-                    request,
-                    f"No se pudo enviar el correo para {asig_para_equiv.asignatura.nombre}. Error: {e}",
-                )
-
-        # Mensaje de éxito con contador
-        if enviados_exitosamente > 0:
-            messages.success(
-                request,
-                f"Solicitud creada. Se enviaron {enviados_exitosamente} de {len(asignatura_ids)} notificaciones exitosamente.",
-            )
-        else:
-            messages.warning(
-                request,
-                "Solicitud creada, pero no se pudo enviar ninguna notificación.",
-            )
+        messages.success(
+            request,
+            f"Solicitud creada. Se están enviando {len(asignatura_ids)} notificaciones a las cátedras.",
+        )
         return redirect("dashboard")
 
     # --- Lógica para mostrar el formulario (GET) ---
@@ -684,11 +696,16 @@ def reenviar_email_asignatura_view(request, pk, detalle_pk):
 
     try:
         _enviar_email_catedra(detalle)
+        if detalle.estado_asignatura == "Pendiente de envío":
+            detalle.estado_asignatura = "Enviada a Cátedra"
+        detalle.error_envio = ""
+        detalle.save(update_fields=["estado_asignatura", "error_envio"])
         messages.success(
             request,
             f"Correo reenviado exitosamente a {detalle.id_asignatura.asignatura}.",
         )
     except Exception as e:
+        _registrar_error_envio(detalle, e)
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Error al reenviar email para detalle {detalle_pk}: {str(e)}")

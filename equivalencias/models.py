@@ -206,6 +206,11 @@ class DetalleSolicitud(models.Model):
         blank=True, null=True, help_text="Detallar temas del Programa Complementario"
     )
     fecha_dictamen = models.DateTimeField(blank=True, null=True)
+    error_envio = models.TextField(
+        blank=True,
+        default="",
+        help_text="Último error al enviar el correo a la cátedra (vacío si el envío salió bien)",
+    )
 
     class Meta:
         verbose_name = "Detalle de Solicitud"
