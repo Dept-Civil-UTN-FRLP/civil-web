@@ -48,7 +48,7 @@
             <p>El acta fue generada y enviada automáticamente al <strong>Departamento de Alumnos</strong></p>
             
             <div class="d-flex gap-2">
-                <a href="{{ solicitud.acta_firmada.url }}" class="btn btn-primary" target="_blank">
+                <a href="{% url 'serve_private_media' path=solicitud.acta_firmada.name|slice:'8:' %}" class="btn btn-primary" target="_blank">
                     <i class="bi bi-download"></i> Descargar Acta Firmada
                 </a>
                 <a href="{% url 'preview_acta' solicitud.pk %}" class="btn btn-outline-secondary">
